@@ -1,14 +1,33 @@
 // Bug Avcısı: İstanbul — oyun kabuğu: çizim, kamera, HUD, menüler, giriş, ses.
 (function () {
   'use strict';
-  const BA = window.BA, ART = window.BA_ART, AU = window.BA_AUDIO;
+  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO;
   const LEVELS = window.BA_LEVELS, WORLDS = window.BA_WORLDS;
   const canvas = document.getElementById('oyun');
   const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
   const VW = 256, VH = 240, TS = 16, TOP = 16;
   const params = new URLSearchParams(location.search);
   if (params.has('tv')) document.body.classList.add('tv');
+
+  // ---------- çözünürlük ----------
+  // Oyun mantığı 256×240 birimlik bir dünyada çalışır; kanvas ise ekranın gerçek piksel sayısında çizilir.
+  // S: bir mantıksal birimin kaç cihaz pikseli olduğu. Böylece her şey her ekranda keskin ve pürüzsüz görünür.
+  let S = 3;
+  function fit() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    // S, 1/16'lık adımlara yuvarlanır: böylece bir karo tam sayı piksel olur, karolar ve
+    // önbellekli katmanlar yeniden örneklenmeden 1:1 kopyalanır (hem keskin hem hızlı).
+    const ideal = Math.max(1, Math.min(4, ((r.width || VW * 3) * dpr) / VW));
+    const s = Math.max(1, Math.floor(ideal * 16) / 16);
+    const w = Math.round(VW * s), h = Math.round(VH * s);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    S = s;
+    ART.setScale(S);
+  }
+  fit();
+  addEventListener('resize', fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(canvas);
 
   // ---------- kayıt ----------
   const store = {
@@ -17,33 +36,31 @@
   };
 
   // ---------- yazı ----------
+  // Fredoka: yuvarlak hatlı, Türkçe harflerin hepsi düzgün (OFL lisanslı).
+  const FONT = 'Fredoka, "Trebuchet MS", system-ui, sans-serif';
   if (window.FontFace && document.fonts) {
-    for (const [file, range] of [
+    const loads = [];
+    for (const wt of [500, 600]) for (const [file, range] of [
       ['latin', 'U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215'],
       ['latin-ext', 'U+0100-0130, U+0132-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF'],
     ]) {
-      new FontFace('Press Start 2P', `url(src/fonts/press-start-2p-${file}-400-normal.woff2)`, { unicodeRange: range })
-        .load().then((f) => document.fonts.add(f)).catch(() => { /* monospace'e düşer */ });
+      loads.push(new FontFace('Fredoka', `url(src/fonts/fredoka-${file}-${wt}-normal.woff2)`, { weight: String(wt), unicodeRange: range })
+        .load().then((f) => document.fonts.add(f)).catch(() => { /* sistem yazı tipine düşer */ }));
     }
+    // yazı tipi gelince yazı içeren önbellekli çizimleri yenile
+    Promise.all(loads).then(() => ART.clearAll());
   }
-  // Yazı tipinin büyük İ, Ö, Ü harfleri küçük harf gibi durduğu için I, O, U yazılıp noktalar elle konur.
-  const DOTS = { 'İ': ['I', [3]], 'Ö': ['O', [1, 5]], 'Ü': ['U', [1, 5]] };
-  function text(s, x, y, col = '#f4f0e4', size = 8, align = 'left', shadow = '#10121c') {
+  // y: yazının üst kenarı; size: göz yüksekliği (eski 8'lik ölçüyle uyumlu)
+  function text(s, x, y, col = '#fff8ec', size = 8, align = 'left', shadow = '#1a1430', weight = 600) {
     s = String(s);
-    ctx.font = `${size}px "Press Start 2P", monospace`;
-    ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-    const chars = [...s];
-    const plain = chars.map((c) => (DOTS[c] ? DOTS[c][0] : c)).join('');
-    const u = size / 8, sh = size >= 16 ? 2 : 1;
-    const x0 = Math.round(x - (align === 'center' ? (chars.length * size) / 2 : align === 'right' ? chars.length * size : 0));
-    const y0 = Math.round(y);
-    const draw = (ox, oy, c) => {
-      ctx.fillStyle = c; ctx.fillText(plain, x0 + ox, y0 + oy);
-      chars.forEach((ch, i) => { if (DOTS[ch]) for (const dx of DOTS[ch][1]) ctx.fillRect(x0 + i * size + dx * u + ox, y0 - 2 * u + oy, 2 * u, u); });
-    };
-    if (shadow) draw(sh, sh, shadow);
-    draw(0, 0, col);
+    const px = size * 1.32;
+    ctx.font = `${weight} ${px}px ${FONT}`;
+    ctx.textAlign = align; ctx.textBaseline = 'middle';
+    const yy = y + size * 0.5;
+    if (shadow) { ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.6, px * 0.24); ctx.strokeStyle = shadow; ctx.strokeText(s, x, yy); }
+    ctx.fillStyle = col; ctx.fillText(s, x, yy);
   }
+  function textW(s, size = 8, weight = 600) { ctx.font = `${weight} ${size * 1.32}px ${FONT}`; return ctx.measureText(String(s)).width; }
   const up = (s) => s.toLocaleUpperCase('tr-TR');
 
   // ---------- giriş ----------
@@ -162,7 +179,7 @@
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
     progress: store.get('ba-ilerleme', 1), best: store.get('ba-rekor', 0), titleT: 0, selW: 0, selS: 0,
   };
-  window.__ba = { app, BA, start: (stage) => startRun(stage || 0) };
+  window.__ba = { app, BA, start: (stage) => startRun(stage || 0), render: () => render() };
 
   function startRun(stage) {
     app.S = BA.newRun();
@@ -304,294 +321,382 @@
   }
 
   // ---------- çizim ----------
-  const skyCache = [];
-  function sky(w) {
-    if (!skyCache[w]) {
-      const [a, b] = ART.WORLD[w].sky;
-      skyCache[w] = ART.mk(VW, VH, (g) => {
-        const gr = g.createLinearGradient(0, 0, 0, VH);
-        gr.addColorStop(0, a); gr.addColorStop(1, b);
-        g.fillStyle = gr; g.fillRect(0, 0, VW, VH);
-      });
+  const shade = ART.shade;
+  function img(c, x, y) { ctx.drawImage(c, x, y, c.lw, c.lh); }
+  // tam ekran önbellekli görüntü: cihaz pikseline 1:1
+  function full(c) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(c, 0, 0); ctx.setTransform(S, 0, 0, S, 0, 0); }
+  function panel(x, y, w, h, r = 6, fill = 'rgba(22,18,48,0.72)', stroke = 'rgba(255,255,255,0.16)') {
+    ART.rr(ctx, x, y, w, h, r); ctx.fillStyle = fill; ctx.fill();
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 0.8; ctx.stroke(); }
+  }
+  // tekrarlanan arka plan katmanı: kopyalar cihaz pikseline oturur, ek yeri görünmez
+  function layerDraw(c, off) {
+    const Wd = Math.round(c.lw * S), Hd = Math.round(c.lh * S);
+    let X = -Math.round((((off % c.lw) + c.lw) % c.lw) * S);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (; X < canvas.width; X += Wd) ctx.drawImage(c, X, 0, Wd, Hd);
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+  }
+  function backdrop(w, cam, t) {
+    full(SC.sky(w, VW, VH));
+    const L = SC.layers(w);
+    layerDraw(L.far, cam * 0.15 + (t || 0) * 0.3);
+    layerDraw(L.near, cam * 0.4 + (t || 0));
+    if (!ART.WORLD[w].water) {
+      // zemin hizasının altı kararır: çukurlar çukur gibi görünsün
+      const gr = ctx.createLinearGradient(0, TOP + 12.2 * TS, 0, VH);
+      gr.addColorStop(0, 'rgba(12,10,30,0)'); gr.addColorStop(1, 'rgba(12,10,30,0.7)');
+      ctx.fillStyle = gr; ctx.fillRect(0, TOP + 12.2 * TS, VW, VH);
     }
-    return skyCache[w];
+    water(w, cam + (t || 0) * 2.5);
   }
-  function layer(img, off, y) {
-    const w = img.width;
-    let x = -((off % w) + w) % w;
-    for (; x < VW; x += w) ctx.drawImage(img, Math.round(x), y || 0);
+  function water(w, cam) {
+    const col = ART.WORLD[w].water;
+    if (!col) return;
+    const y0 = TOP + 12.4 * TS;
+    const gr = ctx.createLinearGradient(0, y0, 0, VH);
+    gr.addColorStop(0, shade(col, 0.18)); gr.addColorStop(1, shade(col, -0.4));
+    ctx.fillStyle = gr; ctx.fillRect(0, y0, VW, VH - y0);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(0, y0, VW, 0.8);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let r = 0; r < 3; r++) {
+      const yy = y0 + 3 + r * 7, sp = 28 + r * 10, off = ((cam * (0.6 + r * 0.25)) % sp + sp) % sp;
+      for (let x = -sp - off + r * 11; x < VW + sp; x += sp) {
+        const yb = yy + Math.sin(app.t * 2 + x * 0.07 + r) * 0.8;
+        ctx.moveTo(x, yb); ctx.quadraticCurveTo(x + 4, yb - 1.6, x + 8, yb);
+      }
+    }
+    ctx.stroke();
   }
-  const ICON = {
-    simit: ART.mk(8, 8, (g) => { ART.disc(g, 4, 4, 3, '#18141e'); ART.disc(g, 4, 4, 3, '#e0902e'); ART.R(g, 3, 3, 2, 2, '#18141e'); ART.R(g, 2, 1, 1, 1, '#ffe08a'); ART.R(g, 5, 5, 1, 1, '#ffe08a'); }),
-    clock: ART.mk(8, 8, (g) => { ART.disc(g, 4, 4, 3, '#ece6d6'); ART.R(g, 4, 2, 1, 3, '#18141e'); ART.R(g, 4, 4, 2, 1, '#18141e'); }),
-    life: ART.mk(8, 8, (g) => { ART.R(g, 1, 0, 6, 3, '#4a2c1c'); ART.R(g, 1, 3, 6, 3, '#f1b98f'); ART.R(g, 2, 3, 2, 1, '#18141e'); ART.R(g, 5, 3, 2, 1, '#18141e'); ART.R(g, 1, 6, 6, 2, '#22a391'); }),
-  };
+
+  // dönen simit kareleri (önbellekli)
+  const coinCache = ART.cache();
+  function coinImg(f) {
+    f = ((f % 8) + 8) % 8;
+    let c = coinCache.get(f);
+    if (!c) { c = ART.mk(16, 16, (g) => ART.drawSimit(g, 8, 8, f / 8 * Math.PI, 6)); coinCache.set(f, c); }
+    return c;
+  }
+  function clockIcon(x, y, r) {
+    ART.circle(ctx, x, y, r, '#f6f0e2', ART.K, 0.7);
+    ART.lin(ctx, x, y, x, y - r * 0.6, ART.K, 0.7); ART.lin(ctx, x, y, x + r * 0.45, y, ART.K, 0.7);
+  }
 
   function hud(G) {
-    const S = app.S;
-    ctx.fillStyle = '#10121c'; ctx.fillRect(0, 0, VW, TOP);
-    text(String(S.score).padStart(6, '0'), 4, 4);
-    ctx.drawImage(ICON.simit, 62, 4); text('×' + String(S.simit).padStart(2, '0'), 72, 4, '#ffe08a');
-    const L = G ? G.L : LEVELS[S.stage];
-    text(`${L.world}-${L.section}`, 112, 4, '#9af4e4');
-    ctx.drawImage(ICON.clock, 150, 4);
+    const St = app.S, L = G ? G.L : LEVELS[St.stage];
+    const y = 3, h = 13, ty = y + 2.6, sz = 7;
+    panel(3, y, 58, h, 6.5); text(String(St.score).padStart(6, '0'), 32, ty, '#fff8ec', sz, 'center');
+    panel(65, y, 44, h, 6.5); img(coinImg(0), 66.5, y - 1.5); text('×' + String(St.simit).padStart(2, '0'), 93, ty, '#ffe08a', sz, 'center');
+    panel(113, y, 30, h, 6.5); text(`${L.world}-${L.section}`, 128, ty, '#9af4e4', sz, 'center');
+    panel(147, y, 52, h, 6.5); clockIcon(157, y + 6.5, 4.2);
     const tm = G ? Math.ceil(G.time) : L.time;
-    text(String(tm).padStart(3, '0'), 160, 4, G && G.time < 100 && G.phase === 'play' && Math.floor(app.t * 4) % 2 ? '#ff6a5a' : '#f4f0e4');
-    ctx.drawImage(ICON.life, 200, 4); text('×' + S.lives, 210, 4);
+    const warn = G && G.time < 100 && G.phase === 'play' && Math.floor(app.t * 4) % 2;
+    text(String(tm).padStart(3, '0'), 180, ty, warn ? '#ff7a6a' : '#fff8ec', sz, 'center');
+    panel(203, y, 50, h, 6.5); ART.drawHead(ctx, 213, y + 7.4, 4.4, { skin: St.power === 2 ? 'hacker' : 'normal' });
+    text('×' + St.lives, 234, ty, '#fff8ec', sz, 'center');
   }
 
-  function heroSprite(G) {
-    const p = G.player, S = G.S;
-    let big = S.power > 0;
+  function heroOpts(G) {
+    const p = G.player, St = G.S;
+    let big = St.power > 0;
     if (p.growT > 0 && Math.floor(p.growT * 16) % 2) big = !big;
-    let name;
-    if (p.dead) name = 'small_dead';
-    else {
-      const pre = big ? 'big_' : 'small_';
-      if (!p.onGround) name = pre + 'jump';
-      else if (p.skid) name = pre + 'skid';
-      else if (Math.abs(p.vx) > 0.3) name = pre + ['walk1', 'walk2', 'walk3', 'walk2'][Math.floor(p.walkT * 1.5) % 4];
-      else name = pre + 'stand';
-      if (big && S.power === 2 && p.shootCD > 0.08 && p.onGround) name = 'big_shoot';
-    }
-    let skin = S.power === 2 ? 'hacker' : 'normal';
-    if (p.star > 0) skin = ['star0', 'star1', 'star2', S.power === 2 ? 'hacker' : 'normal'][Math.floor(app.t * (p.star < 2 ? 8 : 16)) % 4];
-    return ART.sprite(name, skin, p.face < 0 && !p.dead);
+    let mode = 'stand';
+    if (p.dead) mode = 'dead';
+    else if (!p.onGround) mode = 'jump';
+    else if (p.skid) mode = 'skid';
+    else if (Math.abs(p.vx) > 0.3) mode = 'walk';
+    if (!p.dead && big && St.power === 2 && p.shootCD > 0.08 && p.onGround) mode = 'shoot';
+    const star = p.star > 0 && !(p.star < 2 && Math.floor(app.t * 10) % 2);
+    return { big, face: p.face, mode, phase: (p.walkT / 2.2) % 1, skin: St.power === 2 ? 'hacker' : 'normal', star, t: app.t };
   }
 
+  const TILEK = { 2: 'solid', 8: 'solid', 3: 'oneway', 5: 'used', 6: 'crack', 7: 'spike' };
   function drawPlay() {
-    const G = app.G, w = G.world, T = ART.tiles(w), W = ART.WORLD[w];
+    const G = app.G, w = G.world;
     let sx = 0, sy = 0;
-    if (G.shake > 0) { sx = Math.round((Math.random() - 0.5) * 4); sy = Math.round((Math.random() - 0.5) * 4); }
-    const cam = Math.round(G.cam * TS);
-    ctx.drawImage(sky(w), 0, 0);
-    const bg = ART.background(w);
-    layer(bg.far, cam * 0.15);
-    layer(bg.near, cam * 0.4);
-    if (W.water) {
-      const y0 = TOP + Math.round(12.4 * TS);
-      ctx.fillStyle = W.water; ctx.fillRect(0, y0, VW, VH - y0);
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      for (let x = -16; x < VW + 16; x += 16) { const o = Math.round(Math.sin(app.t * 2 + x * 0.05) * 2); ctx.fillRect(x - (cam % 16), y0 + 1 + o, 8, 1); }
-    }
-    ctx.save();
-    ctx.translate(-cam + sx, TOP + sy);
+    if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
+    const cam = Math.round(G.cam * TS * S) / S;
+    backdrop(w, cam);
+    const ox = -cam + sx, oy = TOP + sy;
+    // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
     const x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
-    // yükselen eşyalar blokların arkasında
-    for (const it of G.items) if (it.state === 'rise') ctx.drawImage(ART.sprite(it.kind), Math.round(it.x * TS - 1), Math.round(it.y * TS - 2));
-    // karolar
     const bumpOff = new Map();
-    for (const b of G.bumps) bumpOff.set(b.ty * G.W + b.tx, Math.round(-Math.sin(b.t / 0.2 * Math.PI) * 5));
-    const blink = Math.floor(app.t * 2.5) % 2;
+    for (const b of G.bumps) bumpOff.set(b.ty * G.W + b.tx, -Math.sin(b.t / 0.2 * Math.PI) * 5);
+    // yükselen eşyalar blokların arkasında
+    ctx.save(); ctx.translate(ox, oy);
+    for (const it of G.items) if (it.state === 'rise') ART.drawItem(ctx, it.kind, it.x * TS - 1, it.y * TS - 2, app.t);
+    ctx.restore();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const put = (c, lx, ly) => {
+      const X0 = Math.round((lx + ox) * S), Y0 = Math.round((ly + oy) * S);
+      ctx.drawImage(c, X0, Y0, Math.round((lx + 16 + ox) * S) - X0, Math.round((ly + 16 + oy) * S) - Y0);
+    };
+    const blink = Math.floor(app.t * 2.5) % 2 ? 'off' : '';
     for (let ty = 0; ty < BA.H; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
         const i = ty * G.W + tx, t = G.grid[i];
         if (!t) continue;
         const px = tx * TS, py = ty * TS + (bumpOff.get(i) || 0);
-        switch (t) {
-          case 1: ctx.drawImage(ty > 0 && G.grid[i - G.W] === 1 ? T.fill : T.surf, px, py); break;
-          case 2: case 8: ctx.drawImage(T.solid, px, py); break;
-          case 3: ctx.drawImage(T.oneway, px, py); break;
-          case 4: ctx.drawImage(T.block[blink], px, py); break;
-          case 5: ctx.drawImage(T.used, px, py); break;
-          case 6: ctx.drawImage(T.crack, px, py); break;
-          case 7: ctx.drawImage(T.spike, px, py); break;
-        }
+        if (t === 1) put(ART.tile(w, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
+        else if (t === 4) put(ART.tile(w, 'block', blink), px, py);
+        else if (TILEK[t]) put(ART.tile(w, TILEK[t]), px, py);
       }
     }
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    ctx.save();
+    ctx.translate(ox, oy);
     // simitler
-    const sf = ['simit0', 'simit1', 'simit2', 'simit1'][Math.floor(app.t * 6) % 4];
-    const simg = ART.sprite(sf, null, Math.floor(app.t * 6) % 4 === 3);
-    for (let ty = 0; ty < BA.H; ty++) for (let tx = x0; tx <= x1; tx++) if (G.coins[ty * G.W + tx]) ctx.drawImage(simg, tx * TS, ty * TS);
+    const coin = coinImg(Math.floor(app.t * 10));
+    for (let ty = 0; ty < BA.H; ty++) for (let tx = x0; tx <= x1; tx++) if (G.coins[ty * G.W + tx]) img(coin, tx * TS, ty * TS);
     // kayıt noktası ve DEPLOY
-    if (G.checkpoint) ctx.drawImage(T.check[G.checkpoint.on ? 1 : 0], G.checkpoint.x * TS, (G.checkpoint.y - 1) * TS);
+    if (G.checkpoint) ART.drawCheckpoint(ctx, G.checkpoint.x * TS, (G.checkpoint.y - 1) * TS, G.checkpoint.on, app.t);
     const gl = G.goal;
     if (gl && (gl.active || !G.bossKind)) {
       const gx = gl.x * TS, gy = gl.y * TS;
-      ctx.drawImage(ART.sprite('deploy'), gx, gy);
-      if (Math.floor(app.t * 3) % 2) { ctx.fillStyle = '#7cff6a'; ctx.fillRect(gx + 4, gy + 12, 1, 1); ctx.fillRect(gx + 4, gy + 16, 1, 1); }
-      if (G.phase === 'clear') {
-        const k = Math.min(1, G.clearT / 1.4);
-        ctx.fillStyle = '#10121c'; ctx.fillRect(gx - 12, gy - 14, 40, 8);
-        ctx.fillStyle = '#7cff6a'; ctx.fillRect(gx - 11, gy - 13, Math.round(38 * k), 6);
-      } else {
-        ctx.save(); ctx.translate(gx + 8, gy - 12); text('DEPLOY', 0, 0, '#7cff6a', 8, 'center'); ctx.restore();
+      ART.drawDeploy(ctx, gx, gy, app.t, G.phase === 'clear' ? Math.min(1, G.clearT / 1.4) : undefined);
+      if (G.phase !== 'clear') {
+        const bob = Math.sin(app.t * 4) * 1.2;
+        panel(gx - 12, gy - 16 + bob, 40, 11, 5.5, 'rgba(15,36,26,0.85)', '#7cff6a');
+        text('DEPLOY', gx + 8, gy - 13.6 + bob, '#7cff6a', 6, 'center', null);
       }
     }
     // hareketli platformlar ve dönen kıvılcımlar
-    for (const pl of G.plats) ctx.drawImage(T.lift, 0, 0, pl.w * TS, 8, Math.round(pl.x * TS), Math.round(pl.y * TS), pl.w * TS, 8);
-    const spark = ART.sprite('spark');
+    for (const pl of G.plats) ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
     for (const b of G.bars) {
-      ctx.drawImage(T.anchor, (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
-      for (let k = 1; k <= b.n; k++) ctx.drawImage(spark, Math.round((b.cx + Math.cos(b.a) * k * 0.45) * TS - 4), Math.round((b.cy + Math.sin(b.a) * k * 0.45) * TS - 4));
+      img(ART.tile(w, 'anchor'), (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
+      for (let k = 1; k <= b.n; k++) ART.drawSpark(ctx, (b.cx + Math.cos(b.a) * k * 0.45) * TS, (b.cy + Math.sin(b.a) * k * 0.45) * TS, app.t + k);
     }
     // eşyalar
-    for (const it of G.items) if (it.state !== 'rise') ctx.drawImage(ART.sprite(it.kind), Math.round(it.x * TS - 1), Math.round(it.y * TS - 2));
-    // düşmanlar
+    for (const it of G.items) if (it.state !== 'rise') ART.drawItem(ctx, it.kind, it.x * TS - 1, it.y * TS - 2, app.t);
+    // düşmanlar, patron
     for (const e of G.ents) drawEnemy(e);
-    // patron
     if (G.boss) drawBoss(G);
     // oyuncu
     const p = G.player;
-    if (!(p.inv > 0 && Math.floor(app.t * 20) % 2) || p.dead) {
-      const img = heroSprite(G);
-      ctx.drawImage(img, Math.round(p.x * TS - (TS - p.w * TS) / 2), Math.round((p.y + p.h) * TS - img.height));
-    }
-    // atışlar
-    const shot = ART.sprite('shot');
-    for (const s of G.shots) ctx.drawImage(shot, Math.round(s.x * TS), Math.round(s.y * TS));
+    if (!(p.inv > 0 && Math.floor(app.t * 20) % 2) || p.dead) ART.drawHero(ctx, (p.x + p.w / 2) * TS, (p.y + p.h) * TS, heroOpts(G));
+    // atışlar ve efektler
+    for (const s of G.shots) ART.drawShot(ctx, s.x * TS, s.y * TS, app.t);
     for (const s of G.bshots) drawBossShot(s);
-    // efektler
-    for (const f of G.fx) drawFx(f, T);
+    for (const f of G.fx) drawFx(f, w);
     ctx.restore();
     // patron canı
     if (G.boss && !G.boss.dead) {
       const b = G.boss, name = up(G.L.bossName || '');
-      ctx.fillStyle = 'rgba(16,18,28,0.75)'; ctx.fillRect(0, TOP, VW, 14);
-      text(name, 6, TOP + 3, '#ff8a70');
+      panel(3, TOP + 3, VW - 6, 14, 7);
+      text(name, 11, TOP + 6, '#ffa288', 6.4, 'left');
       for (let i = 0; i < b.maxHp; i++) {
-        const x = VW - 8 - (b.maxHp - i) * 10, full = b.hp > i + 0.01, part = !full && b.hp > i;
-        ctx.fillStyle = '#18141e'; ctx.fillRect(x, TOP + 3, 8, 8);
-        ctx.fillStyle = full ? '#e2483a' : part ? '#8a3a2a' : '#3a3e48'; ctx.fillRect(x + 1, TOP + 4, 6, 6);
+        const x = VW - 12 - (b.maxHp - 1 - i) * 10, full = b.hp > i + 0.01, part = !full && b.hp > i;
+        heart(x, TOP + 10, full ? '#ff4a5a' : part ? '#9a3a40' : '#3a3e52');
       }
       if (b.state === 'intro') {
-        ctx.fillStyle = 'rgba(16,18,28,0.7)'; ctx.fillRect(0, 96, VW, 44);
-        text('PATRON', VW / 2, 102, '#f4c531', 8, 'center');
-        text(name, VW / 2, 118, '#ffffff', 16, 'center');
+        panel(28, 92, VW - 56, 52, 10);
+        text('PATRON', VW / 2, 100, '#f4c531', 7, 'center');
+        text(name, VW / 2, 116, '#ffffff', 14, 'center');
       }
     }
     if (G.goal && G.goal.active && G.bossKind && G.phase === 'play' && G.bossDownT < 4) {
-      text('DEPLOY ET!', VW / 2, 64, Math.floor(app.t * 4) % 2 ? '#7cff6a' : '#ffffff', 16, 'center');
+      text('DEPLOY ET!', VW / 2, 60, Math.floor(app.t * 4) % 2 ? '#7cff6a' : '#ffffff', 14, 'center');
     }
     if (G.phase === 'clear' && G.clearT > 1.4) {
-      ctx.fillStyle = 'rgba(16,18,28,0.6)'; ctx.fillRect(0, 70, VW, 44);
-      text('DEPLOY BAŞARILI!', VW / 2, 78, '#7cff6a', 8, 'center');
-      text('SÜRE BONUSU', VW / 2, 96, '#f4f0e4', 8, 'center');
+      panel(40, 72, VW - 80, 40, 10);
+      text('DEPLOY BAŞARILI!', VW / 2, 79, '#7cff6a', 9, 'center');
+      text('süre bonusu', VW / 2, 96, '#fff8ec', 6.6, 'center', null, 500);
     }
-    if (G.time < 100 && G.time > 97 && G.phase === 'play') text('ACELE ET!', VW / 2, 60, '#ff6a5a', 16, 'center');
+    if (G.time < 100 && G.time > 97 && G.phase === 'play') text('ACELE ET!', VW / 2, 60, '#ff7a6a', 14, 'center');
     hud(G);
+  }
+  function heart(x, y, col) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + 3.2);
+    ctx.bezierCurveTo(x - 5, y - 0.4, x - 3, y - 4.4, x, y - 2);
+    ctx.bezierCurveTo(x + 3, y - 4.4, x + 5, y - 0.4, x, y + 3.2);
+    ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 0.6; ctx.stroke();
   }
 
   function drawEnemy(e) {
-    const t = app.t;
-    let img;
-    const fr = Math.floor(e.t * 6) % 2;
+    const cx = (e.x + e.w / 2) * TS, by = (e.y + e.h) * TS;
+    ctx.save();
+    if (e.dead && e.flip) { const my = by - e.h * TS / 2; ctx.translate(0, my); ctx.scale(1, -1); ctx.translate(0, -my); }
     switch (e.kind) {
-      case 'bug': img = e.dead && !e.flip ? ART.sprite('bug_flat') : ART.sprite(fr ? 'bug1' : 'bug0', null, e.vx > 0); break;
-      case 'virus': img = ART.sprite(fr ? 'virus1' : 'virus0'); break;
-      case 'spam': img = ART.sprite(Math.floor(e.t * 8) % 2 ? 'spam1' : 'spam0', null, e.vx > 0); break;
-      case 'marti': img = ART.sprite(e.state === 'dive' ? 'marti1' : (Math.floor(e.t * 7) % 2 ? 'marti1' : 'marti0'), null, e.vx < 0); break;
+      case 'bug': ART.drawBug(ctx, cx, by, e.t, e.vx > 0 ? 1 : -1, e.dead && !e.flip); break;
+      case 'virus': ART.drawVirus(ctx, cx, by + 1, e.t); break;
+      case 'spam': ART.drawSpam(ctx, cx, by + 1, e.t, e.vx > 0 ? 1 : -1); break;
+      case 'marti': ART.drawMarti(ctx, cx, by + 1, e.t, e.vx < 0 ? -1 : 1, e.state === 'dive'); break;
     }
-    const x = Math.round(e.x * TS + e.w * TS / 2 - img.width / 2), y = Math.round((e.y + e.h) * TS - img.height + (e.kind === 'spam' || e.kind === 'marti' ? 2 : 0));
-    if (e.dead && e.flip) {
-      ctx.save(); ctx.translate(x, y + img.height); ctx.scale(1, -1); ctx.drawImage(img, 0, 0); ctx.restore();
-    } else ctx.drawImage(img, x, y);
-    void t;
+    ctx.restore();
   }
 
+  // yara alan patron: ayrı bir tuvalde çizilip beyaza boyanır
+  let flashCv = null;
+  function flashed(draw, cx, by) {
+    const w = 96, h = 80;
+    if (!flashCv || flashCv.S !== S) { flashCv = document.createElement('canvas'); flashCv.width = Math.ceil(w * S); flashCv.height = Math.ceil(h * S); flashCv.S = S; }
+    const g = flashCv.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, flashCv.width, flashCv.height);
+    g.setTransform(S, 0, 0, S, 0, 0); g.lineJoin = 'round'; g.lineCap = 'round';
+    draw(g, w / 2, h - 6);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(255,255,255,0.82)'; g.fillRect(0, 0, flashCv.width, flashCv.height);
+    g.globalCompositeOperation = 'source-over';
+    ctx.drawImage(flashCv, cx - w / 2, by - h + 6, w, h);
+  }
   function drawBoss(G) {
     const b = G.boss;
     if (b.kind === 'glitch' && (b.state === 'hide' || (b.state === 'appear' && Math.floor(app.t * 20) % 2) || (b.state === 'vanish' && Math.floor(app.t * 25) % 2))) return;
-    let frame = Math.floor(b.t * 6) % 2;
-    if (b.kind === 'sizinti') frame = Math.floor(b.t * 8) % 4;
-    if (b.kind === 'truva' && b.state === 'open') frame = 2;
-    if (b.kind === 'glitch') frame = Math.floor(b.t * 12) % 4;
     const hurt = (b.flash > 0 && Math.floor(app.t * 24) % 2) || (b.hurtT > 0 && Math.floor(app.t * 12) % 2);
-    const img = ART.boss(b.kind, frame, hurt);
-    let flip = false;
-    if (b.kind === 'truva') flip = b.face < 0;
-    if (b.kind === 'marti') flip = b.face < 0;
-    const x = Math.round((b.x + b.w / 2) * TS - img.width / 2);
-    const y = Math.round((b.y + b.h) * TS - img.height + (b.kind === 'kralbug' ? 4 : b.kind === 'spam' ? 6 : b.kind === 'marti' ? 6 : 0));
+    const cx = (b.x + b.w / 2) * TS, by = (b.y + b.h) * TS + (b.kind === 'spam' ? 3 : 0);
     let shakeX = 0;
     if ((b.kind === 'truva' && b.state === 'shake') || (b.kind === 'kralbug' && b.state === 'go' && b.st > 1.5)) shakeX = Math.floor(app.t * 30) % 2 ? 1 : -1;
+    const o = { face: b.face || -1, hurt: false, open: b.kind === 'truva' && b.state === 'open', tired: b.kind === 'ddos' && b.state === 'tired', dive: b.kind === 'marti' && b.state === 'dive' };
     ctx.save();
-    if (b.dead) { ctx.translate(x, y + img.height); ctx.scale(1, -1); ctx.drawImage(img, 0, 0); }
-    else if (flip) { ctx.translate(x + img.width + shakeX, y); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0); }
-    else ctx.drawImage(img, x + shakeX, y);
+    if (b.dead) { const my = by - b.h * TS / 2; ctx.translate(0, my); ctx.scale(1, -1); ctx.translate(0, -my); }
+    if (hurt && b.kind !== 'glitch') flashed((g, x, y) => ART.drawBoss(g, b.kind, x, y, b.t, o), cx + shakeX, by);
+    else ART.drawBoss(ctx, b.kind, cx + shakeX, by, b.t, { ...o, hurt: hurt && b.kind === 'maviekran' });
     ctx.restore();
     if (b.kind === 'dongu' && !b.dead) {
-      const spark = ART.sprite('spark');
       for (let k = 0; k < 3; k++) {
         const a = b.orb + k * Math.PI * 2 / 3;
-        ctx.drawImage(spark, Math.round((b.x + b.w / 2 + Math.cos(a) * 1.8) * TS - 4), Math.round((b.y + b.h / 2 + Math.sin(a) * 1.8) * TS - 4));
+        ART.drawSpark(ctx, (b.x + b.w / 2 + Math.cos(a) * 1.8) * TS, (b.y + b.h / 2 + Math.sin(a) * 1.8) * TS, app.t + k, 3.2);
       }
     }
-    if (b.kind === 'ddos' && b.state === 'tired') text('Z', (b.x + b.w) * TS, (b.y - 0.6) * TS - Math.sin(b.st * 3) * 4, '#ffffff');
   }
   function drawBossShot(s) {
-    const x = Math.round(s.x * TS), y = Math.round(s.y * TS), w = Math.round(s.w * TS), h = Math.round(s.h * TS);
+    const x = s.x * TS, y = s.y * TS, w = s.w * TS, h = s.h * TS, cx = x + w / 2, cy = y + h / 2;
     switch (s.kind) {
-      case 'drop': ctx.fillStyle = '#18141e'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#c88aec'; ctx.fillRect(x + 1, y + 1, w - 2, h - 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 2, 2, 1); break;
-      case 'packet': ctx.fillStyle = '#18141e'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#3ae0ff'; ctx.fillRect(x + 1, y + 1, w - 2, h - 2); ctx.fillStyle = '#18141e'; ctx.fillRect(x + 2, y + 3, w - 4, 1); break;
-      case 'pixel': ctx.fillStyle = ['#ff3a6a', '#3ae0ff', '#7cff6a'][Math.floor(app.t * 20) % 3]; ctx.fillRect(x, y, w, h); break;
-      case 'sad': ctx.fillStyle = '#18141e'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#2a5ad8'; ctx.fillRect(x + 1, y + 1, w - 2, h - 2); ctx.save(); ctx.translate(0, 0); text(':(', x + 1, y + 1, '#ffffff', 8, 'left', null); ctx.restore(); break;
+      case 'drop': {
+        ctx.beginPath(); ctx.moveTo(cx, y - 1); ctx.quadraticCurveTo(x + w + 1, cy + 1, cx, y + h); ctx.quadraticCurveTo(x - 1, cy + 1, cx, y - 1);
+        ctx.fillStyle = '#c88aec'; ctx.fill(); ctx.strokeStyle = ART.K; ctx.lineWidth = 0.7; ctx.stroke();
+        ART.circle(ctx, cx - 1, cy + 0.6, 0.9, 'rgba(255,255,255,0.8)', null);
+        break;
+      }
+      case 'packet': {
+        ART.box(ctx, x, y, w, h, 1.4, '#3ae0ff');
+        ctx.fillStyle = '#0a3a4a'; ctx.font = `600 ${h * 0.62}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('01', cx, cy + 0.3);
+        break;
+      }
+      case 'pixel': {
+        ctx.save(); ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 3 * S;
+        ctx.fillStyle = ['#ff3a6a', '#3ae0ff', '#7cff6a'][Math.floor(app.t * 20) % 3]; ctx.fillRect(x, y, w, h);
+        ctx.restore();
+        break;
+      }
+      case 'sad': {
+        ART.box(ctx, x, y, w, h, 1.6, '#2a5ad8');
+        ctx.fillStyle = '#ffffff'; ctx.font = `600 ${h * 0.6}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(':(', cx, cy + 0.4);
+        break;
+      }
     }
   }
-  function drawFx(f, T) {
+  function drawFx(f, w) {
     switch (f.k) {
-      case 'score': text(f.text, f.x * TS, f.y * TS - 8, '#ffffff', 8, 'center'); break;
-      case 'simitpop': { const y = (f.y - Math.sin(Math.min(1, f.t / 0.5) * Math.PI) * 1.5) * TS; ctx.drawImage(ART.sprite(['simit0', 'simit1', 'simit2', 'simit1'][Math.floor(f.t * 16) % 4]), f.x * TS, Math.round(y)); break; }
-      case 'debris': ctx.drawImage(T.crack, 4, 4, 8, 8, Math.round(f.x * TS - 4), Math.round(f.y * TS - 4), 8, 8); break;
-      case 'puff': { const r = 2 + f.t * 20; ctx.fillStyle = `rgba(255,255,255,${1 - f.t / 0.35})`; ctx.fillRect(Math.round(f.x * TS - r), Math.round(f.y * TS - r), Math.round(r * 2), Math.round(r * 2)); break; }
-      case 'spark': { const a = 1 - f.t / 0.35; ctx.fillStyle = `rgba(255,240,160,${a})`; const r = 3 + f.t * 16; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) ctx.fillRect(Math.round(f.x * TS + dx * r), Math.round(f.y * TS + dy * r), 2, 2); break; }
+      case 'score': text(f.text, f.x * TS, f.y * TS - 8, '#ffffff', 6, 'center'); break;
+      case 'simitpop': { const y = (f.y - Math.sin(Math.min(1, f.t / 0.5) * Math.PI) * 1.5) * TS; img(coinImg(Math.floor(f.t * 20)), f.x * TS, y); break; }
+      case 'debris': {
+        const c = ART.tile(w, 'crack'), k = c.width / 16;
+        ctx.save(); ctx.translate(f.x * TS, f.y * TS); ctx.rotate(f.t * 14);
+        ctx.drawImage(c, 4 * k, 4 * k, 8 * k, 8 * k, -4, -4, 8, 8);
+        ctx.restore();
+        break;
+      }
+      case 'puff': { const r = 2 + f.t * 20; ART.circle(ctx, f.x * TS, f.y * TS, r, `rgba(255,255,255,${Math.max(0, 0.9 - f.t / 0.35)})`, null); break; }
+      case 'spark': {
+        const a = Math.max(0, 1 - f.t / 0.35), r = 3 + f.t * 16;
+        ctx.fillStyle = `rgba(255,240,160,${a})`;
+        for (let k = 0; k < 6; k++) { const an = k / 6 * Math.PI * 2; ctx.beginPath(); ctx.arc(f.x * TS + Math.cos(an) * r, f.y * TS + Math.sin(an) * r, 1.3, 0, Math.PI * 2); ctx.fill(); }
+        break;
+      }
     }
   }
 
   // ---------- ekranlar ----------
-  function menu(items, y0, sel, gap = 16) {
+  function menu(items, y0, sel, gap = 15, w = 150) {
     app.menuItems = [];
+    const x0 = VW / 2 - w / 2;
+    panel(x0, y0 - 7, w, items.length * gap + 5, 9);
     items.forEach((label, i) => {
-      const y = y0 + i * gap;
-      const on = i === sel;
-      if (on) { ctx.fillStyle = 'rgba(16,18,28,0.65)'; ctx.fillRect(40, y - 4, VW - 80, 15); text('▶', 50, y, '#f4c531'); }
-      text(label, VW / 2 + 6, y, on ? '#f4c531' : '#f4f0e4', 8, 'center');
+      const y = y0 + i * gap, on = i === sel;
+      if (on) {
+        ART.rr(ctx, x0 + 4, y - 4.5, w - 8, gap - 1.5, 6.5); ctx.fillStyle = '#f4c531'; ctx.fill();
+        ART.poly(ctx, [x0 + 10, y - 0.4, x0 + 15, y + 2.8, x0 + 10, y + 6], '#2a1a10', null);
+      }
+      text(label, VW / 2, y - 0.4, on ? '#2a1a10' : '#fff8ec', 7.2, 'center', on ? null : '#1a1430');
       app.menuItems.push({ y });
     });
   }
+  function logo(cx, y) {
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = `600 34px ${FONT}`;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#2a1430'; ctx.lineWidth = 8; ctx.strokeText('BUG AVCISI', cx, y + 2);
+    ctx.lineWidth = 7; ctx.strokeText('BUG AVCISI', cx, y);
+    const gr = ctx.createLinearGradient(0, y - 26, 0, y);
+    gr.addColorStop(0, '#fff2a0'); gr.addColorStop(0.5, '#ffc93a'); gr.addColorStop(1, '#ff8a2a');
+    ctx.fillStyle = gr; ctx.fillText('BUG AVCISI', cx, y);
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#ffffff'; ctx.font = `600 34px ${FONT}`;
+    ctx.save(); ctx.beginPath(); ctx.rect(0, y - 27, VW, 7); ctx.clip(); ctx.fillText('BUG AVCISI', cx, y); ctx.restore();
+    ctx.restore();
+    // kırmızı kurdele: İSTANBUL
+    const ry = y + 6, rw = 104;
+    ART.poly(ctx, [cx - rw / 2 - 10, ry + 2, cx - rw / 2 + 2, ry + 2, cx - rw / 2 + 2, ry + 14, cx - rw / 2 - 10, ry + 14, cx - rw / 2 - 6, ry + 8], '#a8141c', '#2a1430', 0.9);
+    ART.poly(ctx, [cx + rw / 2 + 10, ry + 2, cx + rw / 2 - 2, ry + 2, cx + rw / 2 - 2, ry + 14, cx + rw / 2 + 10, ry + 14, cx + rw / 2 + 6, ry + 8], '#a8141c', '#2a1430', 0.9);
+    ART.box(ctx, cx - rw / 2, ry, rw, 13, 2, '#e3242b', '#2a1430', 0.9);
+    text('İSTANBUL', cx, ry + 2.6, '#ffffff', 8, 'center', null);
+  }
   function drawTitle() {
-    const w = 0;
-    ctx.drawImage(sky(w), 0, 0);
-    const bg = ART.background(w);
-    layer(bg.far, app.titleT * 8);
-    layer(bg.near, app.titleT * 20);
-    const T = ART.tiles(w);
-    for (let x = 0; x < 17; x++) { ctx.drawImage(T.surf, x * 16 - Math.floor(app.titleT * 40) % 16, 208); ctx.drawImage(T.fill, x * 16 - Math.floor(app.titleT * 40) % 16, 224); }
-    // logo
-    ctx.fillStyle = 'rgba(16,18,28,0.82)'; ctx.fillRect(0, 22, VW, 66);
-    ctx.fillStyle = '#22a391'; ctx.fillRect(0, 86, VW, 2);
-    text('BUG', VW / 2, 30, '#f4c531', 24, 'center', '#7a3a10');
-    text('AVCISI', VW / 2 + 1, 56, '#f4c531', 16, 'center', '#7a3a10');
-    text('· İSTANBUL ·', VW / 2, 76, '#9af4e4', 8, 'center');
-    // kahraman koşuyor, arkasında bug
-    const hx = 54 + Math.sin(app.titleT * 1.3) * 6;
-    ctx.drawImage(ART.sprite(['big_walk1', 'big_walk2', 'big_walk3', 'big_walk2'][Math.floor(app.titleT * 8) % 4]), Math.round(hx), 176);
-    ctx.drawImage(ART.sprite(Math.floor(app.titleT * 6) % 2 ? 'bug1' : 'bug0', null, true), 16 + Math.round(Math.sin(app.titleT * 1.3) * 6), 192);
-    ctx.drawImage(ART.sprite(['simit0', 'simit1', 'simit2', 'simit1'][Math.floor(app.titleT * 6) % 4]), 200, 150 + Math.round(Math.sin(app.titleT * 3) * 3));
+    const t = app.titleT;
+    full(SC.title(VW, VH));
+    // martılar ve karşıya geçen vapur
+    for (let k = 0; k < 4; k++) {
+      const x = ((t * (10 + k * 3) + k * 83) % 300) - 22, y = 84 + k * 11 + Math.sin(t * 1.5 + k) * 3;
+      SC.seagull(ctx, x, y, 0.8 - k * 0.08, '#fff6ea', 0.6 + Math.sin(t * 8 + k * 2) * 0.5);
+    }
+    SC.pen('rgba(30,20,50,0.5)', 0.4);
+    SC.ferry(ctx, ((t * 7) % 340) - 50, 202, 0.42, { hull: '#2a2448', white: '#fbe6d8', win: '#6a4a7a', funnel: '#f2c87a' });
+    SC.pen(null);
+    // rıhtım
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const scroll = (t * 40) % 16;
+    for (let x = -1; x < 17; x++) for (const [k, y] of [['surf', 208], ['fill', 224]]) {
+      const X0 = Math.round((x * 16 - scroll) * S), Y0 = Math.round(y * S);
+      ctx.drawImage(ART.tile(1, k), X0, Y0, Math.round((x * 16 + 16 - scroll) * S) - X0, Math.round((y + 16) * S) - Y0);
+    }
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    // kahraman koşuyor, bug peşinde
+    const hx = 62 + Math.sin(t * 1.3) * 6;
+    ART.drawHero(ctx, hx, 208, { big: true, face: 1, mode: 'walk', phase: (t * 1.9) % 1, skin: 'normal', t });
+    ART.drawBug(ctx, 24 + Math.sin(t * 1.3 + 0.6) * 6, 208, t, 1);
+    img(coinImg(Math.floor(t * 10)), 214, 172 + Math.sin(t * 3) * 3);
+    logo(VW / 2, 46);
     const items = titleItems().map((i) => i.label);
     app.menu = Math.min(app.menu, items.length - 1);
-    menu(items, 104, app.menu);
-    if (app.best) text('REKOR ' + String(app.best).padStart(6, '0'), VW / 2, 228, '#ffffff', 8, 'center');
+    menu(items, 98, app.menu);
+    if (app.best) { panel(VW / 2 - 40, 226, 80, 11, 5.5); text('REKOR ' + String(app.best).padStart(6, '0'), VW / 2, 228.2, '#ffe08a', 6, 'center', null); }
+  }
+  function screenBg(w, dim, t) {
+    backdrop(w, 0, t || 0);
+    ctx.fillStyle = dim; ctx.fillRect(0, 0, VW, VH);
   }
   function drawHelp() {
-    ctx.fillStyle = '#10121c'; ctx.fillRect(0, 0, VW, VH);
-    text('NASIL OYNANIR', VW / 2, 10, '#f4c531', 8, 'center');
-    const lines = [
-      ['İstanbul\'un sistemlerine', '#f4f0e4'],
-      ['bug\'lar sızdı! Her bölümün', '#f4f0e4'],
-      ['sonundaki DEPLOY terminaline', '#f4f0e4'],
-      ['ulaş, patronları yen.', '#f4f0e4'],
-      ['', ''],
-      ['SOL / SAĞ   yürü', '#9af4e4'],
-      ['Z / BOŞLUK  zıpla', '#9af4e4'],
-      ['  (uzun basınca yüksek)', '#6a8a9a'],
-      ['X / SHIFT   koş, kod at', '#9af4e4'],
-      ['AŞAĞI   ince platformdan in', '#9af4e4'],
-    ];
-    lines.forEach(([s, c], i) => text(s, 8, 26 + i * 11, c));
-    const items = [['simit0', 'SİMİT: 100 tane = +1 can'], ['cay', 'ÇAY: büyü, blok kır'], ['laptop', 'LAPTOP: { } kod at'], ['kahve', 'KAHVE: dokunulmazlık'], ['disket', 'DİSKET: +1 can'], ['virus0', 'VİRÜS: üstüne basılmaz!']];
-    items.forEach(([sp, s], i) => { ctx.drawImage(ART.sprite(sp), 8, 134 + i * 16); text(s, 30, 138 + i * 16, '#f4f0e4'); });
-    if (Math.floor(app.t * 2) % 2) text('DEVAM İÇİN Z', VW / 2, 232 - 4, '#f4c531', 8, 'center');
+    screenBg(2, 'rgba(14,12,34,0.78)', app.t * 6);
+    text('NASIL OYNANIR', VW / 2, 10, '#f4c531', 10, 'center');
+    const story = ["İstanbul'un sistemlerine bug'lar sızdı!", 'Her bölümün sonundaki DEPLOY', 'terminaline ulaş, patronları yen.'];
+    story.forEach((s, i) => text(s, VW / 2, 28 + i * 10, '#fff8ec', 6.4, 'center', null, 500));
+    panel(10, 62, VW - 20, 58, 8);
+    const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in']];
+    keys.forEach(([k, s], i) => { text(k, 72, 68 + i * 12.5, '#9af4e4', 6.6, 'right', null); text(s, 80, 68 + i * 12.5, '#fff8ec', 6.4, 'left', null, 500); });
+    panel(10, 126, VW - 20, 96, 8);
+    const items = [['simit', 'SİMİT', '100 tane = +1 can'], ['cay', 'ÇAY', 'büyü, çatlak blok kır'], ['laptop', 'LAPTOP', '{ } kod fırlat'], ['kahve', 'KAHVE', 'kısa süre dokunulmazlık'], ['disket', 'DİSKET', '+1 can'], ['virus', 'VİRÜS', 'üstüne basılmaz!']];
+    items.forEach(([k, name, s], i) => {
+      const y = 130 + i * 15;
+      if (k === 'simit') img(coinImg(0), 18, y);
+      else if (k === 'virus') { ctx.save(); ctx.translate(26, y + 15); ctx.scale(0.85, 0.85); ART.drawVirus(ctx, 0, 0, app.t); ctx.restore(); }
+      else ART.drawItem(ctx, k, 18, y, app.t);
+      text(name, 40, y + 4, k === 'virus' ? '#ff9a80' : '#f4c531', 6.6, 'left', null);
+      text(s, 92, y + 4, '#fff8ec', 6.4, 'left', null, 500);
+    });
+    if (Math.floor(app.t * 2) % 2) text('DEVAM İÇİN Z', VW / 2, 228, '#f4c531', 6.6, 'center');
   }
   // Bölüm seç: 9 dünya × 3 bölüm
   const SEL = { y0: 30, row: 17, x0: 144, col: 36 };
@@ -605,73 +710,79 @@
   }
   function drawSelect() {
     const w = app.selW;
-    ctx.drawImage(sky(w), 0, 0);
-    const bg = ART.background(w);
-    layer(bg.far, app.t * 6); layer(bg.near, app.t * 14);
-    ctx.fillStyle = 'rgba(12,14,24,0.82)'; ctx.fillRect(0, 0, VW, VH);
-    text('◀ GERİ', 6, 6, '#9aa0b4');
-    text('BÖLÜM SEÇ', VW / 2, 8, '#f4c531', 8, 'center');
+    screenBg(w, 'rgba(14,12,34,0.62)', app.t * 8);
+    panel(4, 4, 52, 14, 7); ART.poly(ctx, [12, 11, 17, 7.6, 17, 14.4], '#c8ccdc', null); text('GERİ', 21, 6.8, '#c8ccdc', 6.4, 'left', null);
+    text('BÖLÜM SEÇ', VW / 2, 6, '#f4c531', 9, 'center');
+    panel(4, SEL.y0 - 6, VW - 8, 9 * SEL.row + 2, 8, 'rgba(18,16,44,0.78)');
     for (let i = 0; i < 9; i++) {
       const y = SEL.y0 + i * SEL.row, on = i === w;
-      if (on) { ctx.fillStyle = 'rgba(244,197,49,0.12)'; ctx.fillRect(4, y - 4, VW - 8, SEL.row - 1); }
-      text(`${i + 1}`, 10, y, on ? '#f4c531' : '#9af4e4');
-      text(up(WORLDS[i].name), 24, y, on ? '#ffffff' : '#c8ccd8');
+      if (on) { ART.rr(ctx, 7, y - 4, VW - 14, SEL.row - 2, 6); ctx.fillStyle = 'rgba(244,197,49,0.16)'; ctx.fill(); }
+      ART.circle(ctx, 17, y + 4.5, 5.6, on ? '#f4c531' : '#2e3460', null);
+      text(`${i + 1}`, 17, y + 1.2, on ? '#2a1a10' : '#9af4e4', 6.4, 'center', null);
+      text(WORLDS[i].name, 28, y + 0.8, on ? '#ffffff' : '#d4d8e8', 6.8, 'left', null);
       for (let k = 0; k < 3; k++) {
         const x = SEL.x0 + k * SEL.col, sel = on && k === app.selS;
-        ctx.fillStyle = sel ? '#f4c531' : k === 2 ? '#5a2a2a' : '#2a3048'; ctx.fillRect(x, y - 3, 32, 13);
-        text(`${i + 1}-${k + 1}`, x + 4, y, sel ? '#10121c' : '#f4f0e4', 8, 'left', null);
+        ART.rr(ctx, x, y - 3, 32, 13, 6.5);
+        ctx.fillStyle = sel ? '#f4c531' : k === 2 ? '#7a2e3a' : '#2e3460'; ctx.fill();
+        if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.9; ctx.stroke(); }
+        text(`${i + 1}-${k + 1}`, x + 16, y + 0.4, sel ? '#2a1a10' : '#fff8ec', 6.4, 'center', null);
       }
     }
     const L = LEVELS[w * 3 + app.selS];
-    ctx.fillStyle = 'rgba(16,18,28,0.9)'; ctx.fillRect(0, 186, VW, 54);
-    text(up(WORLDS[w].name) + ' · ' + up(L.name), VW / 2, 192, '#ffffff', 8, 'center');
-    text(L.boss ? 'PATRON: ' + up(L.bossName) : `${L.map[0].length} KARO UZUNLUĞUNDA`, VW / 2, 206, L.boss ? '#ff8a70' : '#9aa0b4', 8, 'center');
-    if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 222, '#f4c531', 8, 'center');
+    panel(4, 186, VW - 8, 50, 9, 'rgba(18,16,44,0.88)');
+    text(WORLDS[w].name + ' · ' + L.name, VW / 2, 192, '#ffffff', 7.4, 'center', null);
+    text(L.boss ? 'Patron: ' + L.bossName : `${L.map[0].length} karo uzunluğunda`, VW / 2, 206, L.boss ? '#ffa288' : '#aab0c8', 6.4, 'center', null, 500);
+    if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 222, '#f4c531', 6.6, 'center', null);
   }
   function drawIntro() {
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, VH);
-    hud(null);
     const L = LEVELS[app.S.stage], Wd = WORLDS[L.world - 1];
-    text(`DÜNYA ${L.world}-${L.section}`, VW / 2, 70, '#f4f0e4', 16, 'center');
-    text(up(Wd.name), VW / 2, 100, '#f4c531', 8, 'center');
-    text(up(L.name), VW / 2, 114, '#9af4e4', 8, 'center');
-    if (L.boss) text('PATRON: ' + up(L.bossName), VW / 2, 132, '#ff8a70', 8, 'center');
-    const img = ART.sprite(app.S.power ? (app.S.power === 2 ? 'big_stand' : 'big_stand') : 'small_stand', app.S.power === 2 ? 'hacker' : 'normal');
-    ctx.drawImage(img, 100, 176 - img.height + 16);
-    text('× ' + app.S.lives, 124, 180, '#f4f0e4');
+    screenBg(L.world - 1, 'rgba(10,8,28,0.66)', app.introT * 10);
+    hud(null);
+    const ph = (L.boss ? 128 : 114) - (app.S.power > 0 ? 0 : 14);
+    panel(36, 50, VW - 72, ph, 12);
+    text(`DÜNYA ${L.world}-${L.section}`, VW / 2, 60, '#fff8ec', 13, 'center');
+    text(Wd.name, VW / 2, 86, '#f4c531', 8.4, 'center', null);
+    text(L.name, VW / 2, 101, '#9af4e4', 7, 'center', null, 500);
+    if (L.boss) text('Patron: ' + L.bossName, VW / 2, 115, '#ffa288', 7, 'center', null);
+    const big = app.S.power > 0, hy = 50 + ph - 10;
+    ART.rr(ctx, 92, hy - 1, 72, 4, 2); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fill();
+    ART.drawHero(ctx, 114, hy, { big, face: 1, mode: 'stand', skin: app.S.power === 2 ? 'hacker' : 'normal', t: app.t });
+    text('× ' + app.S.lives, 126, hy - 13, '#fff8ec', 9, 'left');
   }
   function drawPause() {
     drawPlay();
     app.menuItems = [];
-    ctx.fillStyle = 'rgba(10,12,20,0.7)'; ctx.fillRect(0, 0, VW, VH);
-    text('DURAKLATILDI', VW / 2, 70, '#f4c531', 8, 'center');
+    ctx.fillStyle = 'rgba(10,8,28,0.6)'; ctx.fillRect(0, 0, VW, VH);
+    text('DURAKLATILDI', VW / 2, 66, '#f4c531', 11, 'center');
     menu(['DEVAM', 'BÖLÜMÜ BAŞTAN AL', 'ANA MENÜ'], 100, app.menu);
   }
   function drawOver() {
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, VH);
-    text('OYUN BİTTİ', VW / 2, 70, '#ff6a5a', 16, 'center');
-    text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 100, '#f4f0e4', 8, 'center');
-    const w = Math.floor(app.S.stage / 3) + 1;
-    if (app.overT > 1.2) menu([`DEVAM ET (DÜNYA ${w} BAŞI)`, 'ANA MENÜ'], 140, app.menu);
+    const w = app.S ? Math.min(8, Math.floor(app.S.stage / 3)) : 0;
+    screenBg(w, 'rgba(10,8,28,0.82)', 0);
+    text('OYUN BİTTİ', VW / 2, 64, '#ff7a6a', 16, 'center');
+    text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 96, '#fff8ec', 8, 'center', null);
+    const wn = Math.floor(app.S.stage / 3) + 1;
+    if (app.overT > 1.2) menu([`DEVAM ET (DÜNYA ${wn} BAŞI)`, 'ANA MENÜ'], 140, app.menu, 15, 170);
     else app.menuItems = [];
   }
   function drawEnd() {
-    const w = 8;
-    ctx.drawImage(sky(w), 0, 0);
-    const bg = ART.background(w);
-    layer(bg.far, app.endT * 6); layer(bg.near, app.endT * 14);
-    ctx.fillStyle = 'rgba(10,12,20,0.75)'; ctx.fillRect(12, 20, VW - 24, 190);
-    text('TEBRİKLER!', VW / 2, 32, '#f4c531', 16, 'center');
-    const lines = ['Mavi Ekran yenildi.', 'İstanbul\'un bütün sistemleri', 'yeniden ayakta. Vapurlar', 'işliyor, simitler sıcak.', '', 'Mühendisimiz son kez', 'git push dedi ve', 'çayını yudumladı.'];
-    lines.forEach((s, i) => text(s, VW / 2, 64 + i * 12, '#f4f0e4', 8, 'center'));
-    text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 172, '#9af4e4', 8, 'center');
-    ctx.drawImage(ART.sprite('big_stand', 'hacker'), 120, 214 - 32 + 0);
+    screenBg(8, 'rgba(10,8,28,0.35)', app.endT * 8);
+    panel(14, 16, VW - 28, 176, 12);
+    text('TEBRİKLER!', VW / 2, 26, '#f4c531', 16, 'center');
+    const lines = ['Mavi Ekran yenildi.', "İstanbul'un bütün sistemleri", 'yeniden ayakta. Vapurlar', 'işliyor, simitler sıcak.', '', 'Mühendisimiz son kez', 'git push dedi ve', 'çayını yudumladı.'];
+    lines.forEach((s, i) => text(s, VW / 2, 58 + i * 12, '#fff8ec', 7, 'center', null, 500));
+    text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 166, '#9af4e4', 8, 'center', null);
+    ART.drawHero(ctx, 116, 214, { big: true, face: 1, mode: 'stand', skin: 'hacker', t: app.t });
+    ART.drawItem(ctx, 'cay', 128, 198, app.t);
     app.menuItems = [];
-    if (app.endT > 3 && Math.floor(app.t * 2) % 2) text('ANA MENÜ İÇİN Z', VW / 2, 228, '#f4c531', 8, 'center');
+    if (app.endT > 3 && Math.floor(app.t * 2) % 2) text('ANA MENÜ İÇİN Z', VW / 2, 226, '#f4c531', 6.6, 'center');
   }
 
   function render() {
-    ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     if (app.screen !== 'title' && app.screen !== 'pause' && app.screen !== 'over') app.menuItems = [];
     switch (app.screen) {
       case 'title': drawTitle(); break;

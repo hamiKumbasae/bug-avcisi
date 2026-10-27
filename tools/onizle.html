@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Bug Avcısı: çizim önizleme</title>
+<style>
+  @font-face { font-family: Fredoka; font-weight: 500; src: url(../src/fonts/fredoka-latin-500-normal.woff2); }
+  @font-face { font-family: Fredoka; font-weight: 600; src: url(../src/fonts/fredoka-latin-600-normal.woff2); }
+  @font-face { font-family: Fredoka; font-weight: 500; src: url(../src/fonts/fredoka-latin-ext-500-normal.woff2); unicode-range: U+0100-024F; }
+  @font-face { font-family: Fredoka; font-weight: 600; src: url(../src/fonts/fredoka-latin-ext-600-normal.woff2); unicode-range: U+0100-024F; }
+  body { margin: 0; background: #222; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="../src/art.js"></script>
+<script src="../src/scenes.js"></script>
+<script>
+(async function () {
+  const q = new URLSearchParams(location.search);
+  const mode = q.get('m') || 'bg', w = +(q.get('w') || 0), S = +(q.get('s') || 3), off = +(q.get('o') || 0);
+  await document.fonts.load('600 10px Fredoka'); await document.fonts.load('500 10px Fredoka');
+  const A = window.BA_ART, SC = window.BA_SCENE;
+  A.setScale(S);
+  const c = document.getElementById('c'), g = c.getContext('2d');
+  const draw = (img, x, y) => g.drawImage(img, x, y, img.lw, img.lh);
+  if (mode === 'bg') {
+    // 512 genişliğin tamamı: gökyüzü + uzak + yakın + su
+    c.width = 512 * S; c.height = 240 * S; g.scale(S, S);
+    draw(SC.sky(w, 512, 240), 0, 0);
+    const L = SC.layers(w);
+    draw(L.far, -off, 0); if (off) draw(L.far, 512 - off, 0);
+    draw(L.near, -off, 0); if (off) draw(L.near, 512 - off, 0);
+    if (A.WORLD[w].water) { g.fillStyle = A.WORLD[w].water; g.fillRect(0, 214, 512, 26); }
+    for (let x = 0; x < 512; x += 16) draw(A.tile(w, 'surf'), x, 224);
+  } else if (mode === 'title') {
+    c.width = 256 * S; c.height = 240 * S; g.scale(S, S);
+    draw(SC.title(256, 240), 0, 0);
+  } else if (mode === 'tiles') {
+    c.width = 9 * 120 * S; c.height = 3 * 40 * S; g.scale(S, S);
+    for (let i = 0; i < 9; i++) {
+      const x0 = i * 120;
+      g.fillStyle = A.WORLD[i].sky[0]; g.fillRect(x0, 0, 120, 120);
+      ['surf', 'fill', 'solid', 'crack', 'oneway', 'block', 'used', 'spike', 'anchor'].forEach((k, j) => draw(A.tile(i, k), x0 + 4 + (j % 5) * 22, 6 + Math.floor(j / 5) * 24));
+      for (let x = 0; x < 7; x++) { draw(A.tile(i, 'surf'), x0 + x * 16, 72); draw(A.tile(i, 'fill'), x0 + x * 16, 88); draw(A.tile(i, 'fill'), x0 + x * 16, 104); }
+      for (let x = 0; x < 3; x++) draw(A.tile(i, 'solid'), x0 + 60 + x * 16, 40);
+    }
+  } else if (mode === 'sprites') {
+    c.width = 400 * S; c.height = 230 * S; g.scale(S, S);
+    g.fillStyle = '#bfe6fb'; g.fillRect(0, 0, 400, 230);
+    const modes = ['stand', 'walk', 'walk', 'walk', 'walk', 'jump', 'skid', 'shoot', 'dead'];
+    let x = 14;
+    for (const [big, skin] of [[false, 'normal'], [true, 'normal'], [true, 'hacker']]) {
+      modes.forEach((m, i) => {
+        if (m === 'shoot' && !big) return;
+        A.drawHero(g, x, big ? 40 : 18 + (big ? 0 : 0) + 22 * (skin === 'hacker' ? 0 : 0) + (big ? 0 : 0), { big, face: 1, mode: m, phase: i / 4, skin, t: 0 });
+        x += 20;
+      });
+    }
+    // satır 2: ölçek kutuları
+    x = 14;
+    g.strokeStyle = 'rgba(255,0,0,0.6)'; g.lineWidth = 0.3;
+    for (const big of [false, true]) { const h = big ? 28 : 14; g.strokeRect(x - 6, 80 - h, 12, h); A.drawHero(g, x, 80, { big, face: 1, mode: 'stand', skin: 'normal', t: 0 }); x += 24; }
+    A.drawHero(g, x, 80, { big: true, face: -1, mode: 'walk', phase: 0.3, skin: 'normal', t: 0.2, star: true }); x += 24;
+    ['cay', 'laptop', 'kahve', 'disket'].forEach((k) => { A.drawItem(g, k, x, 64, 0); g.strokeRect(x, 64, 16, 16); x += 22; });
+    A.drawSimit(g, x + 8, 72, 0); x += 22; A.drawSimit(g, x + 8, 72, 1); x += 22;
+    A.drawShot(g, x, 68, 0); x += 16;
+    A.drawSpark(g, x + 4, 72, 0); x += 16;
+    // düşmanlar
+    x = 14;
+    const by = 120;
+    A.drawBug(g, x + 8, by, 0, -1); g.strokeRect(x, by - 16, 16, 16); x += 24;
+    A.drawBug(g, x + 8, by, 0.2, 1); x += 24;
+    A.drawBug(g, x + 8, by, 0, -1, true); x += 24;
+    A.drawVirus(g, x + 8, by, 0); g.strokeRect(x, by - 14, 16, 14); x += 24;
+    A.drawSpam(g, x + 8, by, 0, -1); g.strokeRect(x, by - 12, 16, 12); x += 24;
+    A.drawMarti(g, x + 8, by, 0, 1); g.strokeRect(x, by - 12, 16, 12); x += 30;
+    A.drawMarti(g, x + 8, by, 0, -1, true); x += 30;
+    A.drawCheckpoint(g, x, by - 32, false, 0); x += 20; A.drawCheckpoint(g, x, by - 32, true, 0); x += 20;
+    A.drawDeploy(g, x, by - 32, 0); x += 22;
+    A.drawLift(g, x, by - 10, 48);
+    // patronlar
+    const B = [['kralbug', 2, 1.75], ['spam', 2, 1.5], ['marti', 2, 1.25], ['truva', 2.25, 2], ['sizinti', 2, 1.5], ['dongu', 1.5, 1.5], ['ddos', 2.5, 1.5], ['glitch', 1.25, 1.75], ['maviekran', 2.75, 2.5]];
+    x = 30;
+    for (const [k, bw, bh] of B) {
+      const cx = x, b = 210;
+      g.strokeRect(cx - bw * 8, b - bh * 16, bw * 16, bh * 16);
+      A.drawBoss(g, k, cx, b, 0.3, { face: -1 });
+      x += 44;
+    }
+  }
+  document.title = 'ok';
+})();
+</script>
+</body>
+</html>

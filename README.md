@@ -8,6 +8,11 @@ sonundaki **DEPLOY** terminaline ulaş, her dünyanın sonunda patronu yen.
 
 Kurulum gerekmez: düz HTML, CSS ve JavaScript. Bütün çizimler, müzikler ve bölümler bu proje için yapıldı.
 
+Çizimler çizgi film tarzında ve vektördür: oyun ekranın gerçek çözünürlüğünde çizildiği için telefonda da
+4K ekranda da pürüzsüz görünür. Her dünyanın arka planında dünyaca tanınan bir İstanbul simgesi var:
+Ayasofya, Sultanahmet Camii, Kız Kulesi, Galata Kulesi, Boğaz Köprüsü, Ortaköy Camii, Haydarpaşa Garı,
+Çamlıca Kulesi; aralarda kırmızı nostaljik tramvay, Şehir Hatları vapuru, simitçi, martılar ve kediler.
+
 ## Dünyalar
 
 9 dünya, her biri 3 bölüm (toplam 27). Her dünyanın 3. bölümünün sonunda bir patron var.
@@ -72,7 +77,9 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 
 - `src/core.js`: oyun kuralları; çizimden bağımsızdır, testler Node'da çalıştırır.
 - `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 27 bölüm (tohumlu, her seferinde aynı çıkar).
-- `src/pixels.js`, `src/art.js`: elle çizilmiş piksel sprite'lar, dünya karoları, arka planlar ve patronlar.
+- `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 9 patron, her dünyanın karoları.
+- `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı) ve başlık ekranının İstanbul silueti.
+- `tools/onizle.html`: bütün çizimleri ve arka planları tek sayfada görmek için geliştirme önizlemesi.
 - `src/audio.js`: sentezlenmiş efektler ve her dünyanın özgün çiptün müziği
   (Kapalıçarşı ve Yerebatan'da Hicaz, gece çatılarında Kürdi dizisi).
 - `src/main.js`: ekranlar, kamera, HUD, giriş (klavye, dokunmatik, oyun kolu).
@@ -82,5 +89,5 @@ Her `main` gönderiminde GitHub Actions testleri çalıştırır ve siteyi GitHu
 
 ## Lisans
 
-Kod MIT lisanslıdır (`LICENSE`). Press Start 2P yazı tipi SIL Open Font License ile gelir
-(`src/fonts/OFL-press-start-2p.txt`). PeerJS ve qrcode-generator MIT lisanslıdır.
+Kod MIT lisanslıdır (`LICENSE`). Fredoka yazı tipi SIL Open Font License ile gelir
+(`src/fonts/OFL-fredoka.txt`). PeerJS ve qrcode-generator MIT lisanslıdır.
