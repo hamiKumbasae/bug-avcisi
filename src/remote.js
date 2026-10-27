@@ -187,7 +187,7 @@
     try { c.close(); } catch (e) { /* yok say */ }
   }
 
-  const MENU_SCREENS = ['title', 'help', 'select', 'pause', 'over', 'end', 'intro'];
+  const MENU_SCREENS = ['title', 'help', 'select', 'pause', 'over', 'end', 'intro', 'story'];
   function accept(c) {
     const id = c.peer;
     const old = conns.get(id);

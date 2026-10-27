@@ -101,6 +101,7 @@
       case 'die': stopMusic(); seq([76, 75, 74, 73, 72], 0.07, 'pulse', 0.1, 0.07); [60, 55, 48].forEach((n, i) => osc('triangle', mid(n), t + 0.45 + i * 0.2, 0.25, 0.28, B)); break;
       case 'clear': stopMusic(); [[72, 0], [76, 0.12], [79, 0.24], [84, 0.36], [79, 0.6], [84, 0.72], [88, 0.84]].forEach(([n, d]) => { osc('pulse', mid(n), t + d, 0.2, 0.1, B); osc('triangle', mid(n - 24), t + d, 0.2, 0.25, B); }); break;
       case 'over': stopMusic(); [67, 64, 60, 55, 52, 48].forEach((n, i) => osc('triangle', mid(n), t + i * 0.25, 0.3, 0.3, B)); break;
+      case 'piece': seq([72, 76, 79, 84, 88, 91, 96], 0.07, 'triangle', 0.22, 0.4); for (const [f, v] of [[1047, 0.05], [2093, 0.02]]) osc('sine', f, t + 0.5, 1.4, v, B, 1, 0.003); break;
       case 'win': [72, 72, 76, 79, 84, 79, 84, 88, 91].forEach((n, i) => { osc('pulse', mid(n), t + i * 0.14, 0.16, 0.1, B); osc('triangle', mid(n - 12), t + i * 0.14, 0.16, 0.22, B); }); break;
     }
   }
@@ -130,6 +131,8 @@
       lead: 'D5 F5 A5 D6 A5 F5 D5 F5 | Bb4 D5 F5 Bb5 F5 D5 Bb4 D5 | C5 E5 G5 C6 G5 E5 C5 E5 | A4 C#5 E5 A5 E5 C#5 A4 C#5 | D6 - C6 . A5 - F5 . | Bb5 - A5 . F5 - D5 . | G5 . A5 . Bb5 . C6 . | C#6 - - . E5 . A5 .' },
     boss: { bpm: 172, chords: 'Dm Dm Bb A Dm Dm Bb A', drums: 'kkhskkhskkhskkss',
       lead: 'D5 . D5 . F5 . D5 . | G#5 . A5 . F5 . D5 . | Bb5 . A5 . G5 . F5 . | E5 . C#5 . A4 . . . | D6 . . C6 . . A5 . | G#5 . A5 . F5 . D5 . | Bb5 . C6 . D6 . Bb5 . | A5 - C#6 . E6 - . .' },
+    hikaye: { bpm: 84, chords: 'Am F C G Am F G E', drums: '................',
+      lead: 'E5 - - . C5 - D5 . | A4 - - - . . . . | G4 - C5 . E5 - D5 C5 | D5 - - - . . . . | E5 - - . G5 - F5 E5 | C5 - - - . . A4 . | B4 - C5 . D5 - E5 . | E5 - - - . . . .' },
     son: { bpm: 112, chords: 'F C Dm Bb F C Bb C', drums: 'k...s...k...s.h.',
       lead: 'C5 - F5 . A5 - G5 F5 | E5 - G5 . C6 - . . | D5 - F5 . A5 - G5 F5 | F5 - D5 . Bb4 - . . | C5 - F5 . A5 - C6 . | Bb5 - A5 . G5 - E5 . | D5 . E5 . F5 . G5 . | F5 - - - . . . .' },
   };
@@ -190,6 +193,94 @@
       nextT += sp; step++;
     }
   }
+  // ---------------- ortam sesleri ----------------
+  // Sürekli katmanlar (süzülmüş gürültü: deniz, rüzgâr, şehir uğultusu, motor) ve rastgele olaylar
+  // (martı, vapur düdüğü, damla, örs, kuş, klavye...). Hikâye sahnelerinde ve bölümlerin arka planında çalar.
+  let ambBus = null, amb = null, ambTimer = null;
+  function loopNoise() {
+    if (!noiseBuf) noise(ac.currentTime, 0.01, 0.0001, 100, sfxBus);
+    const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true; return s;
+  }
+  function bed(kind, vol) {
+    const t = ac.currentTime, out = ac.createGain(); out.gain.value = 0; out.connect(ambBus);
+    out.gain.linearRampToValueAtTime(vol, t + 1.2);
+    const nodes = [out];
+    const lfo = (rate, depth, target) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = rate; g.gain.value = depth; o.connect(g).connect(target); o.start(); nodes.push(o); };
+    const nz = (type, f, q, gain) => { const s = loopNoise(), fl = ac.createBiquadFilter(), g = ac.createGain(); fl.type = type; fl.frequency.value = f; fl.Q.value = q || 0.7; g.gain.value = gain; s.connect(fl).connect(g).connect(out); s.start(t, Math.random()); nodes.push(s); return { fl, g }; };
+    switch (kind) {
+      case 'sea': { const a = nz('lowpass', 520, 0.6, 0.9); lfo(0.13, 0.45, a.g.gain); break; }
+      case 'wind': { const a = nz('bandpass', 420, 0.9, 1.2); lfo(0.07, 0.6, a.g.gain); lfo(0.11, 160, a.fl.frequency); break; }
+      case 'city': nz('lowpass', 240, 0.5, 1.1); break;
+      case 'cave': { nz('lowpass', 140, 0.6, 1.4); break; }
+      case 'murmur': { const a = nz('bandpass', 700, 1.6, 0.7); lfo(3.1, 0.35, a.g.gain); lfo(0.4, 220, a.fl.frequency); break; }
+      case 'engine': {
+        nz('lowpass', 160, 0.8, 1);
+        const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+        o.type = 'sawtooth'; o.frequency.value = 46; f.type = 'lowpass'; f.frequency.value = 180; g.gain.value = 0.18;
+        o.connect(f).connect(g).connect(out); o.start(); nodes.push(o); lfo(0.5, 0.06, g.gain);
+        break;
+      }
+      case 'fire': { const a = nz('bandpass', 1800, 0.5, 0.35); lfo(7, 0.2, a.g.gain); nz('lowpass', 200, 0.5, 0.5); break; }
+    }
+    return { out, nodes };
+  }
+  function ev(kind) {
+    if (!ac || muted || !ambBus) return;
+    const t = ac.currentTime + 0.02, B = ambBus;
+    switch (kind) {
+      case 'bird': for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) { const f = 2600 + Math.random() * 1500; osc('sine', f, t + i * 0.11, 0.07, 0.05, B, 1.35); } break;
+      case 'gull': for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) { osc('sawtooth', 1350 + Math.random() * 200, t + i * 0.32, 0.26, 0.022, B, 0.62, 0.03); osc('sine', 1400, t + i * 0.32, 0.22, 0.035, B, 0.65, 0.03); } break;
+      case 'horn': for (const f of [98, 147]) osc('sawtooth', f, t, 1.8, 0.035, B, 1, 0.25); osc('sine', 98, t, 1.9, 0.12, B, 1, 0.25); break;
+      case 'drip': { osc('sine', 1300 + Math.random() * 500, t, 0.09, 0.08, B, 0.45); osc('sine', 1100, t + 0.21, 0.08, 0.025, B, 0.5); osc('sine', 950, t + 0.43, 0.08, 0.01, B, 0.5); break; }
+      case 'forge': { for (const [f, v, d] of [[820, 0.07, 0.9], [1270, 0.05, 0.7], [2030, 0.035, 0.5], [2810, 0.025, 0.35], [3640, 0.015, 0.25]]) osc('sine', f, t, d, v, B, 1, 0.002); noise(t, 0.06, 0.25, 4000, B, true); break; }
+      case 'step': for (let i = 0; i < 4; i++) noise(t + i * 0.42, 0.06, 0.12, 500, B); break;
+      case 'ding': osc('sine', 1318, t, 0.6, 0.06, B); osc('sine', 988, t + 0.18, 0.8, 0.06, B); break;
+      case 'keys': for (let i = 0; i < 6 + Math.floor(Math.random() * 8); i++) noise(t + i * (0.06 + Math.random() * 0.1), 0.02, 0.07, 3500, B, true); break;
+      case 'carve': for (let i = 0; i < 3; i++) noise(t + i * 0.5, 0.35, 0.06, 2600, B, true); break;
+      case 'car': { const s = loopNoise(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.linearRampToValueAtTime(900, t + 1.2); f.frequency.linearRampToValueAtTime(250, t + 2.6); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 1.2); g.gain.linearRampToValueAtTime(0.0001, t + 2.6); s.connect(f).connect(g).connect(B); s.start(t); s.stop(t + 2.7); break; }
+      case 'meow': osc('triangle', 700, t, 0.45, 0.04, B, 1.4, 0.08); break;
+      case 'bell': for (const [f, v] of [[660, 0.05], [1320, 0.025], [1980, 0.012]]) osc('sine', f, t, 1.6, v, B, 1, 0.003); break;
+    }
+  }
+  // ad: { katmanlar: [[tür, ses]], olaylar: [[tür, ortalama aralık sn]] }
+  const AMB = {
+    sabah: { beds: [['city', 0.06], ['fire', 0.08]], events: [['bird', 2.2], ['forge', 1.35], ['car', 9]] },
+    plaza: { beds: [['city', 0.12], ['wind', 0.05]], events: [['step', 4], ['ding', 7], ['car', 6]] },
+    iskele: { beds: [['sea', 0.16], ['city', 0.04]], events: [['gull', 3.5], ['horn', 14], ['keys', 5]] },
+    vapur: { beds: [['sea', 0.2], ['engine', 0.12], ['wind', 0.05]], events: [['gull', 4], ['horn', 16]] },
+    carsi: { beds: [['murmur', 0.07]], events: [['carve', 3], ['bell', 11], ['step', 7]] },
+    sarnic: { beds: [['cave', 0.14]], events: [['drip', 1.6]] },
+    galata: { beds: [['wind', 0.12], ['city', 0.05]], events: [['gull', 6], ['horn', 15], ['bird', 9]] },
+    kopru: { beds: [['engine', 0.16], ['wind', 0.06]], events: [['car', 3]] },
+    catilar: { beds: [['wind', 0.1], ['city', 0.04]], events: [['keys', 3.5], ['meow', 12], ['car', 10]] },
+    camlica: { beds: [['wind', 0.1]], events: [['bird', 5], ['car', 12]] },
+    safak: { beds: [['wind', 0.06], ['sea', 0.05]], events: [['bird', 1.8], ['gull', 7], ['horn', 18]] },
+  };
+  const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'kopru', 'catilar', 'camlica'];
+  function stopAmbient(fade) {
+    if (!amb || !ac) { amb = null; return; }
+    const t = ac.currentTime, f = fade === undefined ? 0.8 : fade, a = amb;
+    for (const b of a.beds) { b.out.gain.cancelScheduledValues(t); b.out.gain.setValueAtTime(b.out.gain.value, t); b.out.gain.linearRampToValueAtTime(0, t + f); }
+    setTimeout(() => { for (const b of a.beds) for (const n of b.nodes) { try { if (n.stop) n.stop(); n.disconnect(); } catch (e) { /* yok */ } } }, (f + 0.1) * 1000);
+    amb = null;
+    if (ambTimer) { clearInterval(ambTimer); ambTimer = null; }
+  }
+  function ambient(name, level) {
+    if (!ctx()) return;
+    if (amb && amb.name === name) { if (level !== undefined) ambBus.gain.setTargetAtTime(level, ac.currentTime, 0.4); return; }
+    stopAmbient();
+    const D = AMB[name];
+    if (!D) return;
+    if (!ambBus) { ambBus = ac.createGain(); ambBus.connect(master); }
+    ambBus.gain.setTargetAtTime(level === undefined ? 1 : level, ac.currentTime, 0.3);
+    amb = { name, beds: D.beds.map(([k, v]) => bed(k, v)), next: D.events.map(([, m]) => ac.currentTime + Math.random() * m) };
+    ambTimer = setInterval(() => {
+      if (!amb || !ac) return;
+      const now = ac.currentTime;
+      D.events.forEach(([k, m], i) => { if (now >= amb.next[i]) { ev(k); amb.next[i] = now + m * (0.5 + Math.random()); } });
+    }, 100);
+  }
+
   function setMuted(m) {
     muted = m;
     try { localStorage.setItem('ba-ses', m ? '0' : '1'); } catch (e) { /* yok */ }
@@ -197,7 +288,8 @@
   }
 
   root.BA_AUDIO = {
-    unlock: ctx, sfx, playMusic, stopMusic, setRate, WORLD_SONG,
+    unlock: ctx, sfx, playMusic, stopMusic, setRate, WORLD_SONG, ambient, stopAmbient, WORLD_AMB, ambEvent: ev,
+    get ambName() { return amb ? amb.name : null; },
     get muted() { return muted; }, setMuted, SONGS,
     current: () => (cur ? cur.name : null),
   };

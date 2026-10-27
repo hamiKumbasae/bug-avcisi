@@ -329,6 +329,21 @@
     g.arc(x + 16 * s, y - 3 * s, 6 * s, Math.PI * 1.2, Math.PI * 1.95); g.arc(x + 22 * s, y, 6 * s, Math.PI * 1.5, Math.PI * 0.5);
     g.closePath(); g.fill();
   }
+  // Hikâyenin sembolleri: ufuktaki ev (Çamlıca Kulesi, dünyalar ilerledikçe yaklaşır) ve cam ardında tek bir insan
+  function homeTower(g, x, by, s, col, light) {
+    camlicaTower(g, x, by, s, { wall: col, wallD: mix(col, '#000000', 0.08), glass: mix(col, '#ffffff', 0.08), band: mix(col, '#ffffff', 0.18) });
+    if (light) { g.fillStyle = light; g.beginPath(); g.arc(x, by - 172 * s, Math.max(0.6, 1.4 * s * 2), 0, TAU); g.fill(); }
+  }
+  function lonelyWindow(g, x, y, w, h, frame, warm) {
+    rect(g, x - 1.2, y - 1.2, w + 2.4, h + 2.4, frame);
+    rect(g, x, y, w, h, warm || '#ffd98a');
+    rect(g, x, y + h * 0.62, w, h * 0.38, 'rgba(160,90,30,0.25)');
+    const cx = x + w * 0.62, by = y + h;
+    g.fillStyle = 'rgba(40,24,30,0.85)';
+    g.beginPath(); g.ellipse(cx, by - h * 0.18, w * 0.2, h * 0.24, 0, Math.PI, 0); g.fill();
+    g.beginPath(); g.arc(cx + w * 0.02, by - h * 0.52, w * 0.12, 0, TAU); g.fill();
+    rect(g, x + w * 0.1, y + h * 0.66, w * 0.3, 1, 'rgba(60,40,30,0.7)');
+  }
   function wrapX(fn, x, span) { fn(x); if (x - span < 0) fn(x + W); if (x + span > W) fn(x - W); }
 
   // ---------- gökyüzü (kaymaz) ----------
@@ -372,6 +387,7 @@
         cloud(g, 40, 50, 1.1, 'rgba(255,255,255,0.85)'); cloud(g, 300, 34, 0.8, 'rgba(255,255,255,0.75)'); cloud(g, 430, 70, 1, 'rgba(255,255,255,0.8)');
         const back = hillsY(178, 22, 3);
         hills(g, back, '#b4d2e8');
+        homeTower(g, 340, back(340) + 3, 0.13, '#a2c0d8');
         const hz = { wall: '#9ec0da', roof: '#93b6d2', trim: '#a8c8e0' };
         blueMosque(g, 116, back(116) + 4, 0.5, hz); hagiaSophia(g, 52, back(52) + 4, 0.42, hz);
         bridge(g, 230, 500, 166, 124, { cable: '#8fb0ca', deck: '#8fb0ca', tower: '#8fb0ca' });
@@ -383,6 +399,7 @@
         pen('rgba(30,50,80,0.55)', 0.5);
         const towers = [[6, 40, 150, 'a'], [52, 32, 96, 'b'], [100, 50, 182, 'c'], [196, 60, 78, 'e'], [300, 38, 164, 'f'], [350, 48, 118, 'g'], [446, 46, 140, 'a']];
         for (const [x, w, h, k] of towers) glassTower(g, x, 214, w, h, k);
+        lonelyWindow(g, 118, 96, 10, 7, '#2a5a88', '#f6e6b8');
         const r = rng(11);
         for (let x = 4; x < W - 8; x += 22 + r() * 18) tree(g, x, 214, 0.8 + r() * 0.4);
         for (let x = 0; x < W; x += 5) { const c = ['#e2483a', '#f4c531', '#ff7aa8', '#ffffff'][Math.floor(x / 5) % 4]; tulip(g, x + 2, 214, c); }
@@ -408,7 +425,9 @@
         const r = rng(5);
         const cols = ['#e8a87c', '#d97a6a', '#f2d48a', '#9ec8b0', '#c4a6d8', '#f0c0a0'];
         let x = 178;
+        pen(null); homeTower(g, 430, 196, 0.26, '#d4a08e'); pen('rgba(50,30,30,0.55)', 0.5);
         while (x < 500) { const w = 16 + r() * 8, h = 28 + r() * 18; house(g, x, 214, w, h, cols[Math.floor(r() * cols.length)], '#a8503a', r, { door: true }); x += w + 1; }
+        lonelyWindow(g, 262, 160, 7, 9, '#5a3a30');
         tram(g, 300, 214, 1, {});
         cat(g, 190, 214, 0.8, '#f0a050', null, 1); cat(g, 470, 214, 0.7, '#e8e8ec', null, -1);
         seagull(g, 220, 60, 1, '#ffffff'); seagull(g, 250, 74, 0.8, '#ffffff'); seagull(g, 90, 92, 0.9, '#ffffff');
@@ -420,6 +439,7 @@
         pen(null);
         cloud(g, 160, 40, 1, 'rgba(255,255,255,0.9)'); cloud(g, 380, 56, 0.8, 'rgba(255,255,255,0.8)');
         const base = hillsY(206, 14, 31);
+        homeTower(g, 404, 196, 0.24, '#9ab2c8');
         hills(g, base, '#9ab6cc');
         hillHouses(g, base, ['#c8d2da', '#e2d4c4', '#d4c2b8', '#bccad6'], '#c49a86', 32);
         const hz = { wall: '#d6c2b2', wallD: '#c4ae9e', roof: '#8c9cae', roofL: '#a8b6c6', trim: '#e2d2c4', win: '#a89488', brick: '#c88e7a' };
@@ -474,6 +494,7 @@
       far(g) {
         pen(null);
         const base = hillsY(200, 24, 61);
+        homeTower(g, 470, 186, 0.34, '#9a6482', '#ff6a5a');
         hills(g, base, '#a26a86');
         hillHouses(g, base, ['#b47a92', '#a87088', '#c08aa0'], null, 62, '#ffd890', 0.25);
         const hz = { wall: '#8e5a78', roof: '#80506e', trim: '#9a6684' };
@@ -495,6 +516,7 @@
         tram(g, 330, 214, 1.05, { lit: 'rgba(255,230,150,0.55)' });
         simitCart(g, 120, 214, 1);
         cat(g, 252, 214 - 52, 0.7, '#2a2630', '#f4e04a', -1);
+        lonelyWindow(g, 362, 186, 8, 10, '#5a3a30');
         cat(g, 440, 214, 0.8, '#d0d0d4', null, 1);
       },
     },
@@ -503,6 +525,7 @@
       far(g) {
         pen(null);
         const base = hillsY(198, 26, 71);
+        homeTower(g, 404, base(404) + 6, 0.42, '#463670', '#ff5a4a');
         hills(g, base, '#4a3a78');
         hillHouses(g, base, ['#5a4a88', '#54447e'], null, 72, '#ffd890', 0.45);
         bridge(g, 16, 496, 150, 70, { cable: '#e8e0f0', hang: 'rgba(232,224,240,0.7)', deck: '#d8d0e8', tower: '#e8e0f0', towerD: '#c0b8d0', light: true, leds: ['#ffe28a', '#8af0ff', '#ff9ad8'] });
@@ -522,6 +545,7 @@
       far(g) {
         pen(null);
         const base = hillsY(206, 14, 81);
+        homeTower(g, 250, base(250) + 4, 0.52, '#1a2050', '#ff5a4a');
         hills(g, base, '#1c2250');
         hillHouses(g, base, ['#222a5a', '#1e2654'], null, 82, '#ffd27a', 0.5);
         const lit = { wall: '#3a3a6a', wallD: '#30305e', roof: '#4a4e82', roofL: '#7a78a8', trim: '#f4d48a', win: '#ffd27a', lit: '#ffd27a', alem: '#f4d48a' };
@@ -774,5 +798,10 @@
     }
   }
 
-  root.BA_SCENE = { W, H, layers, sky, title, SKY, pen, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram };
+  root.BA_SCENE = {
+    W, H, layers, sky, title, SKY, pen, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
+    // hikâye sahneleri de aynı parçaları kullanır
+    kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
+      cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky },
+  };
 })(window);

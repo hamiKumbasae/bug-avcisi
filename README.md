@@ -13,6 +13,21 @@ Kurulum gerekmez: düz HTML, CSS ve JavaScript. Bütün çizimler, müzikler ve 
 Ayasofya, Sultanahmet Camii, Kız Kulesi, Galata Kulesi, Boğaz Köprüsü, Ortaköy Camii, Haydarpaşa Garı,
 Çamlıca Kulesi; aralarda kırmızı nostaljik tramvay, Şehir Hatları vapuru, simitçi, martılar ve kediler.
 
+## Hikâye
+
+Oyun yazısız bir hikâye anlatır: Ümraniye'de, kendi atölyesinde demir döven ve gece kod yazan bir mühendis
+büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz, ama vazgeçmez ve sonunda kendi yerini kurar.
+
+- **Sahneler:** oyunun başında, her dünyanın sonunda ve en sonda kısa, sessiz sahneler var. Tek kelime yok;
+  hikâyeyi ışık, kompozisyon, hareket ve şehir sesleri anlatır. Işık dili Edward Hopper'ın resimlerinden
+  esinlidir (tablolar kopyalanmaz): sert güneş ve gölge, düz renk alanları, cam ardında tek başına insanlar.
+  Herhangi bir tuşla ya da dokunarak atlanabilirler.
+- **Ufuktaki ev:** Çamlıca Kulesi dünyaların ufkunda görünür; ilerledikçe yaklaşır.
+- **Hatıra parçaları:** her dünyanın 2. bölümünde, yoldan ayrılan yüksek bir köşede bir parça var
+  (Maslak camı, martı tüyü, vapur çanı, nazar, sarnıç damlası, Galata Kulesi, köprü, kedi, lale).
+  Topladıkların kalıcı olarak kaydedilir; son sahnede atölyenin rafında durur, Bölüm seç ekranında da görünür.
+- **Ses:** her dünyanın kendi şehir sesi var (martılar, vapur düdüğü, çarşı uğultusu, damlayan su, gece rüzgârı).
+
 ## Dünyalar
 
 9 dünya, her biri 3 bölüm (toplam 27). Her dünyanın 3. bölümünün sonunda bir patron var.
@@ -79,8 +94,9 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 - `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 27 bölüm (tohumlu, her seferinde aynı çıkar).
 - `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 9 patron, her dünyanın karoları.
 - `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı) ve başlık ekranının İstanbul silueti.
+- `src/story.js`: yazısız hikâye sahneleri (giriş, 8 ara sahne, son).
 - `tools/onizle.html`: bütün çizimleri ve arka planları tek sayfada görmek için geliştirme önizlemesi.
-- `src/audio.js`: sentezlenmiş efektler ve her dünyanın özgün çiptün müziği
+- `src/audio.js`: sentezlenmiş efektler, şehir sesleri ve her dünyanın özgün çiptün müziği
   (Kapalıçarşı ve Yerebatan'da Hicaz, gece çatılarında Kürdi dizisi).
 - `src/main.js`: ekranlar, kamera, HUD, giriş (klavye, dokunmatik, oyun kolu).
 - `src/remote.js`, `kumanda.html`: telefon kumandası.

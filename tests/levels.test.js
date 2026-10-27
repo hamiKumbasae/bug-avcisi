@@ -149,7 +149,10 @@ function analyse(idx) {
   // en uzak ulaşılan nokta (hata ayıklama için)
   let far = 0;
   for (const i of seen) far = Math.max(far, segs[i].x1);
-  return { L, start, reached, traps, far, W, segs: segs.length };
+  // hatıra parçası, ulaşılan bir parçanın üstünde mi
+  let piece = null;
+  if (G.piece) { const ps = segAt.get(Math.floor(G.piece.x) * 100 + Math.floor(G.piece.y)); piece = !!ps && seen.has(ps.id); }
+  return { L, start, reached, traps, far, W, segs: segs.length, piece };
 }
 
 for (let i = 0; i < LEVELS.length; i++) {
@@ -162,9 +165,11 @@ for (let i = 0; i < LEVELS.length; i++) {
   ok(count('G') === 1, `${L.world}-${L.section}: tek DEPLOY`);
   if (L.boss) { ok(count('A') === 1 && count('B') === 1, `${L.world}-${L.section}: patron arenası`); }
   else ok(count('Q') === 1, `${L.world}-${L.section}: kayıt noktası`);
+  ok(count('h') === (L.section === 2 ? 1 : 0), `${L.world}-${L.section}: hatıra parçası yalnız 2. bölümde, bir tane`);
   const r = analyse(i);
   ok(r.start, `${L.world}-${L.section}: başlangıç zeminde`);
   ok(r.reached, `${L.world}-${L.section} ${L.name}: sona ulaşılabiliyor (en uzak x=${r.far}/${r.W})`);
+  if (L.section === 2) ok(r.piece === true, `${L.world}-${L.section}: hatıra parçasına ulaşılabiliyor`);
   ok(r.traps.length === 0, `${L.world}-${L.section}: sıkışma yok ${r.traps.slice(0, 3).map((s) => `(${s.x0}-${s.x1},${s.y})`).join(' ')}`);
   if (process.argv.includes('-v')) console.log(`${L.world}-${L.section} ${L.name.padEnd(20)} genişlik ${r.W} parça ${r.segs} ${r.reached ? 'tamam' : 'ULAŞILAMIYOR'}`);
 }

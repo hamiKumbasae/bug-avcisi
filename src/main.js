@@ -1,7 +1,7 @@
 // Bug Avcısı: İstanbul — oyun kabuğu: çizim, kamera, HUD, menüler, giriş, ses.
 (function () {
   'use strict';
-  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO;
+  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO, ST = window.BA_STORY;
   const LEVELS = window.BA_LEVELS, WORLDS = window.BA_WORLDS;
   const canvas = document.getElementById('oyun');
   const ctx = canvas.getContext('2d');
@@ -160,6 +160,7 @@
       }
     }
     if (app.screen === 'select') { selectTap(x, y); return; }
+    if (app.screen === 'story') { menuKey('ok'); return; }
     if (app.screen === 'play' && y < TOP + 8) pauseGame();
     else if (app.screen === 'help' || app.screen === 'end') menuKey('ok');
   });
@@ -178,13 +179,29 @@
   const app = {
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
     progress: store.get('ba-ilerleme', 1), best: store.get('ba-rekor', 0), titleT: 0, selW: 0, selS: 0,
+    pieces: store.get('ba-parcalar', [false, false, false, false, false, false, false, false, false]),
   };
-  window.__ba = { app, BA, start: (stage) => startRun(stage || 0), render: () => render() };
+  window.__ba = { app, BA, start: (stage) => startRun(stage || 0), render: () => render(), story: (id, then) => playStory(id, then || toTitle) };
 
-  function startRun(stage) {
+  function startRun(stage, prologue) {
     app.S = BA.newRun();
     app.S.stage = stage;
-    toIntro();
+    if (prologue && ST.has('giris')) playStory('giris', toIntro); else toIntro();
+  }
+  // yazısız hikâye sahnesi; bitince ya da atlanınca then() çağrılır
+  function playStory(id, then) {
+    app.screen = 'story'; app.story = { id, t: 0, then };
+    const sc = ST.SCENES[id];
+    AU.stopMusic();
+    if (sc.music) AU.playMusic(sc.music);
+    if (sc.amb) AU.ambient(sc.amb, 1);
+  }
+  function finishStory() {
+    if (!app.story) return;
+    const f = app.story.then;
+    app.story = null;
+    AU.stopAmbient(0.6); AU.stopMusic();
+    f();
   }
   function toIntro() {
     app.screen = 'intro'; app.introT = 0; app.G = null;
@@ -195,21 +212,23 @@
     app.screen = 'play';
     AU.setRate(1);
     AU.playMusic(AU.WORLD_SONG[app.G.world]);
+    AU.ambient(AU.WORLD_AMB[app.G.world], 0.45);
   }
-  function pauseGame() { if (app.screen !== 'play') return; app.screen = 'pause'; app.menu = 0; AU.sfx('pause'); AU.stopMusic(); }
+  function pauseGame() { if (app.screen !== 'play') return; app.screen = 'pause'; app.menu = 0; AU.sfx('pause'); AU.stopMusic(); AU.stopAmbient(0.3); }
   function resume() {
     app.screen = 'play';
     const G = app.G;
     AU.playMusic(G.boss && !G.boss.dead ? 'boss' : AU.WORLD_SONG[G.world]);
+    AU.ambient(AU.WORLD_AMB[G.world], 0.45);
     AU.setRate(G.hurry ? 1.25 : 1);
   }
   function saveScore() {
     if (app.S && app.S.score > app.best) { app.best = app.S.score; store.set('ba-rekor', app.best); }
   }
-  function toTitle() { saveScore(); app.screen = 'title'; app.menu = 0; app.G = null; AU.playMusic('title'); }
+  function toTitle() { saveScore(); app.screen = 'title'; app.menu = 0; app.G = null; AU.stopAmbient(); AU.playMusic('title'); }
 
   function titleItems() {
-    const items = [{ label: 'OYNA', act: () => startRun(0) }];
+    const items = [{ label: 'OYNA', act: () => startRun(0, true) }];
     if (app.progress > 1) items.push({ label: `DEVAM: DÜNYA ${app.progress}`, act: () => startRun((app.progress - 1) * 3) });
     items.push({ label: 'BÖLÜM SEÇ', act: () => { app.screen = 'select'; app.selW = Math.min(8, app.progress - 1); app.selS = 0; } });
     items.push({ label: 'NASIL OYNANIR', act: () => { app.screen = 'help'; } });
@@ -259,11 +278,13 @@
       if (app.endT > 3 && (k === 'ok' || k === 'start' || k === 'back')) toTitle();
     } else if (s === 'intro') {
       if ((k === 'ok' || k === 'start') && app.introT > 0.4) beginStage();
+    } else if (s === 'story') {
+      if ((k === 'ok' || k === 'start' || k === 'back') && app.story && app.story.t > 0.6) finishStory();
     }
   }
 
   // ---------- olaylar → ses ----------
-  const BUZZ = { die: 220, shrink: 90, power: 40, bosshit: 35, oneup: 60, clear: 80 };
+  const BUZZ = { die: 220, shrink: 90, power: 40, bosshit: 35, oneup: 60, clear: 80, piece: 140 };
   function handleEvents(G) {
     for (const e of G.ev) {
       if (BUZZ[e.e] && window.__baRemote && window.__baRemote.count()) window.__baRemote.vibrate(BUZZ[e.e]);
@@ -272,6 +293,7 @@
         case 'bossdown': AU.sfx('bossdown'); AU.stopMusic(); break;
         case 'hurry': AU.sfx('hurry'); AU.setRate(1.25); break;
         case 'starend': break;
+        case 'piece': AU.sfx('piece'); app.pieces[e.world] = true; store.set('ba-parcalar', app.pieces); break;
         default: AU.sfx(e.e);
       }
     }
@@ -306,15 +328,26 @@
       if (n >= 12) acc = 0;
       const G = app.G;
       if (G.result === 'dead') {
+        AU.stopAmbient(0.4);
         if (BA.afterDeath(app.S)) toIntro();
         else { app.screen = 'over'; app.overT = 0; app.menu = 0; AU.sfx('over'); saveScore(); }
       } else if (G.result === 'clear') {
         BA.afterClear(app.S);
         const w = Math.min(9, Math.floor(app.S.stage / 3) + 1);
         if (w > app.progress && app.S.stage < 27) { app.progress = w; store.set('ba-ilerleme', w); }
-        if (app.S.stage >= 27) { app.screen = 'end'; app.endT = 0; saveScore(); AU.sfx('win'); setTimeout(() => { if (app.screen === 'end') AU.playMusic('son'); }, 1600); }
+        AU.stopAmbient(0.6);
+        if (app.S.stage >= 27) {
+          saveScore();
+          const toEnd = () => { app.screen = 'end'; app.endT = 0; AU.sfx('win'); setTimeout(() => { if (app.screen === 'end') AU.playMusic('son'); }, 1600); };
+          if (ST.has('son')) playStory('son', toEnd); else toEnd();
+        } else if (app.S.stage % 3 === 0 && ST.has('ara' + app.S.stage / 3)) playStory('ara' + app.S.stage / 3, toIntro);
         else toIntro();
       }
+    } else if (app.screen === 'story') {
+      const sc = ST.SCENES[app.story.id], t0 = app.story.t;
+      app.story.t += dt;
+      for (const [ct, kind] of sc.cues || []) if (t0 < ct && app.story.t >= ct) AU.ambEvent(kind);
+      if (app.story.t >= sc.dur) finishStory();
     } else if (app.screen === 'over') app.overT += dt;
     else if (app.screen === 'end') app.endT += dt;
     else if (app.screen === 'title') app.titleT += dt;
@@ -469,6 +502,17 @@
     }
     // eşyalar
     for (const it of G.items) if (it.state !== 'rise') ART.drawItem(ctx, it.kind, it.x * TS - 1, it.y * TS - 2, app.t);
+    // hatıra parçası: süzülür ve parlar; daha önce alındıysa soluk görünür
+    if (G.piece && !G.piece.taken) {
+      const pc = G.piece, cx = (pc.x + pc.w / 2) * TS, cy = (pc.y + pc.h / 2) * TS + Math.sin(app.t * 2.4) * 1.6;
+      const gl = ctx.createRadialGradient(cx, cy, 1, cx, cy, 16);
+      gl.addColorStop(0, `rgba(255,236,170,${0.55 + Math.sin(app.t * 4) * 0.15})`); gl.addColorStop(1, 'rgba(255,236,170,0)');
+      ctx.fillStyle = gl; ctx.fillRect(cx - 16, cy - 16, 32, 32);
+      ctx.globalAlpha = app.pieces[G.world] ? 0.55 : 1;
+      ART.drawPiece(ctx, G.world, cx, cy, 1, app.t);
+      ctx.globalAlpha = 1;
+      for (let k = 0; k < 3; k++) { const a = app.t * 2 + k * 2.1; ART.circle(ctx, cx + Math.cos(a) * 9, cy + Math.sin(a) * 6, 0.7, 'rgba(255,250,220,0.9)', null); }
+    }
     // düşmanlar, patron
     for (const e of G.ents) drawEnemy(e);
     if (G.boss) drawBoss(G);
@@ -720,6 +764,9 @@
       ART.circle(ctx, 17, y + 4.5, 5.6, on ? '#f4c531' : '#2e3460', null);
       text(`${i + 1}`, 17, y + 1.2, on ? '#2a1a10' : '#9af4e4', 6.4, 'center', null);
       text(WORLDS[i].name, 28, y + 0.8, on ? '#ffffff' : '#d4d8e8', 6.8, 'left', null);
+      ctx.globalAlpha = app.pieces[i] ? 1 : 0.22;
+      ART.drawPiece(ctx, i, 130, y + 4.5, 0.62, app.t);
+      ctx.globalAlpha = 1;
       for (let k = 0; k < 3; k++) {
         const x = SEL.x0 + k * SEL.col, sel = on && k === app.selS;
         ART.rr(ctx, x, y - 3, 32, 13, 6.5);
@@ -766,16 +813,18 @@
     else app.menuItems = [];
   }
   function drawEnd() {
-    screenBg(8, 'rgba(10,8,28,0.35)', app.endT * 8);
-    panel(14, 16, VW - 28, 176, 12);
-    text('TEBRİKLER!', VW / 2, 26, '#f4c531', 16, 'center');
-    const lines = ['Mavi Ekran yenildi.', "İstanbul'un bütün sistemleri", 'yeniden ayakta. Vapurlar', 'işliyor, simitler sıcak.', '', 'Mühendisimiz son kez', 'git push dedi ve', 'çayını yudumladı.'];
-    lines.forEach((s, i) => text(s, VW / 2, 58 + i * 12, '#fff8ec', 7, 'center', null, 500));
-    text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 166, '#9af4e4', 8, 'center', null);
-    ART.drawHero(ctx, 116, 214, { big: true, face: 1, mode: 'stand', skin: 'hacker', t: app.t });
-    ART.drawItem(ctx, 'cay', 128, 198, app.t);
+    // hikâyenin son karesi (atölye) sürer; üstte yalnız skor ve toplanan parçalar
+    const dur = ST.SCENES.son.dur;
+    ST.draw(ctx, 'son', dur - 3 + (app.endT % 2), { pieces: app.pieces });
+    panel(VW / 2 - 66, 6, 132, 34, 10, 'rgba(22,18,48,0.78)');
+    text(String(app.S.score).padStart(6, '0'), VW / 2, 9.5, '#ffe08a', 8, 'center', null);
+    for (let i = 0; i < 9; i++) {
+      ctx.globalAlpha = app.pieces[i] ? 1 : 0.22;
+      ART.drawPiece(ctx, i, VW / 2 - 52 + i * 13, 30, 0.62, app.t);
+    }
+    ctx.globalAlpha = 1;
     app.menuItems = [];
-    if (app.endT > 3 && Math.floor(app.t * 2) % 2) text('ANA MENÜ İÇİN Z', VW / 2, 226, '#f4c531', 6.6, 'center');
+    if (app.endT > 3 && Math.floor(app.t * 2) % 2) { panel(VW / 2 - 50, 222, 100, 13, 6.5); text('ANA MENÜ İÇİN Z', VW / 2, 224.6, '#f4c531', 6, 'center', null); }
   }
 
   function render() {
@@ -793,6 +842,7 @@
       case 'pause': drawPause(); break;
       case 'over': drawOver(); break;
       case 'end': drawEnd(); break;
+      case 'story': ST.draw(ctx, app.story.id, app.story.t, { pieces: app.pieces }); break;
     }
   }
 

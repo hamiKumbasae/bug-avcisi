@@ -749,7 +749,72 @@
     rr(g, x, y, w, 5.4, 1.4); fs(g, null, K, 0.8);
   }
 
+  // ---------------- hatıra parçaları (her dünyadan bir tane) ----------------
+  // 0 Maslak camı, 1 Kadıköy'den martı tüyü, 2 vapur çanı, 3 çarşı nazarı, 4 sarnıç damlası, 5 Galata Kulesi, 6 köprü, 7 kedi, 8 lale
+  const PIECES = ['cam', 'tuy', 'can', 'nazar', 'damla', 'kule', 'kopru', 'kedi', 'lale'];
+  function drawPiece(g, i, cx, cy, s, t) {
+    s = s || 1; t = t || 0;
+    g.save(); g.translate(cx, cy); g.scale(s, s);
+    switch (PIECES[i]) {
+      case 'cam':
+        poly(g, [-4, 6, -6, -2, 0, -7, 6, -3, 4, 6], grad(g, -6, -7, 6, 6, [[0, '#d8f2ff'], [0.5, '#7ac0e8'], [1, '#3a7ab0']]), K, 0.8);
+        poly(g, [-3, 3, -4, -1, -1, -4], 'rgba(255,255,255,0.7)', null);
+        break;
+      case 'tuy':
+        g.save(); g.rotate(-0.6);
+        g.beginPath(); g.moveTo(0, -8); g.quadraticCurveTo(5, -3, 3, 6); g.lineTo(0, 7); g.lineTo(-3, 6); g.quadraticCurveTo(-5, -3, 0, -8); g.closePath();
+        fs(g, grad(g, -4, -8, 4, 7, [[0, '#ffffff'], [0.7, '#e2e6ee'], [1, '#8a909c']]), K, 0.8);
+        g.strokeStyle = 'rgba(120,128,140,0.7)'; g.lineWidth = 0.4;
+        for (let k = -5; k < 5; k += 2) { g.beginPath(); g.moveTo(0, k); g.lineTo(3, k - 2); g.moveTo(0, k); g.lineTo(-3, k - 2); g.stroke(); }
+        lin(g, 0, -7, 0, 10, '#6a707c', 0.7);
+        g.restore();
+        break;
+      case 'can':
+        g.beginPath(); g.moveTo(-6, 4); g.quadraticCurveTo(-5.4, -5.4, 0, -5.6); g.quadraticCurveTo(5.4, -5.4, 6, 4); g.closePath();
+        fs(g, grad(g, -6, 0, 6, 0, [[0, '#b8862e'], [0.4, '#f4cc5a'], [1, '#9a6a1e']]), K, 0.8);
+        box(g, -7, 3.4, 14, 2.4, 1, '#c8962e', K, 0.7); circle(g, 0, 6.6, 1.5, '#7a5418', K, 0.6);
+        g.strokeStyle = K; g.lineWidth = 0.8; g.beginPath(); g.arc(0, -6.6, 1.6, Math.PI, 0); g.stroke();
+        break;
+      case 'nazar':
+        circle(g, 0, 0, 6.6, '#1e5ad8', K, 0.8); circle(g, 0, 0, 4.4, '#ffffff', null); circle(g, 0, 0, 2.8, '#7ac8ff', null); circle(g, 0, 0, 1.4, '#10122a', null);
+        circle(g, -2.6, -3, 1, 'rgba(255,255,255,0.8)', null);
+        break;
+      case 'damla':
+        g.beginPath(); g.moveTo(0, -7); g.bezierCurveTo(4, -2, 5.6, 1, 5.6, 2.6); g.arc(0, 2.6, 5.6, 0, Math.PI); g.bezierCurveTo(-5.6, 1, -4, -2, 0, -7); g.closePath();
+        fs(g, grad(g, 0, -7, 0, 8, [[0, '#8af0e8'], [1, '#1a8a96']]), K, 0.8);
+        ellipse(g, -2, 1.6, 1.2, 2.2, 'rgba(255,255,255,0.7)', null, 0, 0.3);
+        break;
+      case 'kule':
+        poly(g, [-4, 7, 4, 7, 3.4, -2, -3.4, -2], '#d8c8ae', K, 0.8);
+        box(g, -4.4, -3.4, 8.8, 1.8, 0.4, '#a89478', K, 0.5);
+        poly(g, [-3.8, -3.4, 3.8, -3.4, 0, -10], '#4e5a70', K, 0.8);
+        for (const y of [0, 3.6]) box(g, -1, y, 2, 2.4, 1, '#4a4036', null);
+        break;
+      case 'kopru':
+        g.strokeStyle = '#e8ecf2'; g.lineWidth = 1; g.beginPath(); g.moveTo(-7, 0); g.quadraticCurveTo(-4.6, -1, -4.4, -7); g.quadraticCurveTo(0, 1, 4.4, -7); g.quadraticCurveTo(4.6, -1, 7, 0); g.stroke();
+        for (const x of [-4.4, 4.4]) box(g, x - 0.9, -8, 1.8, 13, 0.4, '#c8ccd6', K, 0.6);
+        box(g, -8, 1, 16, 2, 0.6, '#9aa0ac', K, 0.6);
+        break;
+      case 'kedi':
+        ellipse(g, 0, 3, 4.6, 4, '#f0a050', K, 0.8);
+        circle(g, 1.2, -3.4, 3.6, '#f0a050', K, 0.8);
+        poly(g, [-1.6, -5.6, -1.2, -9, 1, -6.4], '#f0a050', K, 0.6); poly(g, [2, -6.6, 4, -9, 4.4, -5.2], '#f0a050', K, 0.6);
+        g.strokeStyle = K; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-4, 5); g.quadraticCurveTo(-8, 4, -6.6, -1); g.stroke();
+        circle(g, 0.2, -3.6, 0.5, K, null); circle(g, 2.6, -3.6, 0.5, K, null);
+        lin(g, -2.6, 1, -2.6, 6, '#d07a30', 0.8);
+        break;
+      case 'lale':
+        lin(g, 0, 7.6, 0, -1, '#2a8a3a', 1.2);
+        ellipse(g, -2.6, 4, 1.4, 3.6, '#3aa04a', K, 0.5, -0.6); ellipse(g, 2.6, 4.4, 1.4, 3.6, '#3aa04a', K, 0.5, 0.6);
+        g.beginPath(); g.moveTo(-4, -7); g.quadraticCurveTo(-4.4, -0.4, 0, -0.4); g.quadraticCurveTo(4.4, -0.4, 4, -7); g.lineTo(2, -4.6); g.lineTo(0, -8); g.lineTo(-2, -4.6); g.closePath();
+        fs(g, grad(g, -4, -8, 4, 0, [[0, '#ff5a5a'], [1, '#b81a2a']]), K, 0.8);
+        break;
+    }
+    g.restore();
+  }
+
   root.BA_ART = {
+    PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
     drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, cache, clearAll,

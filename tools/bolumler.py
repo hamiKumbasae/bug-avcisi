@@ -15,6 +15,7 @@ Harita işaretleri (14 satır):
   M  yatay hareketli platform   N  dikey hareketli platform   o  döngü (dönen kıvılcım)
   e  bug   s  spam   v  virüs   m  martı
   P  başlangıç   G  DEPLOY noktası   A  arena girişi   B  patron
+  h  hatıra parçası (her dünyanın 2. bölümünde bir tane, iki ince platformla çıkılan köşede)
 """
 import json
 import random
@@ -93,6 +94,17 @@ class Lv:
             for _ in range(1 + (self.r.random() < self.d)):
                 self.enemy(self.r.choice(xs[2:]))
         return xs
+
+    def hatira(self):
+        # hikâyenin hatıra parçası: yoldan ayrılan, iki ince platformla çıkılan yüksek bir köşe
+        x0 = self.x
+        self.flat(10, enemies=False)
+        t = self.top()
+        for i in (2, 3, 4):
+            self.set(x0 + i, t - 3, '-')
+        for i in (5, 6, 7):
+            self.set(x0 + i, t - 6, '-')
+        self.set(x0 + 6, t - 7, 'h')
 
     def blocks(self):
         n = self.r.randint(7, 11)
@@ -309,6 +321,8 @@ def make(world, sec, r):
             lv.flat(6, enemies=False)
             lv.set(x + 2, lv.top() - 4, 'C'); lv.set(x + 3, lv.top() - 4, 'U'); lv.set(x + 4, lv.top() - 4, 'C')
             first_power = False
+    if sec == 1:
+        lv.hatira()
     # disket (can): her bölümde bir tane, gizli olmayan ama yüksekte
     x = lv.x
     lv.flat(6, enemies=False)

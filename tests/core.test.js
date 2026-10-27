@@ -285,5 +285,20 @@ function bossBot(G) {
   }
 }
 
+// hatıra parçası: her dünyanın 2. bölümünde bir tane; alınınca koşu kaydına işlenir
+{
+  for (let w = 0; w < 9; w++) {
+    const S = BA.newRun();
+    const G = BA.loadStage(S, w * 3 + 1);
+    ok(G.piece && !G.piece.taken, `${w + 1}-2: hatıra parçası yüklendi`);
+    const G0 = BA.loadStage(BA.newRun(), w * 3);
+    ok(!G0.piece, `${w + 1}-1: hatıra parçası yok`);
+    G.player.x = G.piece.x; G.player.y = G.piece.y + G.piece.h - G.player.h;
+    const before = S.score;
+    const got = run(G, () => ({}), 0.5, (g) => g.piece.taken);
+    ok(got && S.pieces && S.pieces[w] === true && S.score >= before + 2000, `${w + 1}-2: hatıra parçası alındı ve kaydedildi`);
+  }
+}
+
 console.log(fails ? `${fails} hata, ${passes} geçti` : `core: ${passes} denetim geçti`);
 process.exit(fails ? 1 : 0);

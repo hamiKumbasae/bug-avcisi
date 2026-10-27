@@ -86,6 +86,7 @@
           case 'Q': G.checkpoint = { x, y, on: false }; break;
           case 'A': G.arena = { ax: x, locked: false, cam: x + 3 }; break;
           case 'B': G.bossSpawn = { x, y }; break;
+          case 'h': G.piece = { x: x + 0.125, y: y + 0.1, w: 0.75, h: 0.8, taken: false }; break;
         }
       }
     }
@@ -479,6 +480,15 @@
         const i = ty * G.W + tx;
         if (G.coins[i]) { G.coins[i] = 0; addSimit(G, 1); G.fx.push({ k: 'spark', x: tx + 0.5, y: ty + 0.5, t: 0 }); }
       }
+    }
+    // hatıra parçası: her dünyada bir tane
+    if (G.piece && !G.piece.taken && overlap(p, G.piece)) {
+      G.piece.taken = true;
+      S.pieces = S.pieces || [];
+      S.pieces[G.world] = true;
+      addScore(G, 2000, G.piece.x + 0.4, G.piece.y);
+      G.fx.push({ k: 'spark', x: G.piece.x + 0.4, y: G.piece.y + 0.4, t: 0 });
+      ev(G, 'piece', { world: G.world });
     }
     // çukura düştü
     if (p.y > H + 0.5) die(G, true);
