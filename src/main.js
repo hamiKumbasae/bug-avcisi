@@ -73,6 +73,8 @@
     // menü için kenar tetikleri
     if (n.up && !padPrev.up) menuKey('up');
     if (n.down && !padPrev.down) menuKey('down');
+    if (n.left && !padPrev.left) menuKey('left');
+    if (n.right && !padPrev.right) menuKey('right');
     if (n.jump && !padPrev.jump) menuKey('ok');
     if (n.start && !padPrev.start) menuKey('start');
     if (n.run && !padPrev.run && app.screen !== 'play') menuKey('back');
@@ -92,6 +94,8 @@
     if (!e.repeat) {
       if (c === 'ArrowUp' || c === 'KeyW') menuKey('up');
       if (c === 'ArrowDown' || c === 'KeyS') menuKey('down');
+      if (c === 'ArrowLeft' || c === 'KeyA') menuKey('left');
+      if (c === 'ArrowRight' || c === 'KeyD') menuKey('right');
       if (c === 'Enter' || c === 'Space' || c === 'KeyZ') menuKey('ok');
       if (c === 'Escape') menuKey('back');
       if (c === 'KeyP') menuKey('start');
@@ -115,6 +119,9 @@
       touch[name] = true; el.classList.add('basili');
       if (name === 'jump') menuKey('ok');
       if (name === 'down') menuKey('down');
+      if (name === 'left') menuKey('left');
+      if (name === 'right') menuKey('right');
+      if (name === 'run' && app.screen === 'select') menuKey('back');
       if (navigator.vibrate) navigator.vibrate(8);
     };
     const off = (e) => { e.preventDefault(); touch[name] = false; el.classList.remove('basili'); };
@@ -135,6 +142,7 @@
         if (y >= it.y - 4 && y < it.y + 12) { app.menu = i; menuKey('ok'); return; }
       }
     }
+    if (app.screen === 'select') { selectTap(x, y); return; }
     if (app.screen === 'play' && y < TOP + 8) pauseGame();
     else if (app.screen === 'help' || app.screen === 'end') menuKey('ok');
   });
@@ -152,7 +160,7 @@
   // ---------- uygulama durumu ----------
   const app = {
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
-    progress: store.get('ba-ilerleme', 1), best: store.get('ba-rekor', 0), titleT: 0,
+    progress: store.get('ba-ilerleme', 1), best: store.get('ba-rekor', 0), titleT: 0, selW: 0, selS: 0,
   };
   window.__ba = { app, BA, start: (stage) => startRun(stage || 0) };
 
@@ -186,6 +194,7 @@
   function titleItems() {
     const items = [{ label: 'OYNA', act: () => startRun(0) }];
     if (app.progress > 1) items.push({ label: `DEVAM: DÜNYA ${app.progress}`, act: () => startRun((app.progress - 1) * 3) });
+    items.push({ label: 'BÖLÜM SEÇ', act: () => { app.screen = 'select'; app.selW = Math.min(8, app.progress - 1); app.selS = 0; } });
     items.push({ label: 'NASIL OYNANIR', act: () => { app.screen = 'help'; } });
     if (window.__ba.bridge && window.__ba.bridge.open) items.push({ label: 'TELEFONLA OYNA', act: () => window.__ba.bridge.open() });
     return items;
@@ -199,6 +208,13 @@
       if (k === 'ok' || k === 'start') { AU.unlock(); AU.sfx('select'); items[Math.min(app.menu, items.length - 1)].act(); }
     } else if (s === 'help') {
       if (k === 'ok' || k === 'back' || k === 'start') { app.screen = 'title'; AU.sfx('select'); }
+    } else if (s === 'select') {
+      if (k === 'up') { app.selW = (app.selW + 8) % 9; AU.sfx('move'); }
+      if (k === 'down') { app.selW = (app.selW + 1) % 9; AU.sfx('move'); }
+      if (k === 'left') { app.selS = (app.selS + 2) % 3; AU.sfx('move'); }
+      if (k === 'right') { app.selS = (app.selS + 1) % 3; AU.sfx('move'); }
+      if (k === 'ok' || k === 'start') { AU.sfx('select'); startRun(app.selW * 3 + app.selS); }
+      if (k === 'back') { app.screen = 'title'; AU.sfx('select'); }
     } else if (s === 'play') {
       if (k === 'start' || k === 'back') pauseGame();
     } else if (s === 'pause') {
@@ -577,6 +593,41 @@
     items.forEach(([sp, s], i) => { ctx.drawImage(ART.sprite(sp), 8, 134 + i * 16); text(s, 30, 138 + i * 16, '#f4f0e4'); });
     if (Math.floor(app.t * 2) % 2) text('DEVAM İÇİN Z', VW / 2, 232 - 4, '#f4c531', 8, 'center');
   }
+  // Bölüm seç: 9 dünya × 3 bölüm
+  const SEL = { y0: 30, row: 17, x0: 144, col: 36 };
+  function selectTap(x, y) {
+    if (y < 22 && x < 70) { menuKey('back'); return; }
+    const w = Math.floor((y - SEL.y0 + 3) / SEL.row), c = Math.floor((x - SEL.x0 + 2) / SEL.col);
+    if (w < 0 || w > 8) return;
+    const sec = c >= 0 && c <= 2 ? c : app.selS;
+    if (w === app.selW && sec === app.selS) { menuKey('ok'); return; }
+    app.selW = w; app.selS = sec; AU.sfx('move');
+  }
+  function drawSelect() {
+    const w = app.selW;
+    ctx.drawImage(sky(w), 0, 0);
+    const bg = ART.background(w);
+    layer(bg.far, app.t * 6); layer(bg.near, app.t * 14);
+    ctx.fillStyle = 'rgba(12,14,24,0.82)'; ctx.fillRect(0, 0, VW, VH);
+    text('◀ GERİ', 6, 6, '#9aa0b4');
+    text('BÖLÜM SEÇ', VW / 2, 8, '#f4c531', 8, 'center');
+    for (let i = 0; i < 9; i++) {
+      const y = SEL.y0 + i * SEL.row, on = i === w;
+      if (on) { ctx.fillStyle = 'rgba(244,197,49,0.12)'; ctx.fillRect(4, y - 4, VW - 8, SEL.row - 1); }
+      text(`${i + 1}`, 10, y, on ? '#f4c531' : '#9af4e4');
+      text(up(WORLDS[i].name), 24, y, on ? '#ffffff' : '#c8ccd8');
+      for (let k = 0; k < 3; k++) {
+        const x = SEL.x0 + k * SEL.col, sel = on && k === app.selS;
+        ctx.fillStyle = sel ? '#f4c531' : k === 2 ? '#5a2a2a' : '#2a3048'; ctx.fillRect(x, y - 3, 32, 13);
+        text(`${i + 1}-${k + 1}`, x + 4, y, sel ? '#10121c' : '#f4f0e4', 8, 'left', null);
+      }
+    }
+    const L = LEVELS[w * 3 + app.selS];
+    ctx.fillStyle = 'rgba(16,18,28,0.9)'; ctx.fillRect(0, 186, VW, 54);
+    text(up(WORLDS[w].name) + ' · ' + up(L.name), VW / 2, 192, '#ffffff', 8, 'center');
+    text(L.boss ? 'PATRON: ' + up(L.bossName) : `${L.map[0].length} KARO UZUNLUĞUNDA`, VW / 2, 206, L.boss ? '#ff8a70' : '#9aa0b4', 8, 'center');
+    if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 222, '#f4c531', 8, 'center');
+  }
   function drawIntro() {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, VH);
     hud(null);
@@ -625,6 +676,7 @@
     switch (app.screen) {
       case 'title': drawTitle(); break;
       case 'help': drawHelp(); break;
+      case 'select': drawSelect(); break;
       case 'intro': drawIntro(); break;
       case 'play': drawPlay(); break;
       case 'pause': drawPause(); break;
@@ -636,7 +688,7 @@
   // ---------- kumanda köprüsü (remote.js) ----------
   window.__ba.bridge = {
     input(state) { for (const k of ['left', 'right', 'down', 'jump', 'run']) remote[k] = !!state[k]; },
-    button(b) { AU.unlock(); if (b === 'pause') menuKey('start'); else if (b === 'ok') menuKey('ok'); else if (b === 'up') menuKey('up'); else if (b === 'down') menuKey('down'); else if (b === 'back') menuKey('back'); },
+    button(b) { AU.unlock(); if (b === 'pause') menuKey('start'); else if (b === 'ok') menuKey('ok'); else if (b === 'up') menuKey('up'); else if (b === 'down') menuKey('down'); else if (b === 'left') menuKey('left'); else if (b === 'right') menuKey('right'); else if (b === 'back') menuKey('back'); },
     release() { for (const k of Object.keys(remote)) remote[k] = false; },
     info() {
       const G = app.G;

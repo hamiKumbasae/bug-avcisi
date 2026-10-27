@@ -24,6 +24,8 @@ Kurulum gerekmez: düz HTML, CSS ve JavaScript. Bütün çizimler, müzikler ve 
 | 8 | Gece çatıları | Bacalar · Antenler · Saat Kulesi | Glitch |
 | 9 | Çamlıca Kulesi | Tepe Yolu · Asansör · Yayın Odası | Mavi Ekran |
 
+Ana menüdeki **Bölüm seç** ile 27 bölümden istediğine doğrudan başlayabilirsin.
+
 Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam edersin. Oyun bitince
 "Devam et" ile o dünyanın başından yeniden başlarsın; ulaştığın en ileri dünya menüde kayıtlı kalır.
 

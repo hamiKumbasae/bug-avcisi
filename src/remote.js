@@ -187,7 +187,7 @@
     try { c.close(); } catch (e) { /* yok say */ }
   }
 
-  const MENU_SCREENS = ['title', 'help', 'pause', 'over', 'end', 'intro'];
+  const MENU_SCREENS = ['title', 'help', 'select', 'pause', 'over', 'end', 'intro'];
   function accept(c) {
     const id = c.peer;
     const old = conns.get(id);
@@ -210,7 +210,7 @@
       const menuNow = MENU_SCREENS.includes(B.info().screen);
       if (m.t === 'dir') {
         const d = ['left', 'right', 'up', 'down'].includes(m.d) ? m.d : null;
-        if (d !== st.dir && menuNow && (d === 'up' || d === 'down')) B.button(d);
+        if (d !== st.dir && menuNow && d) B.button(d);
         st.dir = d;
       } else if (m.t === 'k') {
         if (m.b === 'jump') { if (m.on && !st.jump) B.button('ok'); st.jump = !!m.on; }
