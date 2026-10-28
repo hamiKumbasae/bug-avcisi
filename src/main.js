@@ -307,7 +307,7 @@
     if (dt > 0.1) dt = 0.1;
     app.t += dt;
     readPad();
-    update(dt);
+    if (!app.freeze) update(dt);
     render();
     requestAnimationFrame(frame);
   }
@@ -440,17 +440,18 @@
     else if (p.skid) mode = 'skid';
     else if (Math.abs(p.vx) > 0.3) mode = 'walk';
     if (!p.dead && big && St.power === 2 && p.shootCD > 0.08 && p.onGround) mode = 'shoot';
+    if (p.cheer && !p.dead) mode = 'cheer';
     const star = p.star > 0 && !(p.star < 2 && Math.floor(app.t * 10) % 2);
-    return { big, face: p.face, mode, phase: (p.walkT / 2.2) % 1, skin: St.power === 2 ? 'hacker' : 'normal', star, t: app.t };
+    return { big, face: p.face, mode, phase: (p.walkT / 2.2) % 1, skin: St.power === 2 ? 'hacker' : 'normal', star, t: app.t, sq: p.sq };
   }
 
-  const TILEK = { 2: 'solid', 8: 'solid', 3: 'oneway', 5: 'used', 6: 'crack', 7: 'spike' };
+  const TILEK = { 2: 'solid', 8: 'solid', 3: 'oneway', 5: 'used', 6: 'crack', 7: 'spike', 10: 'crack' };
   function drawPlay() {
     const G = app.G, w = G.world;
     let sx = 0, sy = 0;
     if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
     const cam = Math.round(G.cam * TS * S) / S;
-    backdrop(w, cam);
+    if (G.area === 'room') full(SC.metro(w, VW, VH)); else backdrop(w, cam);
     const ox = -cam + sx, oy = TOP + sy;
     // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
     const x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
@@ -471,9 +472,10 @@
         const i = ty * G.W + tx, t = G.grid[i];
         if (!t) continue;
         const px = tx * TS, py = ty * TS + (bumpOff.get(i) || 0);
-        if (t === 1) put(ART.tile(w, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
-        else if (t === 4) put(ART.tile(w, 'block', blink), px, py);
-        else if (TILEK[t]) put(ART.tile(w, TILEK[t]), px, py);
+        const tw = G.room && tx >= G.room.x0 ? ART.METRO : w; // bonus odası metro karolarıyla
+        if (t === 1) put(ART.tile(tw, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
+        else if (t === 4) put(ART.tile(tw, 'block', blink), px, py);
+        else if (TILEK[t]) put(ART.tile(tw, TILEK[t]), px, py);
       }
     }
     ctx.setTransform(S, 0, 0, S, 0, 0);
@@ -486,12 +488,27 @@
     if (G.checkpoint) ART.drawCheckpoint(ctx, G.checkpoint.x * TS, (G.checkpoint.y - 1) * TS, G.checkpoint.on, app.t);
     const gl = G.goal;
     if (gl && (gl.active || !G.bossKind)) {
-      const gx = gl.x * TS, gy = gl.y * TS;
+      const gx = gl.x * TS, gy = gl.y * TS, mast = !G.bossKind;
+      // anten: değilen yükseklik kadar çentik yanar
+      if (mast) ART.drawAntenna(ctx, gx, gy, app.t, G.phase === 'clear' ? (G.goalHit || 0) * Math.min(1, G.clearT / 0.6) : undefined, BA.GOAL_STEPS);
       ART.drawDeploy(ctx, gx, gy, app.t, G.phase === 'clear' ? Math.min(1, G.clearT / 1.4) : undefined);
       if (G.phase !== 'clear') {
-        const bob = Math.sin(app.t * 4) * 1.2;
-        panel(gx - 12, gy - 16 + bob, 40, 11, 5.5, 'rgba(15,36,26,0.85)', '#7cff6a');
-        text('DEPLOY', gx + 8, gy - 13.6 + bob, '#7cff6a', 6, 'center', null);
+        const bob = Math.sin(app.t * 4) * 1.2, ly = mast ? gy - 150 : gy - 16;
+        panel(gx - 12, ly + bob, 40, 11, 5.5, 'rgba(15,36,26,0.85)', '#7cff6a');
+        text('DEPLOY', gx + 8, ly + 2.4 + bob, '#7cff6a', 6, 'center', null);
+      }
+    }
+    // metro girişi, çıkışı ve odadaki yürüyen merdiven
+    if (G.room) {
+      const [, ln, lc] = SC.station(w);
+      for (const m of [G.metroIn, G.metroOut]) if (m && m.x > G.cam - 3 && m.x < G.cam + 18) ART.drawMetroGate(ctx, m.x * TS, m.y * TS, app.t, lc, ln);
+      const ex = G.room.exit;
+      if (ex && G.area === 'room') ART.drawEscalator(ctx, ex.x * TS, ex.y * TS, app.t, lc);
+      // girişin üstünde dururken aşağı ok
+      const p = G.player, mi = G.metroIn;
+      if (mi && !G.warp && G.area === 'main' && p.onGround && Math.abs(p.x + p.w / 2 - mi.x - 1) < 0.8 && Math.abs(p.y + p.h - mi.y - 1) < 0.05) {
+        const ay = (mi.y - 3.4) * TS + Math.abs(Math.sin(app.t * 5)) * 3, ax = (mi.x + 1) * TS;
+        ART.poly(ctx, [ax - 4, ay, ax + 4, ay, ax + 4, ay + 4, ax + 7, ay + 4, ax, ay + 10, ax - 7, ay + 4, ax - 4, ay + 4], '#ffffff', '#1a1430', 0.9);
       }
     }
     // hareketli platformlar ve dönen kıvılcımlar
@@ -518,7 +535,12 @@
     if (G.boss) drawBoss(G);
     // oyuncu
     const p = G.player;
-    if (!(p.inv > 0 && Math.floor(app.t * 20) % 2) || p.dead) ART.drawHero(ctx, (p.x + p.w / 2) * TS, (p.y + p.h) * TS, heroOpts(G));
+    if (!(p.inv > 0 && Math.floor(app.t * 20) % 2) || p.dead) {
+      const cl = G.warp && G.warp.clip;
+      if (cl) { ctx.save(); ctx.beginPath(); ctx.rect(-1e4, -1e4, cl.x1 !== undefined ? cl.x1 * TS + 1e4 : 3e4, cl.y1 !== undefined ? cl.y1 * TS + 1e4 : 3e4); ctx.clip(); }
+      ART.drawHero(ctx, (p.x + p.w / 2) * TS, (p.y + p.h) * TS, heroOpts(G));
+      if (cl) ctx.restore();
+    }
     // atışlar ve efektler
     for (const s of G.shots) ART.drawShot(ctx, s.x * TS, s.y * TS, app.t);
     for (const s of G.bshots) drawBossShot(s);
@@ -542,12 +564,17 @@
     if (G.goal && G.goal.active && G.bossKind && G.phase === 'play' && G.bossDownT < 4) {
       text('DEPLOY ET!', VW / 2, 60, Math.floor(app.t * 4) % 2 ? '#7cff6a' : '#ffffff', 14, 'center');
     }
-    if (G.phase === 'clear' && G.clearT > 1.4) {
+    if (G.phase === 'clear' && G.clearT > 1.4 && !(G.tallyDone && G.clearT - G.tallyDone > 0.35)) {
       panel(40, 72, VW - 80, 40, 10);
       text('DEPLOY BAŞARILI!', VW / 2, 79, '#7cff6a', 9, 'center');
       text('süre bonusu', VW / 2, 96, '#fff8ec', 6.6, 'center', null, 500);
     }
     if (G.time < 100 && G.time > 97 && G.phase === 'play') text('ACELE ET!', VW / 2, 60, '#ff7a6a', 14, 'center');
+    // metro geçişinde ekran kararıp açılır
+    if (G.warp) {
+      const t = G.warp.t, a = t < 0.5 ? 0 : t < 0.85 ? (t - 0.5) / 0.35 : Math.max(0, 1 - (t - 0.85) / 0.3);
+      if (a > 0) { ctx.fillStyle = `rgba(8,8,16,${a})`; ctx.fillRect(0, 0, VW, VH); }
+    }
     hud(G);
   }
   function heart(x, y, col) {
@@ -634,8 +661,68 @@
   }
   function drawFx(f, w) {
     switch (f.k) {
-      case 'score': text(f.text, f.x * TS, f.y * TS - 8, '#ffffff', 6, 'center'); break;
-      case 'simitpop': { const y = (f.y - Math.sin(Math.min(1, f.t / 0.5) * Math.PI) * 1.5) * TS; img(coinImg(Math.floor(f.t * 20)), f.x * TS, y); break; }
+      case 'score': {
+        // önce büyüyüp yerine oturan puan yazısı
+        const t = f.t, k = t < 0.08 ? 0.5 + t / 0.08 * 0.8 : t < 0.2 ? 1.3 - (t - 0.08) / 0.12 * 0.3 : 1;
+        const col = f.text === '1UP' ? '#7cff6a' : +f.text >= 1000 ? '#ffd84a' : '#ffffff';
+        ctx.globalAlpha = Math.max(0, Math.min(1, (0.95 - t) / 0.25));
+        text(f.text, f.x * TS, f.y * TS - 8 - 3 * (k - 1), col, 6 * k, 'center');
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case 'simitpop': {
+        // bloktan fırlayan simit: yükselir, döner, tepede parlar
+        const t = f.t, h = 19 * t - 29 * t * t;
+        const cx = f.x * TS + 8, cy = (f.y + 0.5 - h) * TS;
+        ART.drawSimit(ctx, cx, cy, t * 34, 6.4);
+        break;
+      }
+      case 'dust': {
+        const a = Math.max(0, 1 - f.t / 0.4), r = (f.r || 1) * (2.4 + f.t * 9);
+        ART.circle(ctx, f.x * TS, f.y * TS - r * 0.5, r, `rgba(252,248,238,${a * 0.95})`, `rgba(110,96,84,${a * 0.6})`, 0.6);
+        ART.circle(ctx, f.x * TS - r * 0.25, f.y * TS - r * 0.7, r * 0.45, `rgba(255,255,255,${a * 0.8})`, null);
+        break;
+      }
+      case 'stomp': {
+        // ezme yıldızı: kısa ışınlar ve halka
+        const a = Math.max(0, 1 - f.t / 0.3), r = 5 + f.t * 34, x = f.x * TS, y = f.y * TS;
+        ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a;
+        ctx.lineCap = 'round';
+        for (let k = 0; k < 8; k++) {
+          const an = k / 8 * Math.PI * 2 + 0.2, x0 = Math.cos(an) * r * 0.5, y0 = Math.sin(an) * r * 0.4, x1 = Math.cos(an) * r, y1 = Math.sin(an) * r * 0.8;
+          ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+          ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        }
+        const st = 6 * (1 - f.t / 0.3 * 0.4);
+        ART.poly(ctx, [0, -st, st * 0.3, -st * 0.3, st, 0, st * 0.3, st * 0.3, 0, st, -st * 0.3, st * 0.3, -st, 0, -st * 0.3, -st * 0.3], '#ffffff', '#1a1430', 0.6);
+        ctx.restore();
+        break;
+      }
+      case 'firework': {
+        // gökyüzünde açılan çiçek; kıvılcımlar düşerek söner
+        const t = f.t, x = f.x * TS, y0 = f.y * TS;
+        if (t < 0.3) {
+          const yy = y0 + (1 - t / 0.3) * 70;
+          ART.circle(ctx, x, yy, 1.4, '#fff2c0', null);
+          ctx.fillStyle = 'rgba(255,220,150,0.5)'; ctx.fillRect(x - 0.5, yy, 1, 8);
+          break;
+        }
+        const u = t - 0.3, a = Math.max(0, 1 - Math.max(0, u - 0.25) / 0.55), e = 1 - Math.pow(1 - Math.min(1, u / 0.4), 3), R = 4 + e * 24;
+        if (u < 0.14) ART.circle(ctx, x, y0, 14 * (1 - u / 0.14) + 3, `rgba(255,255,240,${0.95 - u * 6})`, null);
+        ctx.lineCap = 'round';
+        for (let ring = 0; ring < 2; ring++) {
+          const n = ring ? 9 : 14, rr = R * (ring ? 0.55 : 1), hue = (f.hue + ring * 50) % 360, drop = u * u * 16;
+          for (let k = 0; k < n; k++) {
+            const an = k / n * Math.PI * 2 + ring * 0.35, c = Math.cos(an), sn = Math.sin(an);
+            const px = x + c * rr, py = y0 + sn * rr + drop, tail = Math.min(rr * 0.5, 8);
+            ctx.strokeStyle = `hsla(${hue},100%,${ring ? 78 : 64}%,${a * 0.85})`; ctx.lineWidth = ring ? 1.2 : 1.7;
+            ctx.beginPath(); ctx.moveTo(px - c * tail, py - sn * tail - drop * 0.3); ctx.lineTo(px, py); ctx.stroke();
+            const tw = (Math.floor(u * 24 + k) % 3) ? 1 : 0.5;
+            ART.circle(ctx, px, py, (ring ? 1.1 : 1.6) * tw, `rgba(255,255,235,${a})`, null);
+          }
+        }
+        break;
+      }
       case 'debris': {
         const c = ART.tile(w, 'crack'), k = c.width / 16;
         ctx.save(); ctx.translate(f.x * TS, f.y * TS); ctx.rotate(f.t * 14);
@@ -728,7 +815,7 @@
     const story = ["İstanbul'un sistemlerine bug'lar sızdı!", 'Her bölümün sonundaki DEPLOY', 'terminaline ulaş, patronları yen.'];
     story.forEach((s, i) => text(s, VW / 2, 28 + i * 10, '#fff8ec', 6.4, 'center', null, 500));
     panel(10, 62, VW - 20, 58, 8);
-    const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in']];
+    const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in, metroya gir']];
     keys.forEach(([k, s], i) => { text(k, 72, 68 + i * 12.5, '#9af4e4', 6.6, 'right', null); text(s, 80, 68 + i * 12.5, '#fff8ec', 6.4, 'left', null, 500); });
     panel(10, 126, VW - 20, 96, 8);
     const items = [['simit', 'SİMİT', '100 tane = +1 can'], ['cay', 'ÇAY', 'büyü, çatlak blok kır'], ['laptop', 'LAPTOP', '{ } kod fırlat'], ['kahve', 'KAHVE', 'kısa süre dokunulmazlık'], ['disket', 'DİSKET', '+1 can'], ['virus', 'VİRÜS', 'üstüne basılmaz!']];

@@ -750,6 +750,66 @@
     return c;
   }
 
+  // ---------- metro bonus odası: yer altı istasyonu (tek ekran) ----------
+  // dünya → [istasyon, hat, hat rengi]
+  const STATIONS = {
+    0: ['İTÜ-AYAZAĞA', 'M2', '#2fa84f'], 1: ['KADIKÖY', 'M4', '#e5427f'], 3: ['VEZNECİLER', 'M2', '#2fa84f'],
+    5: ['ŞİŞHANE', 'M2', '#2fa84f'], 8: ['KISIKLI', 'M5', '#8a4fae'],
+  };
+  const station = (w) => STATIONS[w] || ['METRO', 'M', '#2fa84f'];
+  const metroCache = A.cache();
+  function metro(w, vw, vh) {
+    const k = w + ':' + vw;
+    let c = metroCache.get(k);
+    if (c) return c;
+    const [name, ln, col] = station(w);
+    c = A.mk(vw, vh, (g) => {
+      // sırlı karo duvar
+      g.fillStyle = '#d8d1c0'; g.fillRect(0, 0, vw, vh);
+      for (let y = 0; y < vh; y += 6) for (let x = (y % 12 ? -6 : 0); x < vw; x += 12) {
+        g.fillStyle = y > 150 ? '#cfc7b4' : '#f1ece0'; A.rr(g, x + 0.5, y + 0.5, 11, 5, 1.2); g.fill();
+      }
+      // hat renginde şeritler
+      rect(g, 0, 98, vw, 7, col); rect(g, 0, 107, vw, 2, col);
+      rect(g, 0, 148, vw, 3, mix(col, '#000000', 0.25));
+      // tavan lambaları
+      for (let x = 8; x < vw; x += 64) {
+        const gl = g.createLinearGradient(0, 48, 0, 84); gl.addColorStop(0, 'rgba(255,252,236,0.55)'); gl.addColorStop(1, 'rgba(255,252,236,0)');
+        g.fillStyle = gl; g.fillRect(x - 6, 48, 58, 36);
+        A.box(g, x, 48, 46, 4, 1.5, '#ffffff', '#8a8f9a', 0.6);
+      }
+      // istasyon tabelaları
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const sx of [30, 158]) {
+        A.box(g, sx, 70, 70, 18, 2.5, '#1d2c55', '#0c1430', 0.8);
+        A.box(g, sx + 4, 73, 14, 12, 2.6, col, null);
+        g.fillStyle = '#ffffff'; g.font = '600 7.4px Fredoka, sans-serif'; g.fillText(ln, sx + 11, 79.4);
+        g.font = `600 ${name.length > 9 ? 6.2 : 7.6}px Fredoka, sans-serif`; g.fillText(name, sx + 44, 79.6);
+      }
+      // peronda bekleyen tren (arkada, hafif soluk)
+      const ty = 124;
+      A.box(g, -8, ty, vw + 16, 86, 10, '#c9ced8', '#5c616c', 1);
+      rect(g, -8, ty + 54, vw + 16, 7, col);
+      g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(0, ty + 4, vw, 2);
+      for (let x = 10; x < vw; x += 62) {
+        // kapı ve pencereler
+        A.box(g, x, ty + 14, 20, 36, 2, '#a9aeb9', '#5c616c', 0.7);
+        A.box(g, x + 2.5, ty + 18, 6.5, 16, 1.4, '#ffe9a8', '#5c616c', 0.6); A.box(g, x + 11, ty + 18, 6.5, 16, 1.4, '#ffe9a8', '#5c616c', 0.6);
+        A.box(g, x + 26, ty + 16, 30, 16, 2.4, '#ffe9a8', '#5c616c', 0.7);
+        g.fillStyle = 'rgba(80,70,60,0.35)'; g.beginPath(); g.arc(x + 34, ty + 30, 3, Math.PI, 0); g.fill(); g.fillRect(x + 31, ty + 30, 6, 2);
+        g.beginPath(); g.arc(x + 47, ty + 31, 2.6, Math.PI, 0); g.fill();
+      }
+      // derinlik: alt kısım ve kenarlar hafif koyu
+      const sh = g.createLinearGradient(0, 120, 0, vh); sh.addColorStop(0, 'rgba(20,24,40,0)'); sh.addColorStop(1, 'rgba(20,24,40,0.35)');
+      g.fillStyle = sh; g.fillRect(0, 120, vw, vh - 120);
+      const vg = g.createRadialGradient(vw / 2, vh / 2, vh * 0.35, vw / 2, vh / 2, vh * 0.85);
+      vg.addColorStop(0, 'rgba(10,12,24,0)'); vg.addColorStop(1, 'rgba(10,12,24,0.35)');
+      g.fillStyle = vg; g.fillRect(0, 0, vw, vh);
+    }, bgScale());
+    metroCache.set(k, c);
+    return c;
+  }
+
   // ---------- başlık ekranı: tek karede İstanbul ----------
   const titleCache = A.cache();
   function title(vw, vh) {
@@ -799,7 +859,7 @@
   }
 
   root.BA_SCENE = {
-    W, H, layers, sky, title, SKY, pen, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
+    W, H, layers, sky, title, metro, station, SKY, pen, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky },

@@ -47,7 +47,20 @@ const flat = (w, extraRows) => {
   let minY = y0;
   run(G, { jump: true }, 1.2, (g) => { minY = Math.min(minY, g.player.y); return false; });
   const hFull = y0 - minY;
-  ok(hFull > 4.2 && hFull < 4.7, `tam zıplama ~4.45 karo (${hFull.toFixed(2)})`);
+  ok(hFull > 4.1 && hFull < 4.6, `tam zıplama ~4.3 karo (${hFull.toFixed(2)})`);
+  // koşarak zıplama daha yüksek
+  G = BA.loadStage(S, i);
+  run(G, { right: true, run: true }, 1.0);
+  const y1 = G.player.y; minY = y1;
+  run(G, { right: true, run: true, jump: true }, 1.2, (g) => { minY = Math.min(minY, g.player.y); return false; });
+  const hRun = y1 - minY;
+  ok(hRun > hFull + 0.6 && hRun < 5.8, `koşarak zıplama daha yüksek (${hRun.toFixed(2)})`);
+  // momentum: bırakınca hemen durmaz
+  G = BA.loadStage(S, i);
+  run(G, { right: true, run: true }, 1.0);
+  const xs = G.player.x;
+  run(G, {}, 1.0);
+  ok(G.player.x - xs > 1.5 && Math.abs(G.player.vx) < 0.01, `bırakınca kayarak durur (${(G.player.x - xs).toFixed(2)})`);
   G = BA.loadStage(S, i);
   minY = G.player.y;
   run(G, (g, t) => ({ jump: t < 0.05 }), 1.2, (g) => { minY = Math.min(minY, g.player.y); return false; });
@@ -217,7 +230,7 @@ const flat = (w, extraRows) => {
   ok(G.phase === 'clear', 'DEPLOY terminaline varınca bölüm biter');
   ok(G.checkpoint.on, 'kayıt noktası geçildi');
   const before = S.score;
-  run(G, NONE, 6, (g) => g.result === 'clear');
+  run(G, NONE, 9, (g) => g.result === 'clear');
   ok(G.result === 'clear' && S.score > before + 1000, `kalan süre puana döndü (+${S.score - before})`);
   // kayıt noktasından yeniden başla
   G = BA.loadStage(S, i);
@@ -225,6 +238,91 @@ const flat = (w, extraRows) => {
   ok(S.checkpoint && S.checkpoint.stage === i, 'kayıt noktası oturuma yazıldı');
   G = BA.loadStage(S, i);
   ok(Math.abs(G.player.x - 8.125) < 0.01, 'kayıt noktasından başladı');
+}
+
+// ---------- gizli blok, çok simitli blok ----------
+{
+  const i = custom(['.....X......Z.....', '..................', '..................', '..................', '..P...............', '##################', '##################'].slice(0));
+  const S = BA.newRun();
+  let G = BA.loadStage(S, i);
+  const hx = 5, hy = 14 - 7;
+  ok(BA.tile(G, hx, hy) === BA.T.HIDDEN, 'gizli blok yüklendi');
+  // üstten düşen oyuncu gizli bloğun içinden geçer
+  G.player.x = hx + 0.1; G.player.y = hy - 2; G.player.vy = 0;
+  run(G, NONE, 0.8);
+  ok(G.player.onGround && G.player.y + G.player.h > hy + 3, 'gizli blok yukarıdan geçirgen');
+  // alttan zıplayınca açığa çıkar ve disket verir
+  run(G, (g, t) => ({ jump: t < 0.4 }), 0.6);
+  ok(BA.tile(G, hx, hy) === BA.T.USED && G.items.some((it) => it.kind === 'disket'), 'alttan vurulan gizli blok açıldı, disket çıktı');
+  // çok simitli blok: art arda vuruşlarda birden çok simit
+  G = BA.loadStage(S, i);
+  G.player.x = 12.1;
+  const s0 = S.simit;
+  for (let k = 0; k < 4; k++) { run(G, (g, t) => ({ jump: t < 0.3 }), 0.9); }
+  ok(S.simit - s0 >= 3 && BA.tile(G, 12, hy) === BA.T.MULTI, `çok simitli blok birden çok simit verdi (${S.simit - s0})`);
+  run(G, NONE, 4.2);
+  run(G, (g, t) => ({ jump: t < 0.3 }), 0.9);
+  ok(BA.tile(G, 12, hy) === BA.T.USED, 'süre dolunca çok simitli blok boşaldı');
+}
+
+// ---------- metro bonus odası ----------
+{
+  const room = ['================', '================', '=..............=', '=..............=', '=..............=', '=..............=', '=..............=', '=..............=', '=..............=', '=..............=', '=.bbbbbbbbbbbb.=', '=.............O=', '################', '################'];
+  const main = ['..P...E.........R.......G...='].map((r) => r);
+  const w = main[0].length;
+  const rows = [];
+  for (let y = 0; y < 14; y++) {
+    const m = y === 11 ? main[0] : y >= 12 ? '#'.repeat(w - 1) + '=' : '.'.repeat(w - 1) + '=';
+    rows.push(m + room[y]);
+  }
+  const i = custom(rows, { room: w });
+  const S = BA.newRun();
+  const G = BA.loadStage(S, i);
+  ok(G.room && G.room.exit && G.metroIn && G.metroOut && G.mainW === w, 'metro girişi, odası ve çıkışı yüklendi');
+  run(G, { right: true }, 3, (g) => g.player.x + g.player.w / 2 > 5.6);
+  run(G, NONE, 1.2);
+  const cxIn = G.player.x + G.player.w / 2;
+  run(G, { down: true }, 0.2);
+  ok(G.warp && G.warp.kind === 'in', `girişte aşağı basınca iniş başladı (x=${cxIn.toFixed(2)})`);
+  run(G, NONE, 2);
+  ok(G.area === 'room' && !G.warp && G.cam === w && G.player.onGround, 'bonus odasına inildi');
+  const s0 = S.simit;
+  run(G, (g, t) => ({ right: true, jump: (t % 0.5) < 0.2 }), 4, (g) => !!g.warp);
+  ok(S.simit > s0 + 5, `odada simit toplandı (${S.simit - s0})`);
+  ok(G.warp && G.warp.kind === 'out', 'yürüyen merdivene girince çıkış başladı');
+  run(G, NONE, 2.5);
+  ok(G.area === 'main' && !G.warp && Math.abs(G.player.x + G.player.w / 2 - 17) < 0.1 && G.player.onGround, 'metro çıkışından yukarı çıkıldı');
+  ok(G.cam <= G.mainW - BA.VW, 'kamera ana alanda kaldı');
+  run(G, { right: true }, 3, (g) => g.phase === 'clear');
+  ok(G.phase === 'clear', 'metrodan sonra bölüm bitirilebildi');
+}
+
+// ---------- bitiş merdiveni ve DEPLOY anteni ----------
+{
+  // merdivenin tepesinden kenara gelen oyuncu verilen hızla zıplar; anten bonusunu döndürür
+  const leap = (idx, vx, jump) => {
+    const G = BA.loadStage(BA.newRun(), idx), g = G.goal, p = G.player;
+    let sx = g.x - 1;
+    while (sx > 0 && !BA.solid(G, sx, BA.H - 2 - 5)) sx--;
+    const top = BA.H - 2 - 5;
+    p.x = sx + 1 - p.w - 0.02; p.y = top - p.h; p.vx = vx; G.cam = Math.max(0, g.x - 12); G.time = 200.5;
+    run(G, (gg, t) => ({ right: true, run: vx > BA.PH.walk, jump: jump && t < 0.8 }), 3, (gg) => gg.phase === 'clear');
+    return G.phase === 'clear' ? G.goalBonus : -1;
+  };
+  const res = [];
+  for (let idx = 0; idx < 27; idx++) {
+    if (LV[idx].boss) continue;
+    const runJ = leap(idx, BA.PH.run, true), walkJ = leap(idx, BA.PH.walk, true), off = leap(idx, BA.PH.walk, false);
+    const G2 = BA.loadStage(BA.newRun(), idx), g = G2.goal;
+    G2.player.x = g.x - 3; G2.player.y = g.y + 2 - G2.player.h; G2.cam = Math.max(0, g.x - 10);
+    run(G2, { right: true }, 2, (gg) => gg.phase === 'clear');
+    res.push([runJ, walkJ, off, G2.goalBonus]);
+  }
+  if (process.argv.includes('-v')) console.log('anten (koşarak, yürüyerek, zıplamadan, yerden):', JSON.stringify(res.slice(0, 4)));
+  ok(res.every((r) => r[0] === 5000), 'merdivenden koşarak atlayınca anten tepesi: 5000');
+  ok(res.every((r) => r[1] >= 400 && r[1] <= 2000), 'yürüyerek atlayınca orta bonus');
+  ok(res.every((r) => r[2] >= 100 && r[2] <= 400), 'zıplamadan inince düşük bonus');
+  ok(res.every((r) => r[3] === 100), 'yerden değince en düşük bonus: 100');
 }
 
 // ---------- gerçek bölümler yüklenir ----------

@@ -82,6 +82,9 @@
       case 'checkpoint': seq([72, 79, 84], 0.08, 'triangle', 0.25); break;
       case 'goalon': seq([79, 84, 88, 91], 0.09, 'triangle', 0.25); break;
       case 'tick': osc('pulse', 1500, t, 0.03, 0.04, B); break;
+      case 'warp': noise(t, 0.5, 0.18, 900, B); osc('triangle', mid(81), t + 0.05, 0.28, 0.16, B); osc('triangle', mid(76), t + 0.32, 0.4, 0.16, B); break;
+      case 'secret': seq([79, 86, 91, 95], 0.05, 'triangle', 0.18, 0.12); break;
+      case 'firework': osc('sine', 500, t, 0.32, 0.04, B, 3.2); noise(t + 0.32, 0.5, 0.35, 1400, B); for (let i = 0; i < 7; i++) noise(t + 0.45 + i * 0.06 + Math.random() * 0.04, 0.05, 0.12, 6000, B, true); break;
       case 'bosshit': osc('sawtooth', 200, t, 0.25, 0.12, B, 0.4); noise(t, 0.2, 0.2, 2500, B); break;
       case 'bossdown': noise(t, 1.4, 0.35, 900, B); [62, 58, 55, 50].forEach((n, i) => osc('sawtooth', mid(n), t + i * 0.22, 0.3, 0.09, B, 0.7)); break;
       case 'thud': osc('triangle', 70, t, 0.3, 0.35, B, 0.5); noise(t, 0.2, 0.2, 400, B); break;

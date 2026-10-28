@@ -16,6 +16,12 @@ Harita işaretleri (14 satır):
   e  bug   s  spam   v  virüs   m  martı
   P  başlangıç   G  DEPLOY noktası   A  arena girişi   B  patron
   h  hatıra parçası (her dünyanın 2. bölümünde bir tane, iki ince platformla çıkılan köşede)
+  X  gizli blok (görünmez; alttan vurulunca disket = can çıkar)
+  Z  çok simitli blok (çatlak görünür; kısa süre içinde her vuruşta bir simit verir)
+  E  metro girişi (üstünde aşağı basılınca bonus odasına iner)
+  O  bonus odasının çıkışı (yürüyen merdiven; içine yürüyünce yukarı çıkılır)
+  R  metrodan çıkış noktası (bölümde daha ileride)
+Bonus odası, bölümün bitiş duvarından sonra 16 sütunluk ayrı bir alandır (levels.js'te room: başlangıç sütunu).
 """
 import json
 import random
@@ -44,12 +50,35 @@ WORLDS = [
 ]
 
 
+METRO_WORLDS = (0, 1, 3, 5, 8)  # gerçekten metrosu olan semtler: Maslak, Kadıköy, Vezneciler, Şişhane, Kısıklı
+
+# bonus odası (16 × 14): yer altı istasyonu, simit sıraları ve bloklar
+ROOM = [
+    '================',
+    '================',
+    '=..............=',
+    '=..............=',
+    '=..............=',
+    '=....bbbbbb....=',
+    '=...bbbbbbbb...=',
+    '=..............=',
+    '=...CCZKKZCC...=',
+    '=..............=',
+    '=.bbbbbbbbbbbb.=',
+    '=.............O=',
+    '################',
+    '################',
+]
+
+
 class Lv:
     def __init__(self, r, d, w):
         self.r, self.d, self.w = r, d, w
         self.cols = []
         self.gh = 2          # zemin kalınlığı (satır)
         self.ceil = 0        # tavan kalınlığı (tünel)
+        self.hidden = 0      # yerleştirilen gizli blok sayısı
+        self.multi = 0       # çok simitli blok sayısı
 
     @property
     def x(self):
@@ -86,14 +115,33 @@ class Lv:
             self.set(x, self.top() - 1, k)
 
     # ---------- parçalar ----------
-    def flat(self, n, enemies=None):
+    def flat(self, n, enemies=None, extras=False):
         xs = [self.col() for _ in range(n)]
         if enemies is None:
             enemies = n >= 6 and self.r.random() < 0.35 + 0.45 * self.d
         if enemies:
             for _ in range(1 + (self.r.random() < self.d)):
                 self.enemy(self.r.choice(xs[2:]))
+        if extras and n >= 8:
+            t = self.top()
+            roll = self.r.random()
+            if roll < 0.3:  # yerden zıplayınca toplanan simit sırası
+                k = min(n - 3, self.r.randint(4, 6))
+                x0 = xs[0] + (n - k) // 2
+                for i in range(k):
+                    self.set(x0 + i, t - 3, 'b')
+            elif roll < 0.5:  # yay biçiminde simitler
+                x0 = xs[0] + 1
+                for i, dy in enumerate([2, 3, 4, 4, 3, 2]):
+                    if x0 + i < xs[-1]:
+                        self.set(x0 + i, t - dy, 'b')
         return xs
+
+    def secret(self):
+        # gizli blok: sade bir düzlüğün ortasında, yerden 4 karo yukarıda; alttan vurulunca can (disket) çıkar
+        xs = self.flat(9, enemies=False)
+        self.set(xs[4], self.top() - 4, 'X')
+        self.hidden += 1
 
     def hatira(self):
         # hikâyenin hatıra parçası: yoldan ayrılan, iki ince platformla çıkılan yüksek bir köşe
@@ -114,6 +162,10 @@ class Lv:
         pat = self.r.choice(pats)
         if self.r.random() < 0.08:
             pat = pat.replace('K', 'S', 1)
+        elif self.multi < 1 and 'C' in pat and self.r.random() < 0.35:
+            i = pat.index('C')
+            pat = pat[:i] + 'Z' + pat[i + 1:]
+            self.multi += 1
         x0 = xs[0] + self.r.randint(1, max(1, n - len(pat) - 1))
         for i, ch in enumerate(pat):
             if ch != '.':
@@ -136,9 +188,14 @@ class Lv:
         if n >= 4:  # ortada küçük bir taş
             self.set(self.x - 2, self.top() - 1, '-')
         self.flat(3, enemies=False)
-        if self.r.random() < 0.5:
-            for i in range(n):
-                self.set(self.x - 3 - n + i, self.top() - 3, 'b')
+        if self.r.random() < 0.6:
+            # boşluğun üstünde zıplama yayını izleyen simitler
+            x0 = self.x - 3 - n - 1
+            m = n + 2
+            for i in range(m):
+                u = (i + 0.5) / m
+                dy = 2 + round(3 * 4 * u * (1 - u))
+                self.set(x0 + i, self.top() - dy, 'b')
 
     def step(self):
         delta = self.r.choice([-2, -1, 1, 2] if self.d < 0.5 else [-3, -2, 2, 3])
@@ -148,10 +205,13 @@ class Lv:
     def stairs(self):
         n = self.r.randint(3, 5 if self.d > 0.3 else 4)
         base = self.top()
+        coins = self.r.random() < 0.5
         for i in range(1, n + 1):
             x = self.col()
             for k in range(i):
                 self.set(x, base - 1 - k, '=')
+            if coins:
+                self.set(x, base - i - 2, 'b')
         down = self.r.random() < 0.5
         if down:
             for i in range(n, 0, -1):
@@ -288,6 +348,32 @@ class Lv:
         self.ceil = old
 
 
+    def metro_in(self):
+        xs = self.flat(7, enemies=False)
+        self.set(xs[2], self.top() - 1, 'E')
+        return xs[2]
+
+    def metro_out(self):
+        xs = self.flat(7, enemies=False)
+        self.set(xs[2], self.top() - 1, 'R')
+
+    def finale(self):
+        # bitiş merdiveni: tepeden atlayıp DEPLOY antenine ne kadar yüksekten değersen o kadar puan
+        self.gh = 2
+        self.flat(4, enemies=False)
+        base = self.top()
+        n = 5
+        for i in range(1, n + 1):
+            x = self.col()
+            for k in range(i):
+                self.set(x, base - 1 - k, '=')
+        x = self.col()
+        for k in range(n):
+            self.set(x, base - 1 - k, '=')
+        xs = self.flat(14, enemies=False)
+        self.set(xs[5], self.top() - 1, 'G')
+
+
 def make(world, sec, r):
     d = (world * 3 + sec) / 26
     W = WORLDS[world]
@@ -303,7 +389,17 @@ def make(world, sec, r):
     last = None
     first_power = True
     checkpoint = False
+    metro = world in METRO_WORLDS and not boss
+    metro_x = None
+    secret_at = None if boss else int(target * r.uniform(0.25, 0.42))
     while lv.x < target:
+        if secret_at is not None and lv.x > secret_at and lv.hidden == 0:
+            lv.secret()
+        if metro and metro_x is None and lv.x > 34:
+            metro_x = lv.metro_in()
+        elif metro and metro_x is not None and metro_x > 0 and lv.x > metro_x + 34:
+            lv.metro_out()
+            metro_x = -1
         if not checkpoint and lv.x > target * (0.6 if boss else 0.5):
             xs = lv.flat(5, enemies=False)
             lv.set(xs[2], lv.top() - 1, 'Q')
@@ -313,7 +409,7 @@ def make(world, sec, r):
             continue
         last = p
         if p == 'flat':
-            lv.flat(r.randint(6, 12))
+            lv.flat(r.randint(6, 12), extras=True)
         else:
             getattr(lv, p)()
         if first_power and lv.x > 20:  # ilk güçlendirme erken gelsin
@@ -343,15 +439,20 @@ def make(world, sec, r):
         for y in range(H):
             lv.set(x, y, '=')
     else:
-        # bitiş: DEPLOY terminali ve bitiş duvarı
-        lv.gh = 2
-        xs = lv.flat(14, enemies=False)
-        lv.set(xs[6], lv.top() - 1, 'G')
+        if metro and metro_x is not None and metro_x > 0:  # çıkış hâlâ konmadıysa
+            lv.metro_out()
+        # bitiş: merdiven, DEPLOY terminali ve bitiş duvarı
+        lv.finale()
         x = lv.col()
         for y in range(H):
             lv.set(x, y, '=')
+    room = None
+    if metro:
+        room = lv.x
+        for cx in range(16):
+            lv.cols.append([ROOM[y][cx] for y in range(H)])
     rows = [''.join(c[y] for c in lv.cols) for y in range(H)]
-    return rows
+    return rows, room
 
 
 def main():
@@ -360,10 +461,13 @@ def main():
         W = WORLDS[w]
         for s in range(3):
             r = random.Random(w * 1000 + s * 37 + 11)
-            rows = make(w, s, r)
-            levels.append({'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
-                           'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
-                           'time': 300 if s < 2 else 360, 'map': rows})
+            rows, room = make(w, s, r)
+            lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
+                  'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
+                  'time': 300 if s < 2 else 360, 'map': rows}
+            if room is not None:
+                lv['room'] = room
+            levels.append(lv)
     worlds = [{'name': W['name'], 'sub': W['sub']} for W in WORLDS]
     out = Path(__file__).resolve().parent.parent / 'src' / 'levels.js'
     body = ',\n'.join('  ' + json.dumps(lv, ensure_ascii=False) for lv in levels)

@@ -4,14 +4,28 @@
   'use strict';
 
   const H = 14, VW = 16;
+  // Klasik platform hissi: yavaş yavaş hız kazanılır, bırakınca bir süre kayılır, ters yöne basınca savrulunur;
+  // koşarken zıplama hızla orantılı olarak daha yüksek ve uzun olur.
   const PH = {
-    walk: 6.5, run: 9.5, accG: 30, accA: 22, fric: 24, skid: 48,
-    jumpV: 15.5, jumpRun: 1.0, gHold: 27, gRel: 85, gFall: 60, maxFall: 18,
+    walk: 6, run: 9.6, accG: 18, accRun: 9, accA: 16, fric: 15, skid: 34,
+    jumpV: 15.3, jumpRun: 1.7, gHold: 27, gRel: 85, gFall: 60, maxFall: 17,
     coyote: 0.08, buffer: 0.12,
   };
+  // durağandan başlayan bir koşunun len karo sonunda ulaşabileceği hız (testler de kullanır)
+  function runUpSpeed(len, cap) {
+    const d1 = (PH.walk * PH.walk) / (2 * PH.accG);
+    if (len <= d1) return Math.min(cap, Math.sqrt(2 * PH.accG * Math.max(0, len)));
+    if (cap <= PH.walk) return cap;
+    return Math.min(cap, Math.sqrt(PH.walk * PH.walk + 2 * PH.accRun * (len - d1)));
+  }
+  const jumpSpeed = (vx) => PH.jumpV + PH.jumpRun * Math.min(1, Math.abs(vx) / PH.run);
   const PW = 0.75, SMALL_H = 0.875, BIG_H = 1.75;
-  const T = { EMPTY: 0, GROUND: 1, SOLID: 2, ONEWAY: 3, BLOCK: 4, USED: 5, CRACK: 6, SPIKE: 7, WALL: 8 };
-  const SOLID = [false, true, true, false, true, true, true, false, true];
+  // HIDDEN: görünmez blok, yalnız oyuncu alttan vurunca katılaşır. MULTI: çatlak görünümlü, kısa süre çok simit verir.
+  const T = { EMPTY: 0, GROUND: 1, SOLID: 2, ONEWAY: 3, BLOCK: 4, USED: 5, CRACK: 6, SPIKE: 7, WALL: 8, HIDDEN: 9, MULTI: 10 };
+  const SOLID = [false, true, true, false, true, true, true, false, true, false, true];
+  const ROOM_W = 16;
+  // DEPLOY anteni: zeminden 10 karo boy; ayakların değdiği yüksekliğe göre bonus eşikleri
+  const GOAL_MAST = 10, GOAL_STEPS = [2, 4, 6, 8, 9.5];
   const CONTENT = { K: 'simit', U: 'guc', S: 'kahve', L: 'disket' };
   const COMBO = [100, 200, 400, 800, 1000, 2000, 4000, 8000];
   const STAR_TIME = 10;
@@ -63,7 +77,9 @@
       time: L.time, t: 0, phase: 'play', result: null, ev: [], cam: 0, shake: 0,
       clearT: 0, dieT: 0, bossDownT: 0, combo: 0, hurry: false, rand: rng(idx * 7919 + 13),
       prev: { jump: false, run: false },
+      multi: new Map(), area: 'main', mainW: L.room || W, room: null, metroIn: null, metroOut: null, warp: null,
     };
+    if (L.room) G.room = { x0: L.room, x1: L.room + ROOM_W, exit: null, used: false };
     let start = { x: 2, y: 11 };
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
@@ -75,6 +91,11 @@
           case 'C': G.grid[i] = T.CRACK; break;
           case '^': G.grid[i] = T.SPIKE; break;
           case 'K': case 'U': case 'S': case 'L': G.grid[i] = T.BLOCK; G.content.set(i, CONTENT[ch]); break;
+          case 'X': G.grid[i] = T.HIDDEN; G.content.set(i, 'disket'); break;
+          case 'Z': G.grid[i] = T.MULTI; break;
+          case 'E': G.metroIn = { x, y }; break;
+          case 'R': G.metroOut = { x, y }; break;
+          case 'O': if (G.room) G.room.exit = { x, y }; break;
           case 'b': G.coins[i] = 1; break;
           case 'e': case 's': case 'v': case 'm':
             G.spawns.push({ kind: { e: 'bug', s: 'spam', v: 'virus', m: 'marti' }[ch], x, y, done: false }); break;
@@ -110,8 +131,9 @@
       x: start.x + (1 - PW) / 2, y: start.y + 1 - h, w: PW, h, vx: 0, vy: 0, face: 1,
       onGround: true, coyote: 0, buf: 0, jumping: false, inv: 0, star: 0, plat: null,
       dropT: 0, shootCD: 0, walkT: 0, growT: 0, skid: false, dead: false, prevBottom: start.y + 1,
+      sq: 0, sqv: 0, dustT: 0, isPlayer: true,
     };
-    G.cam = clamp(G.player.x - 6, 0, W - VW);
+    G.cam = clamp(G.player.x - 6, 0, G.mainW - VW);
     return G;
   }
 
@@ -163,7 +185,9 @@
     } else {
       const ty = Math.floor(b.y);
       const hits = [];
-      for (let tx = x0; tx <= x1; tx++) if (solid(G, tx, ty)) hits.push(tx);
+      // gizli blok yalnız oyuncunun başı alttan girerken katıdır
+      const fromBelow = b.isPlayer && b.y - dy >= ty + 1 - 0.01;
+      for (let tx = x0; tx <= x1; tx++) { const t = tile(G, tx, ty); if (SOLID[t] || (fromBelow && t === T.HIDDEN)) hits.push(tx); }
       if (hits.length) { b.y = ty + 1; res.up = true; res.tiles = hits; res.ty = ty; }
     }
     return res;
@@ -189,6 +213,25 @@
   // ---------------- bloklar ----------------
   function bumpTile(G, tx, ty) {
     const t = tile(G, tx, ty), p = G.player, i = ty * G.W + tx;
+    if (t === T.MULTI) {
+      // ilk vuruştan sonra 4 saniye boyunca (en çok 10) her vuruşta simit; sonra boşalır
+      let m = G.multi.get(i);
+      if (!m) { m = { n: 0, t0: G.t }; G.multi.set(i, m); }
+      m.n++;
+      G.fx.push({ k: 'simitpop', x: tx, y: ty - 1, t: 0 });
+      addSimit(G, 1);
+      if (m.n >= 10 || G.t - m.t0 > 4) setTile(G, tx, ty, T.USED);
+      G.bumps.push({ tx, ty, t: 0 });
+      bumpAbove(G, tx, ty);
+      ev(G, 'bump');
+      return;
+    }
+    if (t === T.HIDDEN) {
+      setTile(G, tx, ty, T.BLOCK);
+      ev(G, 'secret');
+      bumpTile(G, tx, ty);
+      return;
+    }
     if (t === T.BLOCK) {
       const c = G.content.get(i);
       setTile(G, tx, ty, T.USED);
@@ -314,6 +357,36 @@
     }
   }
 
+  // ---------------- metro geçişi ----------------
+  function updateWarp(G, dt) {
+    const w = G.warp, p = G.player;
+    w.t += dt;
+    p.vx = 0; p.vy = 0; p.walkT += dt * 3;
+    if (w.kind === 'in') {
+      if (w.t < 0.6) p.y += 2.3 * dt; // merdivenden aşağı
+      if (!w.moved && w.t >= 0.85) {
+        w.moved = true; G.area = 'room'; w.clip = null;
+        p.x = G.room.x0 + 2.1; p.y = 2.05; p.onGround = false; p.plat = null;
+        G.cam = G.room.x0; G.room.used = true;
+      }
+      if (w.t >= 1.1) G.warp = null;
+    } else {
+      if (!w.moved && w.t < 0.55) { p.x += 2.2 * dt; p.y -= 0.9 * dt; } // yürüyen merdivene bin
+      if (!w.moved && w.t >= 0.85) {
+        w.moved = true; G.area = 'main';
+        const R = G.metroOut || G.metroIn;
+        p.x = R.x + 1 - p.w / 2; p.y = R.y + 1; p.plat = null;
+        w.rise = R.y + 1 - p.h; w.clip = { y1: R.y + 1 };
+        G.cam = clamp(p.x - 6.5, 0, G.mainW - VW);
+        for (const s of G.spawns) if (!s.done && s.x <= G.cam - 2) s.done = true;
+      }
+      if (w.moved) {
+        p.y = Math.max(w.rise, p.y - 2.8 * dt);
+        if (p.y <= w.rise && w.t > 1.5) { p.onGround = true; G.warp = null; }
+      }
+    }
+  }
+
   // ---------------- oyuncu ----------------
   function hurt(G) {
     const p = G.player;
@@ -358,6 +431,17 @@
     return false;
   }
 
+  function dust(G, x, y, vx) {
+    if (G.fx.length > 80) return;
+    G.fx.push({ k: 'dust', x, y: y - 0.15, vx, t: 0, r: 0.8 + G.rand() * 0.5 });
+  }
+  // ezilme/esneme yayı: sq>0 basık, sq<0 uzun
+  function springSquash(p, dt) {
+    const steps = Math.max(1, Math.ceil(dt / 0.005)), h = dt / steps;
+    for (let i = 0; i < steps; i++) { p.sqv += (-520 * p.sq - 24 * p.sqv) * h; p.sq += p.sqv * h; }
+    if (Math.abs(p.sq) < 0.002 && Math.abs(p.sqv) < 0.02) { p.sq = 0; p.sqv = 0; }
+  }
+
   function updatePlayer(G, inp, dt) {
     const p = G.player, S = G.S;
     const jumpPressed = inp.jump && !G.prev.jump;
@@ -377,9 +461,17 @@
     const dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
     const max = inp.run ? PH.run : PH.walk;
     p.skid = false;
+    p.dustT = Math.max(0, p.dustT - dt);
+    if (dir && p.onGround && Math.abs(p.vx) < 0.3 && inp.run) { dust(G, p.x + p.w / 2 - dir * 0.3, p.y + p.h, -dir * 1.6); dust(G, p.x + p.w / 2 - dir * 0.6, p.y + p.h, -dir * 2.6); }
     if (dir) {
-      if (p.onGround && p.vx * dir < -0.5) { p.vx += dir * PH.skid * dt; p.skid = true; }
-      else if (p.vx * dir < max) p.vx = dir * Math.min(max, p.vx * dir + (p.onGround ? PH.accG : PH.accA) * dt);
+      if (p.onGround && p.vx * dir < -0.5) {
+        p.vx += dir * PH.skid * dt; p.skid = true;
+        if (p.dustT <= 0) { p.dustT = 0.07; dust(G, p.x + p.w / 2 + dir * 0.35, p.y + p.h, dir * 1.2); }
+      }
+      else if (p.vx * dir < max) {
+        const sp = p.vx * dir, acc = !p.onGround ? PH.accA : sp < PH.walk ? PH.accG : PH.accRun;
+        p.vx = dir * Math.min(max, sp + acc * dt);
+      }
       else p.vx = approach(p.vx, dir * max, (p.onGround ? PH.fric : 6) * dt);
       if (p.onGround || Math.sign(p.vx) === dir) p.face = dir;
     } else if (p.onGround) {
@@ -400,8 +492,9 @@
     // zıplama
     if (p.onGround) p.coyote = PH.coyote; else p.coyote = Math.max(0, p.coyote - dt);
     if (p.buf > 0 && p.coyote > 0) {
-      p.vy = -(PH.jumpV + (Math.abs(p.vx) > 7 ? PH.jumpRun : 0));
+      p.vy = -jumpSpeed(p.vx);
       p.jumping = true; p.onGround = false; p.coyote = 0; p.buf = 0; p.plat = null;
+      p.sq = -0.32; p.sqv = 0;
       ev(G, p.h > 1 ? 'jumpbig' : 'jump');
     }
     if (!inp.jump) p.jumping = false;
@@ -430,12 +523,12 @@
     const hx = moveX(G, p, p.vx * dt);
     if (hx) p.vx = 0;
     // kamera sol sınırı ve bölüm sonu
-    const left = G.cam, right = G.W - p.w;
+    const left = G.area === 'room' ? G.room.x0 : G.cam, right = (G.area === 'room' ? G.room.x1 : G.mainW) - p.w;
     if (p.x < left) { p.x = left; if (p.vx < 0) p.vx = 0; }
     if (p.x > right) p.x = right;
 
     p.prevBottom = p.y + p.h;
-    const wasGround = p.onGround;
+    const wasGround = p.onGround, fallV = p.vy;
     const r = moveY(G, p, p.vy * dt, p.dropT <= 0);
     if (r.up) {
       // köşe düzeltmesi: başın kenarı bloğa hafifçe değdiyse kenara kaydır
@@ -457,12 +550,23 @@
       }
     }
     p.onGround = r.down;
-    if (r.down) { p.vy = 0; p.plat = r.plat; if (!wasGround) G.combo = 0; }
+    if (r.down) {
+      p.vy = 0; p.plat = r.plat;
+      if (!wasGround) {
+        G.combo = 0;
+        // iniş: ezilip toparlanma ve iki yana toz
+        if (fallV > 4) {
+          p.sq = Math.min(0.55, 0.12 + fallV / 30); p.sqv = 0;
+          if (fallV > 9) { dust(G, p.x + 0.05, p.y + p.h, -1.8); dust(G, p.x + p.w - 0.05, p.y + p.h, 1.8); }
+        }
+      }
+    }
     else if (!r.down && wasGround && p.vy >= 0) p.plat = null;
     if (p.onGround && p.plat === null) G.combo = 0;
 
     // yürüme animasyonu
     if (p.onGround) p.walkT += Math.abs(p.vx) * dt; else p.walkT = 0;
+    springSquash(p, dt);
 
     // diken
     if (!p.dead) {
@@ -824,14 +928,20 @@
     const p = G.player;
 
     // efektler
+    const born = [];
     G.fx = G.fx.filter((f) => {
       f.t += dt;
       if (f.k === 'debris') { f.vy += 40 * dt; f.x += f.vx * dt; f.y += f.vy * dt; return f.y < H + 1; }
-      if (f.k === 'score') { f.y -= 1.5 * dt; return f.t < 0.8; }
-      if (f.k === 'simitpop') return f.t < 0.5;
+      if (f.k === 'score') { f.y -= (f.t < 0.5 ? 1.6 : 0.4) * dt; return f.t < 0.95; }
+      if (f.k === 'simitpop') { if (f.t >= 0.55) { born.push({ k: 'spark', x: f.x + 0.5, y: f.y + 0.5 - (19 * f.t - 29 * f.t * f.t), t: 0 }); return false; } return true; }
+      if (f.k === 'dust') { f.x += f.vx * dt; f.vx *= Math.exp(-6 * dt); f.y -= 0.6 * dt; return f.t < 0.4; }
+      if (f.k === 'stomp') return f.t < 0.3;
+      if (f.k === 'firework') return f.t < 1.1;
       return f.t < 0.35;
     });
+    if (born.length) G.fx.push(...born);
     G.bumps = G.bumps.filter((b) => (b.t += dt) < 0.2);
+    if (G.warp) { updateWarp(G, dt); G.prev.jump = inp.jump; G.prev.run = inp.run; return; }
 
     if (G.phase === 'dying') {
       G.dieT += dt;
@@ -843,14 +953,28 @@
     if (G.phase === 'clear') {
       G.clearT += dt;
       p.vx = 0;
+      // sevinç zıplaması
+      if (!G.hopped && p.onGround && G.clearT > 0.35) { G.hopped = true; p.vy = -10; p.onGround = false; p.sq = -0.3; ev(G, 'jump'); }
       p.vy = Math.min(PH.maxFall, p.vy + PH.gFall * dt);
-      const r = moveY(G, p, p.vy * dt, true); if (r.down) { p.vy = 0; p.onGround = true; }
+      const r = moveY(G, p, p.vy * dt, true);
+      if (r.down) { if (!p.onGround && p.vy > 4) { p.sq = 0.4; p.sqv = 0; dust(G, p.x + 0.05, p.y + p.h, -1.6); dust(G, p.x + p.w - 0.05, p.y + p.h, 1.6); } p.vy = 0; p.onGround = true; }
+      p.cheer = G.hopped;
+      springSquash(p, dt);
       if (G.clearT > 1.6 && G.time > 0) {
         const n = Math.min(G.time, Math.max(1, Math.ceil(dt * 150)));
         G.time -= n; G.S.score += 50 * n; if (Math.floor(G.t * 30) % 2) ev(G, 'tick');
         if (G.time <= 0) { G.time = 0; G.tallyDone = G.clearT; }
       }
-      if (G.time <= 0 && G.clearT > 1.6 && G.clearT - (G.tallyDone || G.clearT) > 1.2) G.result = 'clear';
+      // havai fişekler: sayım bitince şehrin üstünde patlar
+      if (G.tallyDone && G.fireworks < (G.fireworkN || 0) && G.clearT - G.tallyDone > 0.3 + G.fireworks * 0.5) {
+        const k = G.fireworks++;
+        const fx = G.cam + 3 + ((k * 5 + G.idx * 3) % 10) + G.rand() * 1.5, fy = 2.2 + G.rand() * 2.5;
+        G.fx.push({ k: 'firework', x: fx, y: fy, t: 0, hue: (k * 97 + G.idx * 40) % 360 });
+        G.S.score += 500; G.fx.push({ k: 'score', x: fx, y: fy + 1, t: 0, text: '500' });
+        ev(G, 'firework');
+      }
+      const wait = 1.2 + (G.fireworkN || 0) * 0.5;
+      if (G.time <= 0 && G.clearT > 1.6 && G.clearT - (G.tallyDone || G.clearT) > wait) G.result = 'clear';
       G.prev.jump = inp.jump; G.prev.run = inp.run;
       return;
     }
@@ -875,18 +999,35 @@
     G.prev.jump = inp.jump; G.prev.run = inp.run;
     if (G.phase !== 'play') return;
 
+    // metro: girişte aşağı basınca bonus odasına in; odadaki yürüyen merdivenden yukarı çık
+    if (!p.dead && G.room && p.onGround) {
+      const cx = p.x + p.w / 2, mi = G.metroIn, ex = G.room.exit;
+      if (G.area === 'main' && mi && inp.down && cx > mi.x + 0.2 && cx < mi.x + 1.8 && Math.abs(p.y + p.h - (mi.y + 1)) < 0.05) {
+        G.warp = { kind: 'in', t: 0, moved: false, clip: { y1: mi.y + 1 } };
+        p.vx = 0; p.vy = 0; p.star = 0; ev(G, 'warp');
+        return;
+      }
+      if (G.area === 'room' && ex && inp.right && p.x + p.w > ex.x + 0.3) {
+        G.warp = { kind: 'out', t: 0, moved: false, clip: { x1: G.room.x1 - 1 } };
+        p.vx = 0; p.vy = 0; p.face = 1; ev(G, 'warp');
+        return;
+      }
+    }
+
     // kamera
-    if (G.arena && G.arena.locked) {
+    if (G.area === 'room') {
+      G.cam = G.room.x0;
+    } else if (G.arena && G.arena.locked) {
       G.cam = approach(G.cam, G.arena.cam, 10 * dt);
     } else {
       const target = p.x - 6.5;
       if (target > G.cam) G.cam = target;
       else if (p.x - G.cam < 4.5) G.cam = Math.max(0, p.x - 4.5);
-      G.cam = clamp(G.cam, 0, G.W - VW);
+      G.cam = clamp(G.cam, 0, G.mainW - VW);
     }
 
-    // düşman doğurma
-    for (const s of G.spawns) {
+    // düşman doğurma (bonus odasındayken yukarıdakiler beklesin)
+    if (G.area === 'main') for (const s of G.spawns) {
       if (!s.done && s.x < G.cam + VW + 1.5 && s.x > G.cam - 2) { s.done = true; G.ents.push(makeEnemy(G, s.kind, s.x, s.y)); }
       else if (!s.done && s.x <= G.cam - 2) s.done = true;
     }
@@ -915,6 +1056,8 @@
           e.dead = true; e.flip = e.kind !== 'bug'; e.deadT = 0;
           if (e.flip) { e.vy = 2; e.vx = 0; }
           p.vy = inp.jump ? -14 : -9; p.jumping = inp.jump; p.y = e.y - p.h;
+          p.sq = -0.3; p.sqv = 0;
+          G.fx.push({ k: 'stomp', x: e.x + e.w / 2, y: e.y + 0.2, t: 0 });
           ev(G, 'stomp');
         } else hurt(G);
         if (p.dead) break;
@@ -934,7 +1077,7 @@
 
     // kayıt noktası
     const cp = G.checkpoint;
-    if (cp && !cp.on && p.x + p.w / 2 > cp.x) { cp.on = true; G.S.checkpoint = { stage: G.idx }; ev(G, 'checkpoint'); }
+    if (cp && !cp.on && G.area === 'main' && p.x + p.w / 2 > cp.x) { cp.on = true; G.S.checkpoint = { stage: G.idx }; ev(G, 'checkpoint'); }
 
     // patron arenası
     const a = G.arena;
@@ -953,8 +1096,16 @@
 
     // DEPLOY
     const g = G.goal;
-    if (g && g.active && !p.dead && p.x + p.w > g.x + 0.15) {
+    if (g && g.active && !p.dead && G.area === 'main' && p.x + p.w > g.x + 0.15) {
       G.phase = 'clear'; G.clearT = 0; p.vx = 0; G.time = Math.ceil(G.time);
+      // anten bonusu: DEPLOY direğine ne kadar yüksekten değildiyse o kadar puan
+      const hgt = g.y + g.h - (p.y + p.h);
+      const bonus = hgt >= GOAL_STEPS[4] ? 5000 : hgt >= GOAL_STEPS[3] ? 2000 : hgt >= GOAL_STEPS[2] ? 800 : hgt >= GOAL_STEPS[1] ? 400 : hgt >= GOAL_STEPS[0] ? 200 : 100;
+      if (!G.bossKind) { addScore(G, bonus, g.x + 0.5, Math.max(1.5, p.y)); G.goalBonus = bonus; G.goalHit = Math.max(0, Math.min(GOAL_MAST, hgt)); }
+      p.x = Math.min(p.x, g.x - p.w - 0.05);
+      // havai fişek sayısı: kalan sürenin son hanesi tekse o kadar (en çok 5), çiftse yok
+      { const d = G.time % 10; G.fireworkN = d % 2 ? Math.min(5, d) : 0; G.fireworks = 0; }
+      if (G.bossKind) G.fireworkN = 5;
       p.star = 0;
       G.S.checkpoint = null;
       ev(G, 'clear');
@@ -966,8 +1117,8 @@
   function afterDeath(S) { S.lives -= 1; S.power = 0; return S.lives > 0; }
 
   root.BA = {
-    H, VW, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME,
+    H, VW, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, GOAL_MAST, GOAL_STEPS,
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
-    levels, moveX, moveY,
+    levels, moveX, moveY, runUpSpeed, jumpSpeed,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

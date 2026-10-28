@@ -84,7 +84,9 @@
     }
     g.save();
     g.translate(cx, by);
-    if (o.mode === 'dead') { drawHeroFront(g, big, C, o); g.restore(); return; }
+    // ezilme/esneme: ayak tabanı sabit kalır
+    if (o.sq) { const q = Math.max(-0.5, Math.min(0.6, o.sq)); g.scale(1 + q * 0.42, 1 - q * 0.36); }
+    if (o.mode === 'dead' || o.mode === 'cheer') { drawHeroFront(g, big, C, o); g.restore(); return; }
     g.scale(o.face < 0 ? -1 : 1, 1);
     if (o.star) { g.shadowColor = C.hood; g.shadowBlur = 6 * S; }
     const hipY = -legL - 1.3, shY = hipY - torsoH;
@@ -93,6 +95,7 @@
     if (o.mode === 'jump') { la = 0.55; aa = -2.3; bend = 0.8; }
     if (o.mode === 'skid') { la = 0.5; aa = 0.9; lean = -0.12; }
     if (o.mode === 'shoot') { aa = -1.45; }
+    const cheer = o.mode === 'cheer';
     g.rotate(lean);
     const bob = o.mode === 'walk' ? Math.abs(Math.sin(o.phase * Math.PI * 2)) * -0.6 : 0;
     g.translate(0, bob);
@@ -104,7 +107,7 @@
     shoe(g, back[0] - 0.6, back[1], big);
     const armL = big ? 7.4 : 3.8;
     const sh = [-tw / 2 + 1.6, shY + 2];
-    const backArm = o.mode === 'jump' ? [sh[0] - 1.5, sh[1] - armL * 0.9] : [sh[0] + Math.sin(-aa) * armL, sh[1] + Math.cos(-aa) * armL];
+    const backArm = cheer ? [sh[0] - 2.6, sh[1] - armL * 0.92] : o.mode === 'jump' ? [sh[0] - 1.5, sh[1] - armL * 0.9] : [sh[0] + Math.sin(-aa) * armL, sh[1] + Math.cos(-aa) * armL];
     limb(g, sh[0], sh[1], backArm[0], backArm[1], big ? 2.8 : 2.4, C.hoodD);
     circle(g, backArm[0], backArm[1], big ? 1.5 : 1.3, SKIN_D);
     // gövde (kapüşonlu)
@@ -141,7 +144,8 @@
     // ön kol
     const sh2 = [tw / 2 - 1.8, shY + 2.2];
     let fa;
-    if (o.mode === 'jump') fa = [sh2[0] + 2.4, sh2[1] - armL * 0.85];
+    if (cheer) fa = [sh2[0] + 2.8, sh2[1] - armL * 0.92];
+    else if (o.mode === 'jump') fa = [sh2[0] + 2.4, sh2[1] - armL * 0.85];
     else if (o.mode === 'shoot') fa = [sh2[0] + armL, sh2[1] - 0.6];
     else fa = [sh2[0] + Math.sin(aa) * armL, sh2[1] + Math.cos(aa) * armL];
     limb(g, sh2[0], sh2[1], fa[0], fa[1], big ? 2.8 : 2.4, C.hood);
@@ -194,13 +198,14 @@
     void front;
   }
   function drawHeroFront(g, big, C, o) {
-    // ölüm pozu: öne bakar, kollar yukarıda
+    // öne bakan poz, kollar yukarıda: ölüm (şaşkın) ya da bölüm sonu sevinci (gülen, el sallayan)
     const legL = big ? 8.6 : 3, torsoH = big ? 10.5 : 4.6, r = big ? 5.4 : 4.7, tw = big ? 9 : 8;
-    const hipY = -legL - 1.3, shY = hipY - torsoH;
+    const hipY = -legL - 1.3, shY = hipY - torsoH, cheer = o.mode === 'cheer';
+    const wv = cheer ? Math.sin((o.t || 0) * 12) * 1.4 : 0, ah = big ? 6 : 4;
     limb(g, -1.8, hipY, -2.6, -1.2, 3, C.jeans); limb(g, 1.8, hipY, 2.6, -1.2, 3, C.jeans);
     shoe(g, -3.4, -1, big); shoe(g, 2.2, -1, big);
-    limb(g, -tw / 2 + 1, shY + 2, -tw / 2 - 2.5, shY - 4, 2.6, C.hood); limb(g, tw / 2 - 1, shY + 2, tw / 2 + 2.5, shY - 4, 2.6, C.hood);
-    circle(g, -tw / 2 - 2.5, shY - 4, 1.4, SKIN); circle(g, tw / 2 + 2.5, shY - 4, 1.4, SKIN);
+    limb(g, -tw / 2 + 1, shY + 2, -tw / 2 - 2.5 - wv, shY - ah, 2.6, C.hood); limb(g, tw / 2 - 1, shY + 2, tw / 2 + 2.5 + wv, shY - ah, 2.6, C.hood);
+    circle(g, -tw / 2 - 2.5 - wv, shY - ah, 1.4, SKIN); circle(g, tw / 2 + 2.5 + wv, shY - ah, 1.4, SKIN);
     box(g, -tw / 2, shY, tw, torsoH + 1.6, 3, C.hood);
     const y = shY - r + 1.4;
     circle(g, 0, y, r, SKIN);
@@ -208,8 +213,12 @@
     circle(g, 0, y, r, null);
     circle(g, -r * 0.42, y + 0.3, r * 0.3, 'rgba(210,236,255,0.6)', K, 0.7); circle(g, r * 0.42, y + 0.3, r * 0.3, 'rgba(210,236,255,0.6)', K, 0.7);
     lin(g, -r * 0.55, y + 0.3, -r * 0.3, y + 0.3, K, 0.6); lin(g, r * 0.3, y + 0.3, r * 0.55, y + 0.3, K, 0.6);
-    ellipse(g, 0, y + r * 0.6, r * 0.18, r * 0.24, K, null);
-    void o;
+    if (cheer) {
+      // kocaman gülümseme
+      g.beginPath(); g.moveTo(-r * 0.36, y + r * 0.42); g.quadraticCurveTo(0, y + r * 0.98, r * 0.36, y + r * 0.42); g.closePath();
+      g.fillStyle = '#7a2a2a'; g.fill(); g.strokeStyle = K; g.lineWidth = 0.6; g.stroke();
+      circle(g, -r * 0.62, y + r * 0.5, r * 0.14, 'rgba(255,120,110,0.45)', null); circle(g, r * 0.62, y + r * 0.5, r * 0.14, 'rgba(255,120,110,0.45)', null);
+    } else ellipse(g, 0, y + r * 0.6, r * 0.18, r * 0.24, K, null);
   }
 
   // ---------------- eşyalar ----------------
@@ -522,7 +531,9 @@
     { key: 'kopru', sky: ['#4a3a8a', '#f4937a'], water: '#24387a' },
     { key: 'catilar', sky: ['#0b1236', '#2c3170'], water: false },
     { key: 'camlica', sky: ['#070a1e', '#24205a'], water: false },
+    { key: 'metro', sky: ['#2a2e3a', '#3a3f4e'], water: false },   // 9: yer altı bonus odası
   ];
+  const METRO = 9;
   const GROUND = [
     { top: '#7cc84e', topD: '#5aa63a', fill: '#c7ccd6', fillD: '#a8aeba', line: '#8e95a4' },   // Maslak: çim + granit
     { top: '#cfc3ad', topD: '#a99a82', fill: '#9a8b76', fillD: '#7c6e5c', line: '#5e5446' },   // Kadıköy: parke taşı
@@ -533,6 +544,7 @@
     { top: '#8a909c', topD: '#f4c531', fill: '#555a66', fillD: '#454a55', line: '#33373f' },   // köprü asfaltı
     { top: '#d9774e', topD: '#b25a36', fill: '#a54e30', fillD: '#8a3e24', line: '#6a2c18' },   // kiremit
     { top: '#3ae0ff', topD: '#1a8ab0', fill: '#3c4352', fillD: '#2e3442', line: '#20252f' },   // metal ızgara
+    { top: '#d8dce4', topD: '#f4c531', fill: '#8e939e', fillD: '#7a7f8a', line: '#5c616c' },   // metro peronu: granit + sarı hissedilebilir şerit
   ];
   const tileCache = cache();
   function tile(w, kind, extra) {
@@ -549,7 +561,7 @@
       case 'solid': solidTile(g, w, false); break;
       case 'crack': solidTile(g, w, true); break;
       case 'oneway': {
-        const cols = [['#9aa6b8', '#6a7488'], ['#b98a52', '#7a5428'], ['#f4f2ea', '#8a96a8'], ['#d8b884', '#8a6a3a'], ['#7a6a5a', '#4a3e34'], ['#a07a52', '#6a4a2a'], ['#d0603a', '#7a2e18'], ['#8a6a4a', '#4e3a26'], ['#5a6270', '#3ae0ff']][w];
+        const cols = [['#9aa6b8', '#6a7488'], ['#b98a52', '#7a5428'], ['#f4f2ea', '#8a96a8'], ['#d8b884', '#8a6a3a'], ['#7a6a5a', '#4a3e34'], ['#a07a52', '#6a4a2a'], ['#d0603a', '#7a2e18'], ['#8a6a4a', '#4e3a26'], ['#5a6270', '#3ae0ff'], ['#c9ced8', '#6a7080']][w];
         box(g, 0.2, 0.3, 15.6, 4.4, 1.6, cols[0], K, 0.8);
         g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(1.4, 1, 13, 0.8);
         g.fillStyle = cols[1]; g.fillRect(2.6, 4.7, 2, 3.4); g.fillRect(11.4, 4.7, 2, 3.4);
@@ -645,6 +657,13 @@
         g.shadowColor = '#3ae0ff'; g.shadowBlur = 2 * S; g.fillStyle = C.top; g.fillRect(0, 0, 16, 1.6); g.shadowBlur = 0;
         g.fillStyle = C.topD; g.fillRect(0, 1.6, 16, 0.8);
         break;
+      case 'metro':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 4.6);
+        g.fillStyle = C.topD; g.fillRect(0, 1.2, 16, 2.4);
+        g.fillStyle = '#d8a818'; for (let x = 1; x < 16; x += 2.6) { g.beginPath(); g.arc(x, 2.4, 0.5, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(0, 0, 16, 0.7);
+        g.fillStyle = C.line; g.fillRect(0, 4.6, 16, 0.5);
+        break;
     }
   }
   function solidTile(g, w, cracked) {
@@ -702,6 +721,14 @@
         for (let y = 0; y < 16; y += 4) for (let x = (y % 8 ? -4 : 0); x < 16; x += 8) box(g, x + 0.5, y + 0.5, 7, 3, 0.5, y % 8 ? '#a6583e' : '#94503a', null);
         break;
       }
+      case 'metro': {
+        // istasyonun taşıyıcı beton/çelik panelleri: duvar karolarından ayrılsın diye koyu
+        box(g, 0.4, 0.4, 15.2, 15.2, 1.8, grad(g, 0, 0, 0, 16, [[0, '#6f7c96'], [1, '#4a5670']]), '#232a3a', 0.8);
+        g.fillStyle = 'rgba(255,255,255,0.28)'; g.fillRect(1.6, 1.4, 12.8, 1);
+        g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(1.6, 13.4, 12.8, 1);
+        for (const [x, y] of [[3, 3.6], [13, 3.6], [3, 12.4], [13, 12.4]]) circle(g, x, y, 0.75, '#aab4c8', null);
+        break;
+      }
       case 'camlica': {
         box(g, 0.4, 0.4, 15.2, 15.2, 1.6, '#2a3040', '#11141c', 0.8);
         g.shadowColor = '#3ae0ff'; g.shadowBlur = 2 * S;
@@ -739,6 +766,73 @@
       for (let j = 0; j < 4; j++) circle(g, x + 3.6 + j * 2.4, y + 14.5 + k * 4, 0.5, (Math.floor(t * 5 + j + k) % 3) ? '#3fae2c' : '#7cff6a', null);
     }
     circle(g, x + 8, y + 25, 3.4, '#2a8a2a'); circle(g, x + 8, y + 24.5, 2.6, '#7cff6a', null); circle(g, x + 7.2, y + 23.6, 0.8, 'rgba(255,255,255,0.8)', null);
+  }
+  // DEPLOY anteni: zeminden 10 karo boy; çentikler sinyal gücü (bonus eşikleri), lit: kaç karo yüksekten değildi
+  function drawAntenna(g, x, y, t, lit, steps) {
+    // (x, y): sunucunun sol üstü
+    steps = steps || [2, 4, 6, 8, 9.5];
+    const cx = x + 8, top = y - 128;
+    // ince kafes kule
+    g.strokeStyle = 'rgba(40,44,56,0.55)'; g.lineWidth = 0.5; g.beginPath();
+    for (let yy = y; yy > top + 14; yy -= 8) { g.moveTo(cx - 1.6, yy); g.lineTo(cx + 1.6, yy - 8); g.moveTo(cx + 1.6, yy); g.lineTo(cx - 1.6, yy - 8); }
+    g.stroke();
+    lin(g, cx - 1.6, y + 1, cx - 1.6, top + 8, K, 1.4); lin(g, cx + 1.6, y + 1, cx + 1.6, top + 8, K, 1.4);
+    lin(g, cx - 1.6, y + 1, cx - 1.6, top + 8, '#c9ced8', 0.6); lin(g, cx + 1.6, y + 1, cx + 1.6, top + 8, '#c9ced8', 0.6);
+    lin(g, cx, top + 9, cx, top + 4, K, 1.6);
+    // eşik çentikleri: ayakların zeminden yüksekliği (sunucunun içinde kalanlar çizilmez)
+    steps.forEach((h, i) => {
+      const yy = y + 32 - h * 16, on = lit !== undefined && lit >= h;
+      if (yy > y - 2) return;
+      const w = 2.4 + i * 1.1;
+      box(g, cx + 1.6, yy - 1.4, w, 2.8, 1, on ? '#7cff6a' : '#4a505e', K, 0.5);
+      if (on) { g.save(); g.shadowColor = '#7cff6a'; g.shadowBlur = 5 * S; box(g, cx + 1.6, yy - 1.4, w, 2.8, 1, '#b6ffa8', null); g.restore(); }
+    });
+    // tepede yayın başlığı ve dalgalar
+    circle(g, cx, top + 4, 3.2, '#e8ecf2'); circle(g, cx, top + 4, 1.3, '#3fae2c', null);
+    g.strokeStyle = `rgba(124,255,106,${0.45 + 0.35 * Math.sin(t * 5)})`; g.lineWidth = 1; g.lineCap = 'round';
+    for (let k = 1; k <= 2; k++) { g.beginPath(); g.arc(cx, top + 4, 3.2 + k * 2.6, -Math.PI * 0.8, -Math.PI * 0.2); g.stroke(); }
+  }
+  // metro girişi: cam saçaklı küçük köşk, içinde aşağı inen merdiven (x, y: zeminin üstündeki karonun sol üstü; 2 karo geniş)
+  function drawMetroGate(g, x, y, t, line, badge) {
+    const by = y + 16;
+    // iç: karanlık merdiven boşluğu
+    const gr = g.createLinearGradient(0, by - 26, 0, by + 4);
+    gr.addColorStop(0, '#3a4256'); gr.addColorStop(1, '#0c0e16');
+    box(g, x + 3, by - 26, 26, 26, 1.5, gr, null);
+    g.strokeStyle = 'rgba(200,210,230,0.45)'; g.lineWidth = 0.7;
+    for (let k = 0; k < 5; k++) { const yy = by - 4 - k * 4.2, inset = 4 + k * 1.2; g.beginPath(); g.moveTo(x + inset, yy); g.lineTo(x + 32 - inset, yy); g.stroke(); }
+    // cam paneller ve çerçeve
+    g.fillStyle = 'rgba(170,215,240,0.28)'; g.fillRect(x + 1, by - 26, 4, 26); g.fillRect(x + 27, by - 26, 4, 26);
+    lin(g, x + 1.5, by, x + 1.5, by - 27, K, 1.8); lin(g, x + 30.5, by, x + 30.5, by - 27, K, 1.8);
+    lin(g, x + 1.5, by, x + 1.5, by - 27, '#9aa3b2', 0.9); lin(g, x + 30.5, by, x + 30.5, by - 27, '#9aa3b2', 0.9);
+    // saçak
+    box(g, x - 2, by - 30, 36, 4.4, 1.4, '#e8ecf2');
+    g.fillStyle = line; g.fillRect(x - 1, by - 27.2, 34, 1.2);
+    // hat rozeti ve "M"
+    box(g, x + 9, by - 41, 14, 11, 2.6, line, K, 0.8);
+    g.fillStyle = '#ffffff'; g.font = `600 ${9}px Fredoka, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(badge || 'M', x + 16, by - 35.2);
+    void t;
+  }
+  // bonus odasının çıkışı: sağ duvara doğru yükselen yürüyen merdiven (x, y: çıkış karosunun sol üstü)
+  function drawEscalator(g, x, y, t, line) {
+    const by = y + 16;
+    // gövde
+    poly(g, [x - 4, by, x + 6, by, x + 36, by - 34, x + 36, by - 22, x + 10, by + 0], '#5a606e', K, 0.8);
+    // basamaklar (kayar)
+    g.save();
+    g.beginPath(); g.moveTo(x - 2, by - 1); g.lineTo(x + 6, by - 1); g.lineTo(x + 34, by - 33); g.lineTo(x + 26, by - 33); g.closePath(); g.clip();
+    g.fillStyle = '#2a2e38'; g.fillRect(x - 4, by - 36, 42, 38);
+    const off = (t * 10) % 5;
+    g.strokeStyle = '#c9ced8'; g.lineWidth = 0.8;
+    for (let k = -1; k < 9; k++) { const d = k * 5 + off, xx = x + d * 0.66, yy = by - 1 - d * 0.75; g.beginPath(); g.moveTo(xx - 2, yy); g.lineTo(xx + 6, yy); g.stroke(); }
+    g.restore();
+    // korkuluk
+    lin(g, x - 3, by - 9, x + 30, by - 44, K, 2.6); lin(g, x - 3, by - 9, x + 30, by - 44, '#1a1a1a', 1.4);
+    // yukarı ok tabelası
+    box(g, x - 6, by - 52, 14, 11, 2.4, line, K, 0.8);
+    g.strokeStyle = '#ffffff'; g.lineWidth = 1.6; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(x - 2, by - 43.6); g.lineTo(x + 4, by - 49.4); g.moveTo(x - 0.4, by - 49.4); g.lineTo(x + 4, by - 49.4); g.lineTo(x + 4, by - 45); g.stroke();
   }
   function drawLift(g, x, y, w) {
     box(g, x, y, w, 5.4, 1.4, '#9aa6b8');
@@ -817,6 +911,6 @@
     PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
-    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, cache, clearAll,
+    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO,
   };
 })(window);

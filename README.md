@@ -56,7 +56,7 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 | ← → (ya da A D) | yürü |
 | Z, Boşluk ya da ↑ | zıpla (uzun basınca daha yükseğe) |
 | X ya da Shift | koş; laptop varken `{ }` kod fırlat |
-| ↓ | ince platformdan aşağı in |
+| ↓ | ince platformdan aşağı in; metro girişinde bonus odasına in |
 | P / Esc | duraklat |
 | M | ses aç / kapat |
 | K | telefonu kumanda yap |
@@ -80,6 +80,17 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 - **Bug** üstüne basılınca ezilir. **Spam** zarfı uçar. **Martı** üstüne dalış yapar.
   **Virüs** dikenlidir, üstüne basılmaz: kodla ya da kahveyle yen. **Döngü** dönen kıvılcımlardır, yenilmez.
 - **Kısa devre** (dikenli kablolar) can yakar.
+
+## Bölümlerde gizli şeyler
+
+- **Hız ve zıplama:** yavaş yavaş hızlanırsın, bırakınca biraz kayarsın, ters yöne basınca savrulursun.
+  Koşarken zıplarsan daha yükseğe ve uzağa gidersin.
+- **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
+- **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
+- **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane ve Kısıklı'nın normal bölümlerinde
+  metro girişi var. Üstünde ↓'ye bas: simit dolu bir istasyona inersin, yürüyen merdivenle bölümün ilerisine çıkarsın.
+- **DEPLOY anteni:** bölüm sonundaki merdivenden atla; antene ne kadar yüksekten değersen o kadar puan
+  (100'den 5000'e). Kalan sürenin son hanesi tekse havai fişekler patlar.
 
 ## Geliştirme
 
