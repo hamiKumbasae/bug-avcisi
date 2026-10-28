@@ -382,6 +382,45 @@
     for (; X < canvas.width; X += Wd) ctx.drawImage(c, X, Y, Wd, Hd);
     ctx.setTransform(S, 0, 0, S, 0, 0);
   }
+  // tekrarlanan şeridi oda içindeki [X0, X1) aralığına diz (X: odanın solundan mantıksal piksel, rc: kamera)
+  function strip(c, X0, X1, rc) {
+    const a = Math.max(X0 - rc, 0), b = Math.min(X1 - rc, VW);
+    if (b <= a) return;
+    const Wd = Math.round(c.lw * S), Hd = Math.round(c.lh * S), A0 = Math.round(a * S), B0 = Math.round(b * S);
+    let X = Math.round((X0 - rc) * S);
+    if (X < A0 - Wd) X += Math.floor((A0 - X) / Wd) * Wd;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.save(); ctx.beginPath(); ctx.rect(A0, 0, B0 - A0, canvas.height); ctx.clip();
+    for (; X < B0; X += Wd) ctx.drawImage(c, X, 0, Wd, Hd);
+    ctx.restore(); ctx.setTransform(S, 0, 0, S, 0, 0);
+  }
+  function spr(c, X, y, rc) {
+    const x = X - rc;
+    if (x > VW || x + c.lw < 0) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(c, Math.round(x * S), Math.round(y * S), Math.round(c.lw * S), Math.round(c.lh * S));
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+  }
+  // metro hattı: istasyonlar trenin durduğu yerlerde, aralarında tünel; hepsi odayla birlikte kayar
+  function metroBack(G, cam) {
+    const P = SC.metroLine(G.world, VH), r = G.room, rc = cam - r.x0 * TS;
+    const tr = G.plats.find((q) => q.train);
+    const ha = ((tr ? tr.a + tr.w : 20) - r.x0 + 2) * TS, hb = ((tr ? tr.b : 69) - r.x0 - 2) * TS, rw = (r.x1 - r.x0) * TS;
+    strip(P.tunnel, ha, hb, rc); strip(P.hall, 0, ha, rc); strip(P.hall, hb, rw, rc);
+    spr(P.portalL, ha - 2, 0, rc); spr(P.portalR, hb - 38, 0, rc);
+    spr(P.signA, 30, 57, rc); spr(P.mapA, 134, 114, rc); spr(P.signA, ha - 116, 57, rc);
+    spr(P.signB, hb + 44, 57, rc); spr(P.mapB, hb + 150, 114, rc); spr(P.signB, rw - 30 - P.signB.lw, 57, rc);
+    // trenin farı tünel duvarını aydınlatır
+    if (tr && tr.state === 'go') {
+      const hx = (tr.x + tr.w) * TS - cam, hy = TOP + (tr.y - G.camY) * TS + 37;
+      if (hx < VW + 4) {
+        const gr = ctx.createLinearGradient(hx, 0, hx + 96, 0);
+        gr.addColorStop(0, 'rgba(255,246,206,0.34)'); gr.addColorStop(1, 'rgba(255,246,206,0)');
+        ctx.fillStyle = gr; ctx.beginPath();
+        ctx.moveTo(hx, hy - 2.5); ctx.lineTo(hx + 96, hy - 26); ctx.lineTo(hx + 96, hy + 18); ctx.lineTo(hx, hy + 2.5); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
   // pl: mekân (dünya*3 + bölüm)
   // up: kamera başlangıç bandının kaç karo üstünde (tırmanınca arka plan aşağı kayar, gökyüzü açılır);
   // pitY / waterY: çukur kararması ve su çizgisinin ekrandaki yeri (karo satırı, ekranın üstünden)
@@ -480,7 +519,7 @@
     if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
     const cam = Math.round(G.cam * TS * S) / S, camY = Math.round(G.camY * TS * S) / S / TS;
     const pcx = Math.max(0, Math.min(G.W - 1, Math.floor(G.player.x + G.player.w / 2)));
-    if (G.area === 'room') full(SC.metro(w, VW, VH));
+    if (G.area === 'room') metroBack(G, cam);
     else backdrop(pl, cam, 0, G.base0 - camY, G.camHi[pcx] + 12.2 - camY, G.H - 1.6 - camY);
     const ox = -cam + sx, oy = TOP + sy - camY * TS;
     // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
@@ -514,7 +553,7 @@
     ctx.translate(ox, oy);
     // simitler
     const coin = coinImg(Math.floor(app.t * 10));
-    for (let ty = 0; ty < BA.H; ty++) for (let tx = x0; tx <= x1; tx++) if (G.coins[ty * G.W + tx]) img(coin, tx * TS, ty * TS);
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) if (G.coins[ty * G.W + tx]) img(coin, tx * TS, ty * TS);
     // kayıt noktası ve DEPLOY
     if (G.checkpoint) ART.drawCheckpoint(ctx, G.checkpoint.x * TS, (G.checkpoint.y - 1) * TS, G.checkpoint.on, app.t);
     const gl = G.goal;
@@ -542,8 +581,11 @@
         ART.poly(ctx, [ax - 4, ay, ax + 4, ay, ax + 4, ay + 4, ax + 7, ay + 4, ax, ay + 10, ax - 7, ay + 4, ax - 4, ay + 4], '#ffffff', '#1a1430', 0.9);
       }
     }
-    // hareketli platformlar ve dönen kıvılcımlar
-    for (const pl of G.plats) ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
+    // hareketli platformlar (metro treni dahil) ve dönen kıvılcımlar
+    for (const pl of G.plats) {
+      if (!pl.train) ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
+      else if (G.area === 'room') ART.drawTrain(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, SC.station(w)[2], (pl.x - pl.a) * TS, pl.state === 'go');
+    }
     for (const b of G.bars) {
       img(ART.tile(theme, 'anchor'), (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
       for (let k = 1; k <= b.n; k++) ART.drawSpark(ctx, (b.cx + Math.cos(b.a) * k * 0.45) * TS, (b.cy + Math.sin(b.a) * k * 0.45) * TS, app.t + k);
@@ -624,6 +666,13 @@
       case 'bug': ART.drawBug(ctx, cx, by, e.t, e.vx > 0 ? 1 : -1, e.dead && !e.flip); break;
       case 'virus': ART.drawVirus(ctx, cx, by + 1, e.t); break;
       case 'spam': ART.drawSpam(ctx, cx, by + 1, e.t, e.vx > 0 ? 1 : -1); break;
+      case 'leap': {
+        // raylardan sıçrayan bug: yükselirken burnu yukarı, düşerken aşağı; bacaklar açık
+        const a = Math.max(-0.75, Math.min(0.75, -e.vy * 0.045));
+        ctx.translate(cx, by - 6); ctx.rotate(a);
+        ART.drawBug(ctx, 0, 6, 0.11, -1, false);
+        break;
+      }
       case 'marti': ART.drawMarti(ctx, cx, by + 1, e.t, e.vx < 0 ? -1 : 1, e.state === 'dive'); break;
     }
     ctx.restore();

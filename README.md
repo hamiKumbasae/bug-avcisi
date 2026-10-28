@@ -35,6 +35,10 @@ büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz, ama vazgeçmez 
 şehir sesi ve bölüm tipi vardır (dış mekânda koşu ve bloklar; iç mekânda tavanlı dar koridorlar;
 patron bölümlerinde kale gibi tuzaklar). Her dünyanın 3. bölümünün sonunda bir patron var.
 
+Bölümler Super Mario Bros. ölçüsünde: 1. dünyada ~210 blok ve 14 düşman (Mario 1-1: ~200 blok, 17 düşman),
+ilerledikçe uzayıp kalabalıklaşır; 11. dünyada ~330 blok ve 20 düşman. Patron bölümlerinde arenadan önce
+150-230 blokluk bir kale yolu var. Süre 300'den 400 saniyeye çıkar.
+
 **Amaç:** Maslak'tan başlayıp şehri geçerek Ümraniye'ye, eve varmak; yol boyunca 11 hatıra parçasını toplamak.
 Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve topladığın parçaları gösterir.
 
@@ -64,7 +68,7 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 | ← → (ya da A D) | yürü |
 | Z, Boşluk ya da ↑ | zıpla (uzun basınca daha yükseğe) |
 | X ya da Shift | koş; laptop varken `{ }` kod fırlat |
-| ↓ | ince platformdan aşağı in; metro girişinde bonus odasına in |
+| ↓ | ince platformdan aşağı in; metro girişinde metroya in |
 | P / Esc | duraklat |
 | M | ses aç / kapat |
 | K | telefonu kumanda yap |
@@ -99,7 +103,10 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 - **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
 - **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
 - **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane, Haliç, Kısıklı ve Ümraniye'nin dış mekân bölümlerinde
-  metro girişi var. Üstünde ↓'ye bas: simit dolu bir istasyona inersin, yürüyen merdivenle bölümün ilerisine çıkarsın.
+  metro girişi var. Üstünde ↓'ye bas: peronda bekleyen trenin tavanına çıkınca kapılar kapanır, tren kalkar.
+  Beş buçuk ekranlık tünelde simit yaylarını topla, uçan spamlerden ve raylardan sıçrayan bug'lardan kaçın.
+  Tren sonraki istasyonda (İTÜ-Ayazağa → Sanayi Mahallesi, Şişhane → Taksim, Kısıklı → Bulgurlu...) durur;
+  yürüyen merdivenle bölümün epey ilerisine çıkarsın. Raylara düşersen ölmezsin, metrodan çıkarsın.
 - **DEPLOY anteni:** bölüm sonundaki merdivenden atla; antene ne kadar yüksekten değersen o kadar puan
   (100'den 5000'e). Kalan sürenin son hanesi tekse havai fişekler patlar.
 

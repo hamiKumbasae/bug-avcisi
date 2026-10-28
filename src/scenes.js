@@ -768,64 +768,138 @@
     return c;
   }
 
-  // ---------- metro bonus odası: yer altı istasyonu (tek ekran) ----------
-  // dünya → [istasyon, hat, hat rengi]
+  // ---------- metro hattı: iki istasyon ve aradaki tünel (88 karo, kamerayla kayar) ----------
+  // dünya → [istasyon, hat, hat rengi]; NEXT: trenin gittiği sonraki istasyon
   const STATIONS = {
     0: ['İTÜ-AYAZAĞA', 'M2', '#2fa84f'], 1: ['KADIKÖY', 'M4', '#e5427f'], 3: ['VEZNECİLER', 'M2', '#2fa84f'],
     5: ['ŞİŞHANE', 'M2', '#2fa84f'], 6: ['HALİÇ', 'M2', '#2fa84f'], 9: ['KISIKLI', 'M5', '#8a4fae'], 10: ['ÜMRANİYE', 'M5', '#8a4fae'],
   };
-  const station = (w) => STATIONS[w] || ['METRO', 'M', '#2fa84f'];
-  const metroCache = A.cache();
-  function metro(w, vw, vh) {
-    const k = w + ':' + vw;
-    let c = metroCache.get(k);
-    if (c) return c;
-    const [name, ln, col] = station(w);
-    c = A.mk(vw, vh, (g) => {
-      // sırlı karo duvar
-      g.fillStyle = '#d8d1c0'; g.fillRect(0, 0, vw, vh);
-      for (let y = 0; y < vh; y += 6) for (let x = (y % 12 ? -6 : 0); x < vw; x += 12) {
-        g.fillStyle = y > 150 ? '#cfc7b4' : '#f1ece0'; A.rr(g, x + 0.5, y + 0.5, 11, 5, 1.2); g.fill();
-      }
-      // hat renginde şeritler
-      rect(g, 0, 98, vw, 7, col); rect(g, 0, 107, vw, 2, col);
-      rect(g, 0, 148, vw, 3, mix(col, '#000000', 0.25));
-      // tavan lambaları
-      for (let x = 8; x < vw; x += 64) {
-        const gl = g.createLinearGradient(0, 48, 0, 84); gl.addColorStop(0, 'rgba(255,252,236,0.55)'); gl.addColorStop(1, 'rgba(255,252,236,0)');
-        g.fillStyle = gl; g.fillRect(x - 6, 48, 58, 36);
-        A.box(g, x, 48, 46, 4, 1.5, '#ffffff', '#8a8f9a', 0.6);
-      }
-      // istasyon tabelaları
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      for (const sx of [30, 158]) {
-        A.box(g, sx, 70, 70, 18, 2.5, '#1d2c55', '#0c1430', 0.8);
-        A.box(g, sx + 4, 73, 14, 12, 2.6, col, null);
-        g.fillStyle = '#ffffff'; g.font = '600 7.4px Fredoka, sans-serif'; g.fillText(ln, sx + 11, 79.4);
-        g.font = `600 ${name.length > 9 ? 6.2 : 7.6}px Fredoka, sans-serif`; g.fillText(name, sx + 44, 79.6);
-      }
-      // peronda bekleyen tren (arkada, hafif soluk)
-      const ty = 124;
-      A.box(g, -8, ty, vw + 16, 86, 10, '#c9ced8', '#5c616c', 1);
-      rect(g, -8, ty + 54, vw + 16, 7, col);
-      g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(0, ty + 4, vw, 2);
-      for (let x = 10; x < vw; x += 62) {
-        // kapı ve pencereler
-        A.box(g, x, ty + 14, 20, 36, 2, '#a9aeb9', '#5c616c', 0.7);
-        A.box(g, x + 2.5, ty + 18, 6.5, 16, 1.4, '#ffe9a8', '#5c616c', 0.6); A.box(g, x + 11, ty + 18, 6.5, 16, 1.4, '#ffe9a8', '#5c616c', 0.6);
-        A.box(g, x + 26, ty + 16, 30, 16, 2.4, '#ffe9a8', '#5c616c', 0.7);
-        g.fillStyle = 'rgba(80,70,60,0.35)'; g.beginPath(); g.arc(x + 34, ty + 30, 3, Math.PI, 0); g.fill(); g.fillRect(x + 31, ty + 30, 6, 2);
-        g.beginPath(); g.arc(x + 47, ty + 31, 2.6, Math.PI, 0); g.fill();
-      }
-      // derinlik: alt kısım ve kenarlar hafif koyu
-      const sh = g.createLinearGradient(0, 120, 0, vh); sh.addColorStop(0, 'rgba(20,24,40,0)'); sh.addColorStop(1, 'rgba(20,24,40,0.35)');
-      g.fillStyle = sh; g.fillRect(0, 120, vw, vh - 120);
-      const vg = g.createRadialGradient(vw / 2, vh / 2, vh * 0.35, vw / 2, vh / 2, vh * 0.85);
-      vg.addColorStop(0, 'rgba(10,12,24,0)'); vg.addColorStop(1, 'rgba(10,12,24,0.35)');
-      g.fillStyle = vg; g.fillRect(0, 0, vw, vh);
+  const NEXT = { 0: 'SANAYİ MAHALLESİ', 1: 'AYRILIK ÇEŞMESİ', 3: 'HALİÇ', 5: 'TAKSİM', 6: 'VEZNECİLER', 9: 'BULGURLU', 10: 'ÇARŞI' };
+  const station = (w) => { const s = STATIONS[w] || ['METRO', 'M', '#2fa84f']; return [s[0], s[1], s[2], NEXT[w] || s[0]]; };
+  // ekran pikseli (240'lık tuvalde): duvarın altı, rayın üstü (tekerlerin bastığı yer)
+  const WALL_BOT = 206, RAIL_TOP = 218;
+  // raylar ve hendek: her şeridin altına
+  function trench(g, w, dark) {
+    rect(g, 0, WALL_BOT, w, 240 - WALL_BOT, dark ? '#14161d' : '#191c25');
+    rect(g, 0, WALL_BOT, w, 2.6, dark ? '#4c525e' : '#8d939e');
+    rect(g, 0, WALL_BOT + 2.6, w, 0.8, 'rgba(0,0,0,0.45)');
+    // enerji rayı: sarı koruma kapağı (dokunma!)
+    rect(g, 0, 211, w, 2.6, '#d8b22c');
+    for (let x = 0; x < w; x += 8) rect(g, x, 211, 4, 2.6, '#3a3420');
+    rect(g, 0, 213.6, w, 0.7, 'rgba(0,0,0,0.5)');
+    for (let x = 6; x < w; x += 32) rect(g, x, 213.6, 2, 3, '#3a3e48'); // taşıyıcılar
+    // traversler ve balast
+    for (let x = 1; x < w; x += 10) { A.box(g, x, RAIL_TOP + 3.6, 7, 4.2, 0.8, '#5a5248', '#2a2620', 0.5); }
+    const r = rng(dark ? 7 : 3);
+    for (let i = 0; i < w * 0.6; i++) { g.fillStyle = r() < 0.5 ? 'rgba(150,140,125,0.35)' : 'rgba(40,36,32,0.5)'; g.fillRect(r() * w, RAIL_TOP + 8 + r() * 12, 1.2, 0.9); }
+    // ray: mantar başlı çelik
+    rect(g, 0, RAIL_TOP, w, 2.4, '#c9ced8'); rect(g, 0, RAIL_TOP, w, 0.7, '#f2f4f8');
+    rect(g, 0, RAIL_TOP + 2.4, w, 1.4, '#5f6570'); rect(g, 0, RAIL_TOP + 3.8, w, 1, '#3a3e48');
+    const sh = g.createLinearGradient(0, RAIL_TOP + 9, 0, 240); sh.addColorStop(0, 'rgba(8,8,14,0)'); sh.addColorStop(1, 'rgba(8,8,14,0.7)');
+    g.fillStyle = sh; g.fillRect(0, RAIL_TOP + 9, w, 240 - RAIL_TOP - 9);
+  }
+  // istasyon duvarı: sırlı karo, hat renginde şeritler, tavan lambaları (128 piksellik şerit)
+  function hallStrip(g, w, vh, col) {
+    rect(g, 0, 0, w, vh, '#1d2230');
+    for (let y = 48; y < WALL_BOT; y += 6) for (let x = (y % 12 ? -6 : 0); x < w; x += 12) {
+      g.fillStyle = y >= 150 ? '#cdc5b2' : '#f1ece0'; A.rr(g, x + 0.5, y + 0.5, 11, 5, 1.2); g.fill();
+    }
+    rect(g, 0, 48, w, 0.8, 'rgba(0,0,0,0.35)');
+    rect(g, 0, 98, w, 7, col); rect(g, 0, 107, w, 2, col);
+    rect(g, 0, 98, w, 1, 'rgba(255,255,255,0.35)');
+    rect(g, 0, 147, w, 3, mix(col, '#000000', 0.25));
+    for (let x = 8; x < w; x += 64) {
+      const gl = g.createLinearGradient(0, 50, 0, 92); gl.addColorStop(0, 'rgba(255,252,236,0.6)'); gl.addColorStop(1, 'rgba(255,252,236,0)');
+      g.fillStyle = gl; g.fillRect(x - 6, 50, 58, 42);
+      A.box(g, x, 48, 46, 4, 1.5, '#ffffff', '#8a8f9a', 0.6);
+    }
+    const sh = g.createLinearGradient(0, 150, 0, WALL_BOT); sh.addColorStop(0, 'rgba(20,24,40,0)'); sh.addColorStop(1, 'rgba(20,24,40,0.3)');
+    g.fillStyle = sh; g.fillRect(0, 150, w, WALL_BOT - 150);
+    trench(g, w, false);
+  }
+  // tünel: beton bölmeler, kablolar, seyrek lambalar
+  function tunnelStrip(g, w, vh) {
+    rect(g, 0, 0, w, vh, '#151820');
+    const gr = g.createLinearGradient(0, 48, 0, WALL_BOT);
+    gr.addColorStop(0, '#222733'); gr.addColorStop(0.45, '#333a49'); gr.addColorStop(1, '#232834');
+    g.fillStyle = gr; g.fillRect(0, 48, w, WALL_BOT - 48);
+    // tavana doğru kemer gölgesi
+    const top = g.createLinearGradient(0, 48, 0, 76); top.addColorStop(0, 'rgba(6,8,14,0.65)'); top.addColorStop(1, 'rgba(6,8,14,0)');
+    g.fillStyle = top; g.fillRect(0, 48, w, 28);
+    for (let x = 0; x < w; x += 64) {
+      // bölme derzleri ve cıvatalar
+      rect(g, x, 48, 1.4, WALL_BOT - 48, '#191d26'); rect(g, x + 1.4, 48, 0.7, WALL_BOT - 48, 'rgba(120,135,160,0.18)');
+      for (const y of [64, 120, 176]) A.circle(g, x + 5, y, 0.8, '#4a5264', null);
+      // kablo taşıyıcıları
+      A.box(g, x + 30, 76, 4, 18, 0.8, '#3d4454', '#151820', 0.5);
+    }
+    // sarkık kablolar
+    g.lineCap = 'round';
+    for (const [y, c, lw] of [[80, '#101218', 1.6], [85, '#0e1016', 1.4], [90, '#5a3a2a', 1.1]]) {
+      g.strokeStyle = c; g.lineWidth = lw; g.beginPath();
+      for (let x = -32; x < w; x += 64) { g.moveTo(x + 32, y); g.quadraticCurveTo(x + 64, y + 5, x + 96, y); }
+      g.stroke();
+    }
+    // lamba ve duvara düşen ışığı
+    const lx = 96, ly = 60;
+    const lg = g.createRadialGradient(lx, ly + 6, 1, lx, ly + 10, 34);
+    lg.addColorStop(0, 'rgba(255,226,150,0.42)'); lg.addColorStop(1, 'rgba(255,226,150,0)');
+    g.fillStyle = lg; g.fillRect(lx - 36, ly - 20, 72, 72);
+    A.box(g, lx - 5, ly - 2, 10, 5, 1.6, '#ffe7a0', '#151820', 0.6);
+    lin(g, lx - 4, ly + 0.5, lx + 4, ly + 0.5, 'rgba(60,50,30,0.6)', 0.5);
+    // reflektörlü mesafe levhası
+    A.box(g, 30, 160, 7, 9, 1.2, '#e8ecf2', '#151820', 0.6);
+    A.poly(g, [31.5, 166.5, 33.5, 162, 35.5, 166.5], '#e2483a', null);
+    trench(g, w, true);
+  }
+  // istasyon duvarının bittiği beton sütun ve tünel ağzının gölgesi (soldan sağa: istasyon → tünel)
+  function portalStrip(g, w, vh) {
+    const gr = g.createLinearGradient(14, 0, w, 0); gr.addColorStop(0, 'rgba(6,8,14,0.75)'); gr.addColorStop(1, 'rgba(6,8,14,0)');
+    g.fillStyle = gr; g.fillRect(14, 48, w - 14, WALL_BOT - 48);
+    A.box(g, 0, 44, 15, WALL_BOT - 42, 1.5, A.grad(g, 0, 0, 15, 0, [[0, '#a3a9b4'], [0.6, '#868d99'], [1, '#666c78']]), '#232a3a', 0.8);
+    rect(g, 2, 46, 1, WALL_BOT - 48, 'rgba(255,255,255,0.3)');
+    for (const y of [70, 130, 186]) rect(g, 1.5, y, 12, 1, 'rgba(0,0,0,0.25)');
+    void vh;
+  }
+  // istasyon tabelası: hat rozeti ve ad
+  function stationSign(name, ln, col) {
+    const fs = name.length > 11 ? 6.2 : 7.6, mw = Math.max(48, name.length * fs * 0.62 + 30);
+    return A.mk(mw, 18, (g) => {
+      A.box(g, 0.5, 0.5, mw - 1, 17, 2.5, '#1d2c55', '#0c1430', 0.8);
+      A.box(g, 4, 3, 14, 12, 2.6, col, null);
+      g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '600 7.4px Fredoka, sans-serif'; g.fillText(ln, 11, 9.4);
+      g.font = `600 ${fs}px Fredoka, sans-serif`; g.fillText(name, 18 + (mw - 22) / 2, 9.6);
     }, bgScale());
-    metroCache.set(k, c);
-    return c;
+  }
+  // hat şeması: duraklar nokta, bulunulan durak büyük ve parlak (yazısız)
+  function lineMap(col, at) {
+    return A.mk(84, 14, (g) => {
+      A.box(g, 0.5, 0.5, 83, 13, 2, '#f8f6f0', '#8a8f9a', 0.6);
+      rect(g, 8, 6.2, 68, 1.8, col);
+      for (let k = 0; k < 7; k++) {
+        const x = 8 + k * (68 / 6), on = k === at;
+        A.circle(g, x, 7.1, on ? 2.6 : 1.6, on ? '#ffffff' : col, on ? col : null, on ? 1.2 : 0);
+      }
+    }, bgScale());
+  }
+  const lineCache = A.cache();
+  function metroLine(w, vh) {
+    const k = w + ':' + vh;
+    let P = lineCache.get(k);
+    if (P) return P;
+    const [name, ln, col, next] = station(w);
+    P = {
+      hall: A.mk(128, vh, (g) => hallStrip(g, 128, vh, col), bgScale()),
+      tunnel: A.mk(128, vh, (g) => tunnelStrip(g, 128, vh), bgScale()),
+      portalL: A.mk(40, vh, (g) => portalStrip(g, 40, vh), bgScale()),
+      portalR: A.mk(40, vh, (g) => { g.translate(40, 0); g.scale(-1, 1); portalStrip(g, 40, vh); }, bgScale()),
+      signA: stationSign(name, ln, col), signB: stationSign(next, ln, col),
+      mapA: lineMap(col, 2), mapB: lineMap(col, 3),
+      col, ln, WALL_BOT, RAIL_TOP,
+    };
+    lineCache.set(k, P);
+    return P;
   }
 
   // ---------- başlık ekranı: tek karede İstanbul ----------
@@ -877,7 +951,7 @@
   }
 
   root.BA_SCENE = {
-    W, H, layers, sky, title, metro, station, SKY, pen, BASE_AT, PLACES, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
+    W, H, layers, sky, title, metroLine, station, SKY, pen, BASE_AT, PLACES, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,

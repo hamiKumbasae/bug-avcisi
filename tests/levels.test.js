@@ -28,9 +28,13 @@ function analyse(idx, revealHidden) {
   if (revealHidden) for (let i = 0; i < G.grid.length; i++) if (G.grid[i] === T.HIDDEN) G.grid[i] = T.USED;
   // patron arenası için duvarı da ekle (gerçekte kilitlendiğinde gelir; geçiş denetimi için önemsiz)
   // hareketli platformları menzilleri boyunca sabit say
-  const statics = [];
+  const statics = [], rides = [];
   for (const p of G.plats) {
-    if (p.kind === 'h') statics.push({ x: p.a, y: p.y, w: p.b - p.a + p.w, h: 0.5, dy: 0 });
+    if (p.train) {
+      // tren: iki ucunda durur; bir ucundan binip öbür ucunda inilir
+      const a = { x: p.a, y: p.y, w: p.w, h: 0.5, dy: 0 }, z = { x: p.b, y: p.y, w: p.w, h: 0.5, dy: 0 };
+      statics.push(a, z); rides.push([a, z]);
+    } else if (p.kind === 'h') statics.push({ x: p.a, y: p.y, w: p.b - p.a + p.w, h: 0.5, dy: 0 });
     else { statics.push({ x: p.x, y: p.a, w: p.w, h: 0.5, dy: 0 }); statics.push({ x: p.x, y: p.b, w: p.w, h: 0.5, dy: 0 }); }
   }
   G.plats = statics;
@@ -65,7 +69,7 @@ function analyse(idx, revealHidden) {
   for (const p of statics) {
     const y = Math.round(p.y) - 1;
     const s = { id: segs.length, y, x0: Math.floor(p.x), x1: Math.ceil(p.x + p.w) - 1, plat: true, py: p.y };
-    segs.push(s);
+    segs.push(s); p.seg = s;
     for (let k = s.x0; k <= s.x1; k++) if (!segAt.has(k * 100 + y)) segAt.set(k * 100 + y, s);
   }
   const findSeg = (b) => {
@@ -129,6 +133,7 @@ function analyse(idx, revealHidden) {
     }
     // aynı sıradaki komşu parçaya yürüyerek (tek karo engelsiz) — zaten bitişikse aynı parça
   }
+  for (const [a, z] of rides) { edges[a.seg.id].add(z.seg.id); edges[z.seg.id].add(a.seg.id); }
   // metro: giriş → odaya düşüş, odanın çıkışı → yukarıdaki çıkış noktası
   let metro = null;
   if (G.room) {

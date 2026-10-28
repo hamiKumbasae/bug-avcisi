@@ -13,7 +13,8 @@ Harita işaretleri (14 satır):
   K  komut bloğu (simit)   U  komut bloğu (güç)   S  komut bloğu (kahve)   L  komut bloğu (disket = can)
   C  çatlak blok (kırılır)   ^  kısa devre (diken)   b  simit
   M  yatay hareketli platform   N  dikey hareketli platform   o  döngü (dönen kıvılcım)
-  e  bug   s  spam   v  virüs   m  martı
+  e  bug   s  spam   v  virüs   m  martı   j  raylardan sıçrayan bug (metro hattı)
+  T  metro treni (10 karo; tavanına binilir)
   P  başlangıç   G  DEPLOY noktası   A  arena girişi   B  patron
   h  hatıra parçası (her dünyanın 2. bölümünde bir tane, iki ince platformla çıkılan köşede)
   X  gizli blok (görünmez; alttan vurulunca disket = can çıkar)
@@ -21,7 +22,7 @@ Harita işaretleri (14 satır):
   E  metro girişi (üstünde aşağı basılınca bonus odasına iner)
   O  bonus odasının çıkışı (yürüyen merdiven; içine yürüyünce yukarı çıkılır)
   R  metrodan çıkış noktası (bölümde daha ileride)
-Bonus odası, bölümün bitiş duvarından sonra 16 sütunluk ayrı bir alandır (levels.js'te room: başlangıç sütunu).
+Metro hattı, bölümün bitiş duvarından sonra 88 sütunluk ayrı bir alandır (levels.js'te room: başlangıç sütunu, roomW: genişlik).
 Tırmanış (climb) ve iniş (descent) parçaları bandı yukarı/aşağı kaydırır; harita o kadar uzar ve levels.js'te
 vcam: [[sütun, kameranın en üst satırı, en alt satırı], ...] kameranın dikey hareket aralığını verir.
 """
@@ -117,23 +118,55 @@ PLACES = [
 
 
 
-# bonus odası (16 × 14): yer altı istasyonu, simit sıraları ve bloklar
-ROOM = [
-    '================',
-    '================',
-    '=..............=',
-    '=..............=',
-    '=..............=',
-    '=....bbbbbb....=',
-    '=...bbbbbbbb...=',
-    '=..............=',
-    '=...CCZKKZCC...=',
-    '=..............=',
-    '=.bbbbbbbbbbbb.=',
-    '=.............O=',
-    '################',
-    '################',
-]
+# metro hattı (88 × 14): iki istasyon arasında tünel. Peronda bekleyen trenin tavanına binilir,
+# tren tüneli geçip öbür istasyonda durur; raylara düşen oyuncu ölmez, metrodan çıkar (Mario'daki bulut odası gibi).
+ROOM_W = 88
+TRAIN_W = 10
+
+
+def make_room(r):
+    W = ROOM_W
+    g = [['.'] * W for _ in range(H)]
+    for x in range(W):
+        g[0][x] = g[1][x] = '='
+    for y in range(H):
+        g[y][0] = g[y][W - 1] = '='
+    A1, B0 = 9, 79            # A peronu 1..9, raylar 10..78, B peronu 79..86 (peron zemini tren tavanı hizasında)
+    for x in range(1, W - 1):
+        if x <= A1 or x >= B0:
+            for y in range(9, 14):
+                g[y][x] = '#'
+    g[8][A1 + 1] = 'T'        # tren: tavanı 9. satırda, 10 karo; B peronuna kadar gider
+    # A peronu: simitler ve bloklar
+    for x in range(2, 9):
+        g[7][x] = 'b'
+    for x, ch in zip(range(3, 8), 'CKZKC'):
+        g[4][x] = ch
+    # tünel: trenin üstünde simit yayları ya da bloklar
+    x = 21
+    while x < B0 - 14:
+        if r.random() < 0.6:
+            for i, dy in enumerate([6, 5, 4, 4, 5, 6]):
+                g[dy][x + i] = 'b'
+        else:
+            for i in range(3):
+                g[4][x + 1 + i] = 'K' if i == 1 else 'C'
+            g[3][x + 2] = 'b'
+        x += 8
+    # uçan spamler ve raylardan sıçrayan bug'lar
+    for sx in (35, 57):
+        g[r.randint(4, 6)][sx] = 's'
+    for jx in (29, 44, 51, 64):
+        g[12][jx] = 'j'
+    # B peronu: simitler, gizli disket ve çıkış merdiveni
+    for x in range(80, 85):
+        g[7][x] = 'b'
+    g[4][82] = 'X'
+    g[8][W - 3] = 'O'
+    return [''.join(row) for row in g]
+
+
+SAFE_R = 9   # özel noktaların çevresinde düşmansız yarıçap (karo)
 
 
 class Lv:
@@ -244,7 +277,7 @@ class Lv:
         main_n = self.x
         if room is not None:
             rb = max(self.cbase)
-            for cx in range(16):
+            for cx in range(len(room[0])):
                 self.cols.append([room[y][cx] for y in range(H)])
                 self.cbase.append(rb); self.ctop.append(rb); self.cceil.append(2); self.cwall.append(False); self.extra.append({})
         lo = min(min(self.ctop), min(self.cbase))
@@ -315,7 +348,87 @@ class Lv:
                 for i, dy in enumerate([2, 3, 4, 4, 3, 2]):
                     if x0 + i < xs[-1]:
                         self.set(x0 + i, t - dy, 'b')
+            elif roll < 0.85 and t - 4 > self.ceil + 1:  # kısa blok sırası: düzlük boş kalmasın
+                pat = self.r.choice(['CKC', 'KCK', 'CCKC', 'CKKC', 'K', 'CC'])
+                x0 = xs[0] + (n - len(pat)) // 2
+                for i, ch in enumerate(pat):
+                    self.set(x0 + i, t - 4, ch)
         return xs
+
+    # ---------- düşman yoğunluğu ----------
+    def ground_row(self, x):
+        # sütunun yürünebilir zemini: alttan kesintisiz katı yığının üst satırı (bant içinde); boşluk/duvar/kuyu ise None
+        if x < 0 or x >= self.x or self.cwall[x] or self.ctop[x] != self.cbase[x]:
+            return None
+        c = self.cols[x]
+        if c[H - 1] not in '#=':
+            return None
+        g = H - 1
+        while g > 0 and c[g - 1] in '#=':
+            g -= 1
+        return g
+
+    def populate(self, want, x0, x1, start=16):
+        # Düşmanları seyrek kalan yerlere, düz zemine (ya da havaya) en boş aralıktan başlayarak ekle.
+        # Özel işaretlerin (başlangıç, kayıt, metro, arena, hatıra, asansör...) ve dikey kuyuların yanından uzak dur.
+        kinds = WORLDS[self.w]['enemies'].replace('o', '')
+        walkers = ''.join(k for k in kinds if k in 'ev') or 'e'
+        flyers = ''.join(k for k in kinds if k in 'sm')
+        foes = [x for x in range(self.x) if any(ch in 'esvm' for ch in self.cols[x]) or any(ch in 'esvm' for ch in self.extra[x].values())]
+        marks = [(x, SAFE_R if any(ch in 'PQER' for ch in self.cols[x]) else 3) for x in range(self.x) if any(ch in 'PQGERhABMNTOo' for ch in self.cols[x])]
+
+        def ok(x):
+            if x < max(start, x0) or x >= x1:
+                return None
+            if any(abs(x - m) <= rad for m, rad in marks):
+                return None
+            if any(0 <= x + k < self.x and self.ctop[x + k] != self.cbase[x + k] for k in range(-3, 4)):
+                return None
+            g = self.ground_row(x)
+            if g is None or g - 1 <= self.cceil[x]:
+                return None
+            for k in (-1, 0, 1, 2):
+                c = self.cols[x + k] if x + k < self.x else None
+                if c is None or self.ground_row(x + k) != g or c[g - 1] != '.' or (g >= 2 and c[g - 2] not in '.b'):
+                    return None
+            if any(self.cols[x + k][g - 1] == '^' for k in (-2, 3) if 0 <= x + k < self.x):
+                return None
+            return g
+
+        n = len(foes)
+        while n < want:
+            cands = [x for x in range(x0, x1) if ok(x) is not None]
+            if not cands:
+                break
+            far = lambda x: min([abs(x - f) for f in foes] + [x - start + 6])
+            best = max(far(x) for x in cands)
+            if best < 5:
+                break
+            x = self.r.choice([x for x in cands if far(x) == best])
+            g = ok(x)
+            if flyers and self.r.random() < 0.3:
+                y = g - 3 - self.r.randint(0, 2)
+                c = self.cols[x]
+                if y - 1 > self.cceil[x] and all(c[yy] == '.' for yy in (y - 1, y, y + 1)):
+                    self.set(x, y, self.r.choice(flyers))
+                else:
+                    self.set(x, g - 1, self.r.choice(walkers))
+            else:
+                self.set(x, g - 1, self.r.choice(walkers))
+            foes.append(x)
+            n += 1
+        return n
+
+    def clear_near(self, chars='PQER', before=SAFE_R, after=SAFE_R):
+        # başlangıç, kayıt noktası ve metro giriş/çıkışının çevresi düşmansız: oraya gelen oyuncu hemen vurulmasın
+        for m in [x for x in range(self.x) if any(ch in chars for ch in self.cols[x])]:
+            for x in range(max(0, m - before), min(self.x, m + after + 1)):
+                for y in range(H):
+                    if self.cols[x][y] in 'esvm':
+                        self.cols[x][y] = '.'
+                for row, ch in list(self.extra[x].items()):
+                    if ch in 'esvm':
+                        self.extra[x][row] = '.'
 
     def secret(self):
         # gizli blok: sade bir düzlüğün ortasında, yerden 4 karo yukarıda; alttan vurulunca can (disket) çıkar
@@ -589,7 +702,8 @@ def make(world, sec, r):
     xs = lv.flat(8, enemies=False)
     lv.set(xs[2], lv.top() - 1, 'P')
     boss = sec == 2
-    target = (95 if boss else 150) + int(40 * d)
+    # bölüm boyu: 1. dünyada ~200 blok (Mario 1-1 gibi), 11. dünyada ~320; patron bölümünde arenadan önce kale yolu
+    target = (115 + int(85 * d)) if boss else (175 + int(120 * d))
     parts = PL['parts']
     last = None
     first_power = True
@@ -608,7 +722,7 @@ def make(world, sec, r):
             lv.secret()
         if metro and metro_x is None and lv.x > 34:
             metro_x = lv.metro_in()
-        elif metro and metro_x is not None and metro_x > 0 and lv.x > metro_x + 34:
+        elif metro and metro_x is not None and metro_x > 0 and lv.x > metro_x + 30 + int(target * 0.15):
             lv.metro_out()
             metro_x = -1
         if not checkpoint and lv.x > target * (0.6 if boss else 0.5):
@@ -620,7 +734,7 @@ def make(world, sec, r):
             continue
         last = p
         if p == 'flat':
-            lv.flat(r.randint(6, 12), extras=True)
+            lv.flat(r.randint(6, 10), extras=True)
         else:
             getattr(lv, p)()
         if first_power and lv.x > 20:  # ilk güçlendirme erken gelsin
@@ -630,6 +744,9 @@ def make(world, sec, r):
             first_power = False
     if sec == 1:
         lv.hatira()
+    # düşman yoğunluğu: Mario 1-1'de 17 düşman var; burada 14 → 20, patron yolunda 9 → 14
+    lv.clear_near()
+    lv.populate((9 + round(5 * d)) if boss else (14 + round(6 * d)), 0, lv.x)
     # disket (can): her bölümde bir tane, gizli olmayan ama yüksekte
     x = lv.x
     lv.flat(6, enemies=False)
@@ -654,7 +771,7 @@ def make(world, sec, r):
         lv.finale()
         lv.wall()
     room = lv.x if metro else None
-    rows, vcam = lv.assemble(ROOM if metro else None)
+    rows, vcam = lv.assemble(make_room(r) if metro else None)
     return rows, room, vcam
 
 
@@ -667,9 +784,10 @@ def main():
             rows, room, vcam = make(w, s, r)
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
-                  'time': 300 if s < 2 else 360, 'map': rows}
+                  'time': (300 if s < 2 else 330) + 50 * round(2 * (w * 3 + s) / (len(WORLDS) * 3 - 1)), 'map': rows}
             if room is not None:
                 lv['room'] = room
+                lv['roomW'] = ROOM_W
             if len(rows) > H:
                 lv['vcam'] = vcam
             levels.append(lv)

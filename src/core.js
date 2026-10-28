@@ -25,6 +25,8 @@
   const T = { EMPTY: 0, GROUND: 1, SOLID: 2, ONEWAY: 3, BLOCK: 4, USED: 5, CRACK: 6, SPIKE: 7, WALL: 8, HIDDEN: 9, MULTI: 10 };
   const SOLID = [false, true, true, false, true, true, true, false, true, false, true];
   const ROOM_W = 16;
+  // metro treni: 10 karo; oyuncu tavanına binince kalkar, hızlanır, öbür perona yavaşlayarak yanaşır
+  const TRAIN_W = 10, TRAIN_V = 4.5, TRAIN_ACC = 2.6, LEAP_G = 24;
   // DEPLOY anteni: zeminden 10 karo boy; ayakların değdiği yüksekliğe göre bonus eşikleri
   const GOAL_MAST = 10, GOAL_STEPS = [2, 4, 6, 8, 9.5];
   const CONTENT = { K: 'simit', U: 'guc', S: 'kahve', L: 'disket' };
@@ -83,7 +85,7 @@
       prev: { jump: false, run: false },
       multi: new Map(), area: 'main', mainW: L.room || W, room: null, metroIn: null, metroOut: null, warp: null,
     };
-    if (L.room) G.room = { x0: L.room, x1: L.room + ROOM_W, y0: MH - VHT, exit: null, used: false };
+    if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false };
     // dikey kamera aralıkları: her sütunda kameranın üst satırı [lo, hi] arasında kalır (düz bölümlerde 0)
     const vc = L.vcam || [[0, MH - VHT, MH - VHT]];
     for (let k = 0; k < vc.length; k++) {
@@ -107,10 +109,11 @@
           case 'R': G.metroOut = { x, y }; break;
           case 'O': if (G.room) G.room.exit = { x, y }; break;
           case 'b': G.coins[i] = 1; break;
-          case 'e': case 's': case 'v': case 'm':
-            G.spawns.push({ kind: { e: 'bug', s: 'spam', v: 'virus', m: 'marti' }[ch], x, y, done: false }); break;
+          case 'e': case 's': case 'v': case 'm': case 'j':
+            G.spawns.push({ kind: { e: 'bug', s: 'spam', v: 'virus', m: 'marti', j: 'leap' }[ch], x, y, done: false }); break;
           case 'o': G.bars.push({ cx: x + 0.5, cy: y + 0.5, a: (x * 1.7) % 6.28, sp: (x % 2 ? 1 : -1) * (1.9 + 0.1 * G.world), n: 5 }); break;
           case 'M': G.plats.push({ kind: 'h', x, y: y + 1, w: 3, h: 0.5, tx: x, ty: y + 1, dx: 0, dy: 0 }); break;
+          case 'T': G.plats.push({ kind: 'h', train: true, x, y: y + 1, w: TRAIN_W, h: 0.5, tx: x, ty: y + 1, dx: 0, dy: 0, v: 0, state: 'wait', wt: 0 }); break;
           case 'N': G.plats.push({ kind: 'v', x, y, w: 2, h: 0.5, tx: x, ty: y, dx: 0, dy: 0 }); break;
           case 'P': start = { x, y }; break;
           case 'G': G.goal = { x, y: y - 1, w: 1, h: 2, active: !L.boss, t: 0 }; break;
@@ -126,7 +129,7 @@
       if (p.kind === 'h') {
         let k = 0;
         while (p.x + k < W && !SOLID[G.grid[p.y * W + p.x + k]] && G.grid[p.y * W + p.x + k] !== T.ONEWAY) k++;
-        p.a = p.x; p.b = p.x + Math.max(0, k - p.w); p.sp = 2.2; p.dir = 1;
+        p.a = p.x; p.b = p.x + Math.max(0, k - p.w); p.sp = p.train ? TRAIN_V : 2.2; p.dir = 1;
       } else {
         p.a = p.y; p.b = p.y + 4; p.sp = 1.6; p.dir = 1;
       }
@@ -299,6 +302,7 @@
     if (kind === 'bug') e.vx = -2;
     else if (kind === 'virus') e.vx = -1.5;
     else if (kind === 'spam') { e.vx = -2.4; e.baseY = y + 0.125; e.h = 0.75; }
+    else if (kind === 'leap') { e.vy = -(17.5 + (x % 3) * 1.2); e.vx = -(1.8 + (x % 2) * 1.2); e.h = 0.75; }
     else if (kind === 'marti') { e.w = 1; e.h = 0.75; e.homeX = x; e.homeY = y; e.state = 'hover'; e.cd = 0.5; e.vx = -1.2; }
     return e;
   }
@@ -324,6 +328,11 @@
       case 'spam':
         e.x += e.vx * dt;
         e.y = e.baseY + Math.sin(e.t * 3) * 0.6;
+        break;
+      case 'leap':
+        // raylardan sıçrayan bug: karolara takılmadan yay çizer, raylara geri düşer
+        e.vy += LEAP_G * dt; e.x += e.vx * dt; e.y += e.vy * dt;
+        if (e.vy > 0 && G.room && e.y > G.room.y0 + 13) return false;
         break;
       case 'marti': {
         e.cd -= dt;
@@ -396,16 +405,20 @@
       if (w.t < 0.6) p.y += 2.3 * dt; // merdivenden aşağı
       if (!w.moved && w.t >= 0.85) {
         w.moved = true; G.area = 'room'; w.clip = null;
-        p.x = G.room.x0 + 2.1; p.y = G.room.y0 + 2.05; p.onGround = false; p.plat = null;
+        p.x = G.room.x0 + 2.1; p.y = G.room.y0 + 2.05; p.onGround = false; p.plat = null; p.carry = 0;
+        for (const pl of G.plats) if (pl.train) { pl.x = pl.a; pl.v = 0; pl.state = 'wait'; pl.wt = 0; }
         G.cam = G.room.x0; G.camY = G.room.y0; G.room.used = true;
       }
       if (w.t >= 1.1) G.warp = null;
     } else {
-      if (!w.moved && w.t < 0.55) { p.x += 2.2 * dt; p.y -= 0.9 * dt; } // yürüyen merdivene bin
+      if (!w.moved && w.t < 0.55) {
+        if (w.fall) p.y += 7 * dt;                 // raylara düştü: karanlığa kaybolur
+        else { p.x += 2.2 * dt; p.y -= 0.9 * dt; } // yürüyen merdivene bin
+      }
       if (!w.moved && w.t >= 0.85) {
         w.moved = true; G.area = 'main';
         const R = G.metroOut || G.metroIn;
-        p.x = R.x + 1 - p.w / 2; p.y = R.y + 1; p.plat = null;
+        p.x = R.x + 1 - p.w / 2; p.y = R.y + 1; p.plat = null; p.carry = 0;
         w.rise = R.y + 1 - p.h; w.clip = { y1: R.y + 1 };
         G.cam = clamp(p.x - 6.5, 0, G.mainW - VW);
         { const cx = colAt(G, p.x + p.w / 2); G.camY = clamp(w.rise + p.h - 12, G.camLo[cx], G.camHi[cx]); }
@@ -475,6 +488,7 @@
 
   function updatePlayer(G, inp, dt) {
     const p = G.player, S = G.S;
+    const onTrain = p.plat && p.plat.train ? p.plat : null;
     const jumpPressed = inp.jump && !G.prev.jump;
     const runPressed = inp.run && !G.prev.run;
     if (jumpPressed) p.buf = PH.buffer; else p.buf = Math.max(0, p.buf - dt);
@@ -550,9 +564,9 @@
       } else p.plat = null;
     }
 
-    // hareket
-    const hx = moveX(G, p, p.vx * dt);
-    if (hx) p.vx = 0;
+    // hareket (trenden zıplayınca trenin hızı havada da sürer: p.carry)
+    const hx = moveX(G, p, (p.vx + (p.carry || 0)) * dt);
+    if (hx) { p.vx = 0; p.carry = 0; }
     // kamera sol sınırı ve bölüm sonu
     const left = G.area === 'room' ? G.room.x0 : G.cam, right = (G.area === 'room' ? G.room.x1 : G.mainW) - p.w;
     if (p.x < left) { p.x = left; if (p.vx < 0) p.vx = 0; }
@@ -582,6 +596,8 @@
     }
     p.onGround = r.down;
     if (r.down) {
+      // trene geri inince hız trenin olur; perona inince ivme kayarak söner
+      if (p.carry) { if (!(r.plat && r.plat.train)) p.vx += p.carry; p.carry = 0; }
       p.vy = 0; p.plat = r.plat;
       if (!wasGround) {
         G.combo = 0;
@@ -594,6 +610,7 @@
     }
     else if (!r.down && wasGround && p.vy >= 0) p.plat = null;
     if (p.onGround && p.plat === null) G.combo = 0;
+    if (onTrain && p.plat !== onTrain && !p.onGround) p.carry = onTrain.v;
 
     // yürüme animasyonu
     if (p.onGround) p.walkT += Math.abs(p.vx) * dt; else p.walkT = 0;
@@ -1066,7 +1083,18 @@
     // platformlar
     for (const pl of G.plats) {
       const ox = pl.x, oy = pl.y;
-      if (pl.b > pl.a) {
+      if (pl.train) {
+        if (pl.state === 'wait') {
+          // oyuncu tavanda yarım saniye durunca kapılar kapanır, tren kalkar
+          pl.wt = p.plat === pl && !p.dead ? pl.wt + dt : 0;
+          if (pl.wt > 0.5) { pl.state = 'go'; ev(G, 'train'); }
+        } else if (pl.state === 'go') {
+          const left = pl.b - pl.x;
+          pl.v = Math.min(pl.sp, pl.v + TRAIN_ACC * dt, Math.sqrt(2 * TRAIN_ACC * Math.max(0, left)) + 0.15);
+          pl.x = Math.min(pl.b, pl.x + pl.v * dt);
+          if (pl.x >= pl.b) { pl.x = pl.b; pl.v = 0; pl.state = 'stop'; ev(G, 'trainstop'); }
+        }
+      } else if (pl.b > pl.a) {
         if (pl.kind === 'h') { pl.x += pl.dir * pl.sp * dt; if (pl.x >= pl.b) { pl.x = pl.b; pl.dir = -1; } if (pl.x <= pl.a) { pl.x = pl.a; pl.dir = 1; } }
         else { pl.y += pl.dir * pl.sp * dt; if (pl.y >= pl.b) { pl.y = pl.b; pl.dir = -1; } if (pl.y <= pl.a) { pl.y = pl.a; pl.dir = 1; } }
       }
@@ -1078,6 +1106,12 @@
     G.prev.jump = inp.jump; G.prev.run = inp.run;
     if (G.phase !== 'play') return;
 
+    // metro hattında raylara düşen oyuncu ölmez: metrodan çıkar (bulut odasından düşmek gibi)
+    if (!p.dead && G.area === 'room' && p.y + p.h > G.room.y0 + 12.6) {
+      G.warp = { kind: 'out', fall: true, t: 0.3, moved: false, clip: { y1: G.room.y0 + 12.6 } };
+      p.vx = 0; p.vy = 0; p.carry = 0; p.plat = null; ev(G, 'fall');
+      return;
+    }
     // metro: girişte aşağı basınca bonus odasına in; odadaki yürüyen merdivenden yukarı çık
     if (!p.dead && G.room && p.onGround) {
       const cx = p.x + p.w / 2, mi = G.metroIn, ex = G.room.exit;
@@ -1095,7 +1129,8 @@
 
     // kamera
     if (G.area === 'room') {
-      G.cam = G.room.x0; G.camY = G.room.y0;
+      // metro hattında kamera yatayda oyuncuyu izler
+      G.cam = clamp(approach(G.cam, p.x - 6.5, 30 * dt), G.room.x0, G.room.x1 - VW); G.camY = G.room.y0;
     } else if (G.arena && G.arena.locked) {
       G.cam = approach(G.cam, G.arena.cam, 10 * dt);
     } else {
@@ -1106,9 +1141,14 @@
     }
     if (G.area !== 'room') updateCamY(G, dt);
 
-    // düşman doğurma (bonus odasındayken yukarıdakiler beklesin)
-    if (G.area === 'main') for (const s of G.spawns) {
-      if (!s.done && s.x < G.cam + VW + 1.5 && s.x > G.cam - 2) { s.done = true; G.ents.push(makeEnemy(G, s.kind, s.x, s.y)); }
+    // düşman doğurma: her alan kendi düşmanlarını doğurur (metrodayken yukarıdakiler bekler)
+    for (const s of G.spawns) {
+      if (G.room && (G.area === 'room') !== (s.x >= G.room.x0)) continue;
+      const lead = s.kind === 'leap' ? -2 : 1.5; // sıçrayan bug ekranın içinde, rayların arasından çıkar
+      if (!s.done && s.x < G.cam + VW + lead && s.x > G.cam - 2) {
+        s.done = true; G.ents.push(makeEnemy(G, s.kind, s.x, s.y));
+        if (s.kind === 'leap') { ev(G, 'leap'); G.fx.push({ k: 'spark', x: s.x + 0.5, y: s.y + 0.7, t: 0 }, { k: 'spark', x: s.x + 0.1, y: s.y + 0.9, t: -0.08 }); }
+      }
       else if (!s.done && s.x <= G.cam - 2) s.done = true;
     }
     G.ents = G.ents.filter((e) => updateEnemy(G, e, dt));
@@ -1197,7 +1237,7 @@
   function afterDeath(S) { S.lives -= 1; S.power = 0; return S.lives > 0; }
 
   root.BA = {
-    H, VW, VHT, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, GOAL_MAST, GOAL_STEPS, deathY,
+    H, VW, VHT, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, TRAIN_W, TRAIN_V, GOAL_MAST, GOAL_STEPS, deathY,
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
     levels, moveX, moveY, runUpSpeed, jumpSpeed,
   };

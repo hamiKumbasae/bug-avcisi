@@ -1050,6 +1050,114 @@
     g.strokeStyle = '#ffffff'; g.lineWidth = 1.6; g.lineCap = 'round'; g.lineJoin = 'round';
     g.beginPath(); g.moveTo(x - 2, by - 43.6); g.lineTo(x + 4, by - 49.4); g.moveTo(x - 0.4, by - 49.4); g.lineTo(x + 4, by - 49.4); g.lineTo(x + 4, by - 45); g.stroke();
   }
+  // metro treni (yan görünüş): iki vagon, öndeki sağda. (x, y) tavanın sol üstü, w genişlik (px); tavanında durulur.
+  // Tekerlekler rayın üstüne (tavandan 58 px aşağı) basar. dist: alınan yol (px, tekerlek dönüşü), moving: hareket ediyor mu
+  const trainCache = cache();
+  const TRAIN_WHEEL_Y = 53.5;
+  function trainBody(w, line) {
+    const k = w + line;
+    let c = trainCache.get(k);
+    if (c) return c;
+    c = mk(w + 4, 56, (g) => {
+      g.translate(2, 0);
+      const cw = (w - 4) / 2;
+      for (let n = 0; n < 2; n++) {
+        const x0 = n * (cw + 4), front = n === 1;
+        // boji şasileri (tekerleklerin üstünü örter)
+        for (const bx of [x0 + 15, x0 + cw - 15]) {
+          box(g, bx - 11.5, 43, 23, 8, 1.6, '#3a3f4a', K, 0.7);
+          g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(bx - 10.5, 44, 21, 0.7);
+          circle(g, bx, 47.5, 1.4, '#22252c', null);
+        }
+        rr(g, x0, 0.6, cw, 44.4, 4.5);
+        g.fillStyle = grad(g, 0, 1, 0, 45, [[0, '#f4f6f9'], [0.55, '#dfe3ea'], [1, '#c4cad3']]); g.fill();
+        g.save(); rr(g, x0, 0.6, cw, 44.4, 4.5); g.clip();
+        // tavan: üstünde durulan yüzey
+        g.fillStyle = '#9aa2af'; g.fillRect(x0, 0, cw, 4.4);
+        g.fillStyle = 'rgba(255,255,255,0.75)'; g.fillRect(x0, 0.6, cw, 0.8);
+        g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(x0, 4.4, cw, 0.7);
+        // pencere bandı ve iki pencere: sıcak ışık, yolcu siluetleri
+        g.fillStyle = '#2b3446'; g.fillRect(x0, 9, cw, 17.5);
+        for (let k = 0; k < 2; k++) {
+          const wx = x0 + 23 + k * 18;
+          box(g, wx, 11, 14, 13.5, 1.6, grad(g, 0, 11, 0, 24.5, [[0, '#fff3c4'], [1, '#f2d27e']]), null);
+          g.fillStyle = 'rgba(70,58,48,0.42)';
+          const seat = (n * 2 + k) % 3;
+          for (let j = 0; j <= (seat === 1 ? 1 : 0); j++) {
+            const px = wx + 4 + j * 6 + (seat === 2 ? 2 : 0);
+            g.beginPath(); g.arc(px, 17.4, 2.3, 0, Math.PI * 2); g.fill();
+            g.beginPath(); g.ellipse(px, 24, 3.8, 3.2, 0, Math.PI, 0); g.fill();
+          }
+          g.fillStyle = 'rgba(255,255,255,0.45)'; poly(g, [wx + 1.5, 23, wx + 7, 12, wx + 9.5, 12, wx + 4, 23], 'rgba(255,255,255,0.35)', null);
+        }
+        // kapılar: iki kanatlı, küçük pencereli
+        for (const dx of [x0 + 7, x0 + cw - 19]) {
+          box(g, dx, 7.5, 12, 33, 1.2, '#cfd4dc', '#7d8490', 0.6);
+          lin(g, dx + 6, 8, dx + 6, 40, '#7d8490', 0.6);
+          for (const lx of [dx + 1.3, dx + 7.1]) box(g, lx, 11, 3.6, 12, 0.9, '#ffe8a6', '#5c616c', 0.5);
+        }
+        // hat şeridi ve etek
+        g.fillStyle = line; g.fillRect(x0, 29, cw, 4.4);
+        g.fillStyle = shade(line, -0.3); g.fillRect(x0, 33.4, cw, 1);
+        g.fillStyle = '#8f96a2'; g.fillRect(x0, 40, cw, 5);
+        g.fillStyle = 'rgba(255,255,255,0.3)'; g.fillRect(x0, 40, cw, 0.6);
+        // ön vagonda sürücü camı ve dijital tabela, arkada stop lambası yuvası
+        if (front) {
+          box(g, x0 + cw - 6.5, 7.5, 7, 17, 2.4, grad(g, 0, 7, 0, 24, [[0, '#4a6a8e'], [1, '#1c2a3e']]), '#1a2030', 0.6);
+          lin(g, x0 + cw - 4.5, 9.5, x0 + cw - 1.5, 13, 'rgba(255,255,255,0.45)', 0.7);
+          box(g, x0 + cw - 5.5, 35.5, 5, 3.4, 1.2, '#f6f2e0', '#5c616c', 0.5);
+        } else {
+          box(g, x0 + 0.5, 35.5, 4, 3.4, 1.2, '#7a1e1a', '#3a1010', 0.5);
+        }
+        g.restore();
+        rr(g, x0, 0.6, cw, 44.4, 4.5); fs(g, null, K, 0.8);
+      }
+      // vagonlar arası körük
+      box(g, cw, 6, 4, 34, 0.8, '#4a4f5a', '#24272e', 0.5);
+      g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 0.5;
+      for (let y = 8; y < 40; y += 2.2) { g.beginPath(); g.moveTo(cw + 0.4, y); g.lineTo(cw + 3.6, y); g.stroke(); }
+    });
+    trainCache.set(k, c);
+    return c;
+  }
+  function drawTrain(g, x, y, w, t, line, dist, moving) {
+    const cw = (w - 4) / 2, rot = dist / 4.5;
+    // tekerlekler (gövdenin arkasında): dönen jant çizgileri
+    for (let n = 0; n < 2; n++) {
+      const x0 = x + n * (cw + 4);
+      for (const bx of [x0 + 15, x0 + cw - 15]) {
+        for (const wx of [bx - 6, bx + 6]) {
+          circle(g, wx, y + TRAIN_WHEEL_Y, 4.5, '#2a2d34', K, 0.7);
+          circle(g, wx, y + TRAIN_WHEEL_Y, 3.1, null, '#5a606c', 0.6);
+          for (let k = 0; k < 3; k++) { const a = rot + k * 2.094; lin(g, wx, y + TRAIN_WHEEL_Y, wx + Math.cos(a) * 3, y + TRAIN_WHEEL_Y + Math.sin(a) * 3, '#8a909c', 0.6); }
+          circle(g, wx, y + TRAIN_WHEEL_Y, 1.1, '#b8bec8', null);
+        }
+      }
+    }
+    const c = trainBody(w, line);
+    g.drawImage(c, x - 2, y, c.lw, c.lh);
+    // farlar: önde beyaz, arkada kırmızı
+    const hx = x + w - 3, hy = y + 37.2;
+    const hg = g.createRadialGradient(hx, hy, 0.5, hx, hy, 7);
+    hg.addColorStop(0, 'rgba(255,250,220,0.95)'); hg.addColorStop(1, 'rgba(255,250,220,0)');
+    g.fillStyle = hg; g.fillRect(hx - 7, hy - 7, 14, 14);
+    const tx = x + 2.5, tg = g.createRadialGradient(tx, hy, 0.3, tx, hy, 4.5);
+    tg.addColorStop(0, `rgba(255,70,50,${0.75 + 0.2 * Math.sin(t * 3)})`); tg.addColorStop(1, 'rgba(255,70,50,0)');
+    g.fillStyle = tg; g.fillRect(tx - 4.5, hy - 4.5, 9, 9);
+    // giderken enerji rayından kıvılcım
+    if (moving) {
+      for (let i = 0; i < 4; i++) {
+        const f = Math.floor(t * 16 + i * 7.3);
+        if (((f * 2654435761) >>> 0) % 9 !== 0) continue;
+        const sx = x + [15, cw - 15, cw + 19, w - 15][i] + 8, sy = y + 52.5;
+        g.strokeStyle = 'rgba(255,240,170,0.95)'; g.lineWidth = 0.8;
+        g.beginPath();
+        for (let k = 0; k < 4; k++) { const a = -Math.PI * (0.15 + k * 0.23); g.moveTo(sx, sy); g.lineTo(sx + Math.cos(a) * 3.4, sy + Math.sin(a) * 3.4); }
+        g.stroke();
+        circle(g, sx, sy, 1, '#ffffff', null);
+      }
+    }
+  }
   function drawLift(g, x, y, w) {
     box(g, x, y, w, 5.4, 1.4, '#9aa6b8');
     g.save(); rr(g, x, y, w, 5.4, 1.4); g.clip();
@@ -1145,6 +1253,6 @@
     PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
-    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
+    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
   };
 })(window);

@@ -346,6 +346,65 @@ const flat = (w, extraRows) => {
   ok(n === 10 && good === n, `bütün metro girişleri odaya iner, çıkıştan yukarı çıkılır (${good}/${n})`);
 }
 
+// ---------- metro hattı: perondan trene bin, tüneli geç, öbür perondan çık ----------
+{
+  const idx = LV.findIndex((L, i) => i < NL && L.room);
+  const enter = () => {
+    const G = BA.loadStage(BA.newRun(), idx), p = G.player, mi = G.metroIn;
+    p.x = mi.x + 1 - p.w / 2; p.y = mi.y + 1 - p.h; p.vy = 0; p.onGround = true; G.cam = Math.max(0, mi.x - 7);
+    run(G, { down: true }, 0.05); run(G, NONE, 2);
+    return G;
+  };
+  {
+    const G = enter(), p = G.player, tr = G.plats.find((q) => q.train);
+    ok(tr && tr.w === BA.TRAIN_W && tr.state === 'wait' && tr.x === tr.a, 'metro hattında tren peronda bekliyor');
+    ok(tr.b - tr.a > 50, `tren tünel boyunca gider (${(tr.b - tr.a).toFixed(0)} karo)`);
+    run(G, NONE, 3);
+    ok(tr.state === 'wait' && tr.x === tr.a, 'oyuncu binmeden tren kalkmaz');
+    // trenin üstüne yürü, dur
+    run(G, { right: true }, 3, (g) => g.player.plat === tr && g.player.x > tr.x + 3);
+    run(G, NONE, 1);
+    ok(tr.state === 'go' && tr.x > tr.a, 'trene binince tren kalktı');
+    // tren giderken zıpla: aynı yere geri inilir (trenin hızı havada sürer)
+    run(G, (g) => { g.player.inv = 9; return {}; }, 3);
+    const rel0 = p.x - tr.x, v0 = tr.v;
+    run(G, (g, t) => { g.player.inv = 9; return { jump: t < 0.06 }; }, 0.2); // kısa zıplama: tavandaki bloklara çarpmasın
+    const air = !p.onGround;
+    run(G, (g) => { g.player.inv = 9; return {}; }, 1.6, (g) => g.player.onGround);
+    ok(air && p.plat === tr && Math.abs(p.x - tr.x - rel0) < 0.6 && v0 > 4, `giden trende zıplayınca yine trene inildi (kayma ${(p.x - tr.x - rel0).toFixed(2)})`);
+    let maxV = 0;
+    run(G, (g) => { maxV = Math.max(maxV, tr.v); g.player.inv = 9; return {}; }, 20, () => tr.state === 'stop');
+    ok(tr.state === 'stop' && tr.x === tr.b && maxV <= BA.TRAIN_V + 1e-6, 'tren öbür perona yanaşıp durdu');
+    ok(p.plat === tr && !p.dead && G.area === 'room', 'oyuncu tüm yol boyunca trenin üstünde kaldı');
+    run(G, { right: true }, 4, (g) => !!g.warp);
+    ok(G.warp && G.warp.kind === 'out' && !G.warp.fall, 'öbür perondan yürüyen merdivene çıkıldı');
+    run(G, NONE, 2.5);
+    ok(G.area === 'main' && !p.dead && p.onGround, 'metrodan yukarı, bölüme dönüldü');
+  }
+  {
+    // raylara düşen oyuncu ölmez, metrodan çıkar
+    const G = enter(), p = G.player, lives = G.S.lives, tr = G.plats.find((q) => q.train);
+    p.x = tr.x + tr.w + 1.5; p.y = G.room.y0 + 9.5; p.vy = 0; p.onGround = false; p.plat = null;
+    run(G, NONE, 1.2, (g) => !!g.warp);
+    ok(G.warp && G.warp.kind === 'out' && G.warp.fall && !p.dead, 'raylara düşünce metrodan çıkış başladı');
+    run(G, NONE, 2.5);
+    ok(G.area === 'main' && !p.dead && G.S.lives === lives && G.phase === 'play', 'raylara düşen oyuncu canını yitirmeden bölüme döndü');
+  }
+  {
+    // raylardan sıçrayan bug: ekranda belirir, yükselip raylara geri düşer
+    const G = enter(), sp = G.spawns.filter((s) => s.kind === 'leap');
+    ok(sp.length >= 3, `tünelde sıçrayan bug'lar var (${sp.length})`);
+    const s = sp[0];
+    G.cam = s.x - BA.VW + 2.5; G.player.x = G.cam + 6.5; G.player.y = G.room.y0 + 4; G.player.inv = 99;
+    run(G, (g) => { g.player.y = g.room.y0 + 4; g.player.vy = 0; g.player.inv = 99; return {}; }, 0.02);
+    const e = G.ents.find((q) => q.kind === 'leap');
+    ok(e && e.x < G.cam + BA.VW, 'sıçrayan bug ekranın içinde doğdu');
+    let top = 99;
+    run(G, (g) => { if (e) top = Math.min(top, e.y); g.player.y = g.room.y0 + 4; g.player.vy = 0; g.player.inv = 99; return {}; }, 3);
+    ok(e && top < G.room.y0 + 7 && !G.ents.includes(e), `bug yükselip raylara geri düştü (tepe ${(top - G.room.y0).toFixed(1)})`);
+  }
+}
+
 // ---------- bitiş merdiveni ve DEPLOY anteni ----------
 {
   // merdivenin tepesinden kenara gelen oyuncu verilen hızla zıplar; anten bonusunu döndürür

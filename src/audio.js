@@ -57,6 +57,14 @@
 
   // ---------------- efektler ----------------
   const last = {};
+  // metro treninin uğultusu: tren durunca ya da metrodan çıkınca kısılır
+  let trainSnd = null;
+  function stopTrain() {
+    if (!trainSnd) return;
+    const t = ac.currentTime, g = trainSnd.g.gain;
+    g.cancelScheduledValues(t); g.setValueAtTime(Math.max(0.0001, g.value), t); g.linearRampToValueAtTime(0.0001, t + 0.6);
+    trainSnd.s.stop(t + 0.7); trainSnd = null;
+  }
   function sfx(name) {
     if (!ctx() || muted) return;
     const t = ac.currentTime, B = sfxBus;
@@ -82,7 +90,7 @@
       case 'checkpoint': seq([72, 79, 84], 0.08, 'triangle', 0.25); break;
       case 'goalon': seq([79, 84, 88, 91], 0.09, 'triangle', 0.25); break;
       case 'tick': osc('pulse', 1500, t, 0.03, 0.04, B); break;
-      case 'warp': noise(t, 0.5, 0.18, 900, B); osc('triangle', mid(81), t + 0.05, 0.28, 0.16, B); osc('triangle', mid(76), t + 0.32, 0.4, 0.16, B); break;
+      case 'warp': stopTrain(); noise(t, 0.5, 0.18, 900, B); osc('triangle', mid(81), t + 0.05, 0.28, 0.16, B); osc('triangle', mid(76), t + 0.32, 0.4, 0.16, B); break;
       case 'secret': seq([79, 86, 91, 95], 0.05, 'triangle', 0.18, 0.12); break;
       case 'firework': osc('sine', 500, t, 0.32, 0.04, B, 3.2); noise(t + 0.32, 0.5, 0.35, 1400, B); for (let i = 0; i < 7; i++) noise(t + 0.45 + i * 0.06 + Math.random() * 0.04, 0.05, 0.12, 6000, B, true); break;
       case 'bosshit': osc('sawtooth', 200, t, 0.25, 0.12, B, 0.4); noise(t, 0.2, 0.2, 2500, B); break;
@@ -105,6 +113,21 @@
       case 'clear': stopMusic(); [[72, 0], [76, 0.12], [79, 0.24], [84, 0.36], [79, 0.6], [84, 0.72], [88, 0.84]].forEach(([n, d]) => { osc('pulse', mid(n), t + d, 0.2, 0.1, B); osc('triangle', mid(n - 24), t + d, 0.2, 0.25, B); }); break;
       case 'over': stopMusic(); [67, 64, 60, 55, 52, 48].forEach((n, i) => osc('triangle', mid(n), t + i * 0.25, 0.3, 0.3, B)); break;
       case 'piece': seq([72, 76, 79, 84, 88, 91, 96], 0.07, 'triangle', 0.22, 0.4); for (const [f, v] of [[1047, 0.05], [2093, 0.02]]) osc('sine', f, t + 0.5, 1.4, v, B, 1, 0.003); break;
+      case 'train': {
+        // kapı kapanır ("ding-dong"), motor homurdanarak hızlanır; tünel uğultusu tren durana dek sürer
+        osc('sine', 784, t, 0.5, 0.07, B); osc('sine', 622, t + 0.3, 0.75, 0.07, B);
+        osc('sawtooth', 60, t + 0.8, 3.2, 0.025, B, 3.4, 0.4);
+        stopTrain();
+        const s = loopNoise(), f = ac.createBiquadFilter(), g = ac.createGain();
+        f.type = 'lowpass'; f.frequency.setValueAtTime(140, t); f.frequency.linearRampToValueAtTime(320, t + 3.5);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 3); g.gain.setValueAtTime(0.16, t + 16); g.gain.linearRampToValueAtTime(0.0001, t + 18);
+        s.connect(f).connect(g).connect(B); s.start(t + 0.6, Math.random()); s.stop(t + 18.2);
+        trainSnd = { s, g };
+        break;
+      }
+      case 'trainstop': stopTrain(); noise(t, 1, 0.09, 3200, B, true); osc('sawtooth', 210, t, 1.3, 0.022, B, 0.35); break;
+      case 'fall': stopTrain(); osc('triangle', 900, t, 0.55, 0.1, B, 0.22); break;
+      case 'leap': osc('square', 210, t, 0.17, 0.05, B, 2.8); noise(t, 0.08, 0.08, 4200, B, true); break;
       case 'win': [72, 72, 76, 79, 84, 79, 84, 88, 91].forEach((n, i) => { osc('pulse', mid(n), t + i * 0.14, 0.16, 0.1, B); osc('triangle', mid(n - 12), t + i * 0.14, 0.16, 0.22, B); }); break;
     }
   }
