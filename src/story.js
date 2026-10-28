@@ -679,6 +679,82 @@
     },
   };
 
+  // Haliç'ten sonra — Balat'ta akşam: kahraman dik yokuşu çıkar; üst kattaki pencereden yaşlı bir teyze
+  // ipe bağlı sepeti sarkıtır, içinde simit ve çay. Kahraman alır, yukarı bakar, iki el birbirine sallanır.
+  SCENES.halic = {
+    dur: 11, amb: 'balat', cues: [[2.2, 'bell']],
+    draw(g, t) {
+      const base = layer('halic', VW, VH, (b) => {
+        b.fillStyle = grad(b, 0, 0, 0, 120, [[0, '#4a3a8a'], [0.6, '#d8708a'], [1, '#f8a870']]); b.fillRect(0, 0, VW, 120);
+        // karşıda Haliç ve Fener Rum Lisesi
+        b.fillStyle = '#8a5a7a'; b.beginPath(); b.moveTo(0, 120); b.quadraticCurveTo(80, 70, 180, 86); b.quadraticCurveTo(220, 92, 256, 80); b.lineTo(256, 120); b.closePath(); b.fill();
+        A.box(b, 70, 66, 50, 20, 0, '#b8442a'); b.fillStyle = '#9a3a24'; b.beginPath(); b.ellipse(95, 66, 9, 7, 0, Math.PI, 0); b.fill();
+        // renkli evler: yakın plan cepheler
+        const cols = ['#e2483a', '#f4c531', '#3aa86a', '#3a7ad8', '#a85ad8'];
+        for (let i = 0; i < 5; i++) {
+          const x = -10 + i * 56, top = 40 + (i % 2) * 18;
+          rect(b, x, top, 54, 240 - top, cols[i]);
+          rect(b, x, top, 54, 240 - top, 'rgba(60,20,40,0.12)');
+          rect(b, x - 2, top - 4, 58, 5, A.shade(cols[i], -0.35));
+          for (let f = 0; f < 4; f++) for (let k = 0; k < 2; k++) { const wx = x + 8 + k * 24, wy = top + 14 + f * 40; rect(b, wx, wy, 14, 22, '#2a2a46'); rect(b, wx - 1.5, wy - 1.5, 17, 1.5, '#f4ecdc'); rect(b, wx - 1.5, wy + 22, 17, 2, '#f4ecdc'); }
+        }
+        // kaldırım taşları
+        b.fillStyle = '#6a5a5a'; b.fillRect(0, 214, VW, 26);
+        for (let x = 0; x < VW; x += 8) for (let y = 216; y < 240; y += 6) A.ellipse(b, x + ((y / 6) % 2) * 4, y, 3.4, 2.2, '#7a6a68', null);
+      });
+      img(g, base, 0, 0);
+      // üst kat penceresinde teyze (pencerenin içi ılık)
+      const wx = 186, wy = 94;
+      rect(g, wx, wy, 14, 22, '#f2c870'); glow(g, wx + 7, wy + 10, 22, 'rgba(255,210,130,A)', 0.4);
+      figure(g, wx + 7, wy + 24, 30, { pose: 'stand', dir: -1, shirt: '#8a3a5a', hair: '#d8d8d8', skin: '#e8b896', wave: t > 8.2 && t < 10.5, phase: t });
+      rect(g, wx - 1.5, wy + 22, 17, 2, '#f4ecdc');
+      // ip ve sepet: iner, bekler, boş olarak geri çıkar
+      const down = seg(t, 2.4, 5) - seg(t, 7.2, 9.2);
+      const by = lerp(wy + 26, 176, down), bx = wx + 4;
+      A.lin(g, bx, wy + 20, bx, by, '#c8a878', 0.6);
+      A.poly(g, [bx - 7, by, bx + 7, by, bx + 5.4, by + 9, bx - 5.4, by + 9], '#c8904a', A.K, 0.6);
+      for (let k = 1; k < 4; k++) A.lin(g, bx - 6.6 + k * 0.4, by + k * 2.2, bx + 6.6 - k * 0.4, by + k * 2.2, '#8a5a26', 0.5);
+      if (t < 6.4) { A.drawSimit(g, bx - 2, by - 1.6, 0, 3); A.poly(g, [bx + 2, by - 4, bx + 5, by - 4, bx + 4.4, by + 1, bx + 2.6, by + 1], 'rgba(200,40,20,0.9)', A.K, 0.4); }
+      // kahraman yokuştan gelir, durur, yukarı bakar, uzanıp alır
+      const walk = seg(t, 0, 2.6);
+      const hx = lerp(-20, bx - 16, walk);
+      const reach = t > 5.4 && t < 6.6;
+      hero(g, hx, 214, 58, walk < 1 ? { pose: 'walk', dir: 1, phase: t * 1.3, bag: true } : { pose: 'stand', dir: 1, look: 'up', bag: true, reach: reach ? [(bx - 2 - hx) / 0.58, (by + 4 - 214) / 0.58] : undefined, wave: t > 8.2 && t < 10.5, phase: t });
+      if (t > 6.4) { A.drawSimit(g, hx + 12, 180, 0, 2.6); }
+      SC.cat(g, lerp(270, 210, seg(t, 3, 6)), 214, 0.9, '#f0a050', null, -1);
+    },
+  };
+
+  // Çamlıca'dan sonra — gece tepede: kahraman doğuya, Ümraniye'nin ışıklarına bakar. Işıkların arasında bir atölyenin
+  // ocağı turuncu yanıp söner; kahraman sırt çantasını düzeltir ve o ışığa doğru yürür.
+  SCENES.eve = {
+    dur: 10, amb: 'camlica', cues: [[4.2, 'forge'], [6.4, 'forge']],
+    draw(g, t) {
+      const base = layer('eve', VW, VH, (b) => {
+        b.fillStyle = grad(b, 0, 0, 0, 150, [[0, '#04061a'], [0.7, '#141a4a'], [1, '#2a2a6a']]); b.fillRect(0, 0, VW, 150);
+        const r = A.rng(12); for (let i = 0; i < 70; i++) A.circle(b, r() * VW, r() * 110, 0.3 + r() * 0.5, `rgba(255,255,240,${0.3 + r() * 0.7})`, null);
+        // vadide Ümraniye: apartman ışıkları
+        b.fillStyle = '#0c1036'; b.fillRect(0, 130, VW, 110);
+        for (let i = 0; i < 500; i++) { const x = r() * VW, y = 134 + Math.pow(r(), 0.8) * 70; b.fillStyle = ['#ffd27a', '#fff0c0', '#ffb070'][Math.floor(r() * 3)]; b.globalAlpha = 0.35 + r() * 0.6; b.fillRect(x, y, 0.9, 0.9); }
+        b.globalAlpha = 1;
+        // tepe, çamlar, kule
+        b.fillStyle = '#080a24'; b.beginPath(); b.moveTo(0, 240); b.lineTo(0, 168); b.quadraticCurveTo(70, 150, 140, 182); b.quadraticCurveTo(200, 210, 256, 214); b.lineTo(256, 240); b.closePath(); b.fill();
+        for (let x = 4; x < 120; x += 9) { b.fillStyle = '#060818'; b.beginPath(); b.moveTo(x - 5, 170 + x * 0.06); b.lineTo(x + 5, 170 + x * 0.06); b.lineTo(x, 150 + x * 0.06); b.closePath(); b.fill(); }
+        K.camlicaTower(b, 40, 162, 0.62, { wall: '#c8ccdc', wallD: '#9aa0b8', glass: '#3a6ab8', band: '#9ad8ff', lit: '#bff0ff' });
+      });
+      img(g, base, 0, 0);
+      // atölyenin ocağı: vadide turuncu nabız
+      const fx = 196, fy = 168, pulse = 0.55 + Math.sin(t * 3.2) * 0.25;
+      glow(g, fx, fy, 16 + Math.sin(t * 3.2) * 3, 'rgba(255,140,50,A)', pulse);
+      A.circle(g, fx, fy, 1.6, '#ffcc6a', null);
+      // kahraman: arkadan bakar, sonra o ışığa doğru iner
+      const go = seg(t, 6.2, 9.6);
+      if (go <= 0) hero(g, 120, 178, 40, { pose: 'back', bag: true });
+      else hero(g, lerp(120, 270, go), lerp(178, 214, go), 40, { pose: 'walk', dir: 1, phase: t * 1.3, bag: true });
+      birds(g, t, 60, 2, '#1a1a3a', 7);
+    },
+  };
+
   // 9 — Son: şafakta Çamlıca'dan iniş, sonra atölye sabah ışığında. Örs ile laptop yan yana,
   // kapının üstünde kendi tabelası, rafta yolda toplanan parçalar.
   SCENES.son = {
@@ -727,11 +803,11 @@
       // güneş ışığı odaya çapraz düşer (Hopper)
       g.fillStyle = 'rgba(255,230,170,0.35)'; g.beginPath(); g.moveTo(236, 54); g.lineTo(150, 54); g.lineTo(40, 200); g.lineTo(200, 200); g.closePath(); g.fill();
       // raf ve parçalar
-      rect(g, 34, 84, 120, 3, '#8a5a34');
-      for (let i = 0; i < 9; i++) {
-        const x = 42 + i * 13, y = 77;
-        if (pieces[i]) { glow(g, x, y, 9, 'rgba(255,240,190,A)', 0.4); A.drawPiece(g, i, x, y, 0.75, t); }
-        else { g.strokeStyle = 'rgba(255,240,220,0.4)'; g.setLineDash([1.4, 1.4]); g.lineWidth = 0.6; g.strokeRect(x - 5, y - 6, 10, 11); g.setLineDash([]); }
+      rect(g, 30, 84, 132, 3, '#8a5a34');
+      for (let i = 0; i < A.PIECES.length; i++) {
+        const x = 37 + i * 11.8, y = 77;
+        if (pieces[i]) { glow(g, x, y, 8, 'rgba(255,240,190,A)', 0.4); A.drawPiece(g, i, x, y, 0.66, t); }
+        else { g.strokeStyle = 'rgba(255,240,220,0.4)'; g.setLineDash([1.4, 1.4]); g.lineWidth = 0.6; g.strokeRect(x - 4.5, y - 5.4, 9, 10); g.setLineDash([]); }
       }
       // duvarda çekiç ve maşalar
       for (let k = 0; k < 4; k++) { const x = 172 + k * 12; A.lin(g, x, 64, x, 92, '#6a4a2a', 1.4); A.box(g, x - 3.4, 62, 6.8, 4, 1, '#5a5e68', A.K, 0.4); }

@@ -41,6 +41,8 @@
     ddos:      { hp: 5, w: 2.5, h: 1.5 },
     glitch:    { hp: 5, w: 1.25, h: 1.75 },
     maviekran: { hp: 6, w: 2.75, h: 2.5 },
+    spagetti: { hp: 5, w: 2.25, h: 1.75 },
+    teknikborc: { hp: 7, w: 2.5, h: 2.5 },
   };
 
   function rng(seed) {
@@ -723,7 +725,7 @@
     const anger = 1 - b.hp / b.maxHp; // 0 → 1
     const set = (s) => { b.state = s; b.st = 0; };
     if (b.state === 'intro') {
-      if (b.kind === 'kralbug' || b.kind === 'truva' || b.kind === 'sizinti' || b.kind === 'maviekran') bossGravity(G, b, dt);
+      if (b.kind === 'kralbug' || b.kind === 'truva' || b.kind === 'sizinti' || b.kind === 'maviekran' || b.kind === 'spagetti' || b.kind === 'teknikborc') bossGravity(G, b, dt);
       if (b.st > 1.4) set(b.kind === 'glitch' ? 'hide' : 'go');
       return;
     }
@@ -873,6 +875,54 @@
           if (b.st > 1.9 - anger * 0.4) set('vanish');
         } else if (b.state === 'vanish') {
           if (b.st > 0.3) set('hide');
+        }
+        break;
+      }
+      case 'spagetti': {
+        // birbirine dolanmış kod: yürür, durup kemer çizerek erişte topları fırlatır, öfkelenince zıplar
+        if (b.state === 'go' && b.onGround) {
+          if (b.st > 0.8) b.face = toward;
+          b.vx = b.face * (1.6 + anger * 1.6);
+          b.cyc += dt;
+          if (b.cyc > 2.2 - anger * 0.7) { b.cyc = 0; set('throw'); b.shotN = 0; }
+        } else if (b.state === 'throw') {
+          b.vx = 0; b.face = toward;
+          const n = anger > 0.5 ? 3 : 2;
+          if (b.shotN < n && b.st > 0.35 + b.shotN * 0.3) {
+            const dist = clamp(Math.abs(pcx - bcx), 1.5, 9) * (0.75 + 0.25 * b.shotN);
+            bshot(G, { kind: 'noodle', x: bcx - 0.27, y: b.y, vx: toward * dist / 0.82, vy: -9, g: 22, w: 0.55, h: 0.55, life: 3, solidKill: true });
+            b.shotN++; ev(G, 'spawn');
+          }
+          if (b.st > 1.4) {
+            set('go');
+            if (anger > 0.35 && G.rand() < 0.6) { b.vy = -10.5; b.vx = toward * 3; set('hop'); ev(G, 'bossjump'); }
+          }
+        }
+        const r = bossGravity(G, b, dt);
+        if (r.hx) b.face = -b.face;
+        if (b.state === 'hop' && r.landed) { G.shake = 0.2; ev(G, 'thud'); set('go'); }
+        break;
+      }
+      case 'teknikborc': {
+        // yığılmış eski kod kutuları: ağır zıplar, inince tavandan kutular düşer; öfkelenince yerde cıvata kayar
+        if (b.state === 'go' && b.onGround) {
+          if (b.st > 0.9) b.face = toward;
+          b.vx = b.face * (1.2 + anger * 1.4);
+          if (b.st > 2.6 - anger * 0.8) { b.vy = -12; b.vx = toward * (2.5 + anger * 2); set('jump'); ev(G, 'bossjump'); }
+        }
+        const r = bossGravity(G, b, dt);
+        if (r.hx) b.face = -b.face;
+        if (b.state === 'jump' && r.landed) {
+          G.shake = 0.4; ev(G, 'thud'); set('go');
+          const n = 2 + Math.round(anger * 2);
+          for (let k = 0; k < n; k++) {
+            const x = b.L + 1 + G.rand() * (b.R - b.L - 3);
+            bshot(G, { kind: 'box', x, y: -0.6 - k * 1.3, vy: 0, g: 14, w: 0.8, h: 0.8, solidKill: true, life: 4 });
+          }
+          if (anger > 0.45) {
+            bshot(G, { kind: 'bolt', x: b.x - 0.6, y: 11.35, vx: -6, w: 0.6, h: 0.5, life: 3 });
+            bshot(G, { kind: 'bolt', x: b.x + b.w, y: 11.35, vx: 6, w: 0.6, h: 0.5, life: 3 });
+          }
         }
         break;
       }

@@ -11,6 +11,7 @@ vm.createContext(ctx);
 for (const f of ['levels.js', 'core.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8'), ctx, { filename: f });
 const BA = ctx.BA;
 const LV = ctx.BA_LEVELS;
+const NL = LV.length, NW = NL / 3; // gerçek bölümler (denemeler sona eklenir)
 const dt = 1 / 120;
 
 let fails = 0, passes = 0;
@@ -310,7 +311,7 @@ const flat = (w, extraRows) => {
     return G.phase === 'clear' ? G.goalBonus : -1;
   };
   const res = [];
-  for (let idx = 0; idx < 27; idx++) {
+  for (let idx = 0; idx < NL; idx++) {
     if (LV[idx].boss) continue;
     const runJ = leap(idx, BA.PH.run, true), walkJ = leap(idx, BA.PH.walk, true), off = leap(idx, BA.PH.walk, false);
     const G2 = BA.loadStage(BA.newRun(), idx), g = G2.goal;
@@ -327,7 +328,7 @@ const flat = (w, extraRows) => {
 
 // ---------- gerçek bölümler yüklenir ----------
 {
-  for (let k = 0; k < 27; k++) {
+  for (let k = 0; k < NL; k++) {
     const S = BA.newRun();
     const G = BA.loadStage(S, k);
     run(G, NONE, 0.5);
@@ -363,7 +364,7 @@ function bossBot(G) {
   return inp;
 }
 {
-  for (let k = 2; k < 27; k += 3) {
+  for (let k = 2; k < NL; k += 3) {
     const L = LV[k];
     const S = BA.newRun();
     S.power = 1;
@@ -385,7 +386,7 @@ function bossBot(G) {
 
 // hatıra parçası: her dünyanın 2. bölümünde bir tane; alınınca koşu kaydına işlenir
 {
-  for (let w = 0; w < 9; w++) {
+  for (let w = 0; w < NW; w++) {
     const S = BA.newRun();
     const G = BA.loadStage(S, w * 3 + 1);
     ok(G.piece && !G.piece.taken, `${w + 1}-2: hatıra parçası yüklendi`);

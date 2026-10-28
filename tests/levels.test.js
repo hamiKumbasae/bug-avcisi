@@ -1,4 +1,4 @@
-// 27 bölümün hepsinin baştan sona geçilebildiğini gerçek zıplama fiziğiyle denetler.
+// Bütün bölümlerin baştan sona geçilebildiğini gerçek zıplama fiziğiyle denetler.
 // node tests/levels.test.js
 'use strict';
 const fs = require('fs');

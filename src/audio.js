@@ -132,6 +132,10 @@
       lead: 'E5 . . G5 . F5 E5 . | F5 . . A5 . G5 F5 . | E5 . G5 . B5 . A5 G5 | F5 . E5 . D5 . . . | E5 . . G5 . F5 E5 . | A5 . . C6 . B5 A5 . | G5 . F5 . E5 . D5 F5 | E5 - - . B4 . E5 .' },
     camlica: { bpm: 164, chords: 'Dm Bb C A Dm Bb Gm A', drums: 'k.hkk.hkk.hkk.hh',
       lead: 'D5 F5 A5 D6 A5 F5 D5 F5 | Bb4 D5 F5 Bb5 F5 D5 Bb4 D5 | C5 E5 G5 C6 G5 E5 C5 E5 | A4 C#5 E5 A5 E5 C#5 A4 C#5 | D6 - C6 . A5 - F5 . | Bb5 - A5 . F5 - D5 . | G5 . A5 . Bb5 . C6 . | C#6 - - . E5 . A5 .' },
+    halic: { bpm: 120, chords: 'Dm Gm A Dm Bb Gm A Dm', drums: 'k..hs.h.k..hs.h.',
+      lead: 'D5 . F5 . A5 - G5 F5 | G5 . Bb5 . A5 G5 F5 . | E5 . C#5 . E5 . A5 . | F5 - E5 D5 D5 - . . | D5 . F5 . Bb5 - A5 G5 | G5 . F5 . E5 . D5 . | C#5 . E5 . G5 F5 E5 C#5 | D5 - - . A4 . D5 .' },
+    umraniye: { bpm: 140, chords: 'G D Em C G D C D', drums: 'k.h.s.h.k.h.s.hh',
+      lead: 'G4 . B4 . D5 . G5 . | F#5 - E5 D5 A4 . D5 . | E5 . G5 . B5 . A5 G5 | E5 - D5 C5 G4 - . . | B4 . D5 . G5 . B5 . | A5 - F#5 . D5 . A5 . | G5 . E5 . C5 . E5 G5 | F#5 - A5 . D6 - . .' },
     boss: { bpm: 172, chords: 'Dm Dm Bb A Dm Dm Bb A', drums: 'kkhskkhskkhskkss',
       lead: 'D5 . D5 . F5 . D5 . | G#5 . A5 . F5 . D5 . | Bb5 . A5 . G5 . F5 . | E5 . C#5 . A4 . . . | D6 . . C6 . . A5 . | G#5 . A5 . F5 . D5 . | Bb5 . C6 . D6 . Bb5 . | A5 - C#6 . E6 - . .' },
     hikaye: { bpm: 84, chords: 'Am F C G Am F G E', drums: '................',
@@ -139,7 +143,7 @@
     son: { bpm: 112, chords: 'F C Dm Bb F C Bb C', drums: 'k...s...k...s.h.',
       lead: 'C5 - F5 . A5 - G5 F5 | E5 - G5 . C6 - . . | D5 - F5 . A5 - G5 F5 | F5 - D5 . Bb4 - . . | C5 - F5 . A5 - C6 . | Bb5 - A5 . G5 - E5 . | D5 . E5 . F5 . G5 . | F5 - - - . . . .' },
   };
-  const WORLD_SONG = ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', 'kopru', 'catilar', 'camlica'];
+  const WORLD_SONG = ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'camlica', 'umraniye'];
   function chordNotes(ch) {
     const m = /^([A-G])(#|b)?(m?)/.exec(ch);
     const root = NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
@@ -284,12 +288,19 @@
     saat: { beds: [['cave', 0.06], ['wind', 0.04]], events: [['tick', 4.1], ['creak', 6], ['bell', 20]] },
     asansor: { beds: [['engine', 0.08], ['wind', 0.06]], events: [['ding', 8]] },
     yayin: { beds: [['hum', 0.12]], events: [['beep', 2], ['keys', 6]] },
+    karakoy: { beds: [['sea', 0.14], ['city', 0.08]], events: [['gull', 3], ['horn', 12], ['step', 6]] },
+    halic: { beds: [['sea', 0.08], ['wind', 0.06]], events: [['gull', 6], ['bird', 7], ['bell', 16]] },
+    balat: { beds: [['city', 0.05], ['wind', 0.05]], events: [['bird', 3], ['meow', 9], ['bell', 14], ['step', 6]] },
+    mahalle: { beds: [['city', 0.1], ['murmur', 0.05]], events: [['bird', 5], ['car', 6], ['step', 5], ['ding', 14]] },
+    plazadis: { beds: [['city', 0.12], ['engine', 0.05], ['wind', 0.04]], events: [['car', 3], ['ding', 12]] },
+    sanayi: { beds: [['fire', 0.08], ['hum', 0.06], ['city', 0.04]], events: [['forge', 2.6], ['carve', 5], ['creak', 7]] },
   };
-  const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'kopru', 'catilar', 'camlica'];
+  const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'camlica', 'mahalle'];
   // her bölümün mekânı (dünya*3 + bölüm)
   const PLACE_AMB = ['plaza', 'ofis', 'sunucu', 'iskele', 'pazar', 'moda', 'iskele', 'vapur', 'firtina',
     'carsi', 'carsi', 'bedesten', 'sarnic', 'sarnic', 'karanlik', 'kamondo', 'galata', 'cati',
-    'kopru', 'halat', 'tepe', 'catilar', 'catilar', 'saat', 'camlica', 'asansor', 'yayin'];
+    'karakoy', 'halic', 'balat', 'kopru', 'halat', 'tepe', 'catilar', 'catilar', 'saat', 'camlica', 'asansor', 'yayin',
+    'mahalle', 'plazadis', 'sanayi'];
   function stopAmbient(fade) {
     if (!amb || !ac) { amb = null; return; }
     const t = ac.currentTime, f = fade === undefined ? 0.8 : fade, a = amb;

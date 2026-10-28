@@ -1,8 +1,8 @@
 # Bug Avcısı: İstanbul
 
 Bilgisayar mühendisi bir kahramanla İstanbul'da geçen, tarayıcıda çalışan özgün bir platform oyunu.
-İstanbul'un bütün sistemlerine bug'lar sızmış; Maslak'taki plazalardan Çamlıca Kulesi'ne kadar her bölümün
-sonundaki **DEPLOY** terminaline ulaş, her dünyanın sonunda patronu yen.
+İstanbul'un bütün sistemlerine bug'lar sızmış; Maslak'taki plazalardan Haliç'e, Çamlıca'ya ve Ümraniye'ye
+kadar her bölümün sonundaki **DEPLOY** terminaline ulaş, her dünyanın sonunda patronu yen.
 
 **Oyna:** https://hamikumbasae.github.io/bug-avcisi/
 
@@ -24,17 +24,18 @@ büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz, ama vazgeçmez 
   Herhangi bir tuşla ya da dokunarak atlanabilirler.
 - **Ufuktaki ev:** Çamlıca Kulesi dünyaların ufkunda görünür; ilerledikçe yaklaşır.
 - **Hatıra parçaları:** her dünyanın 2. bölümünde, yoldan ayrılan yüksek bir köşede bir parça var
-  (Maslak camı, martı tüyü, vapur çanı, nazar, sarnıç damlası, Galata Kulesi, köprü, kedi, lale).
+  (Maslak camı, martı tüyü, vapur çanı, nazar, sarnıç damlası, Galata Kulesi, Balat'ın sepeti, köprü, kedi,
+  lale, demirci çekici).
   Topladıkların kalıcı olarak kaydedilir; son sahnede atölyenin rafında durur, Bölüm seç ekranında da görünür.
 - **Ses:** her dünyanın kendi şehir sesi var (martılar, vapur düdüğü, çarşı uğultusu, damlayan su, gece rüzgârı).
 
 ## Dünyalar
 
-9 dünya, her biri 3 bölüm (toplam 27). Her bölüm ayrı bir mekânda geçer: kendi arka planı, zemini,
+11 dünya, her biri 3 bölüm (toplam 33). Her bölüm ayrı bir mekânda geçer: kendi arka planı, zemini,
 şehir sesi ve bölüm tipi vardır (dış mekânda koşu ve bloklar; iç mekânda tavanlı dar koridorlar;
 patron bölümlerinde kale gibi tuzaklar). Her dünyanın 3. bölümünün sonunda bir patron var.
 
-**Amaç:** Maslak'tan başlayıp şehri geçerek Çamlıca'ya varmak, yol boyunca 9 hatıra parçasını toplamak.
+**Amaç:** Maslak'tan başlayıp şehri geçerek Ümraniye'ye, eve varmak; yol boyunca 11 hatıra parçasını toplamak.
 Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve topladığın parçaları gösterir.
 
 | Dünya | Yer | Bölümler | Patron |
@@ -45,11 +46,13 @@ Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve top
 | 4 | Kapalıçarşı | Kuyumcular · Halıcılar · Bedesten (kubbeli taş salon) | Truva Atı |
 | 5 | Yerebatan Sarnıcı | Sütunlar · Medusa (yeşil ışık) · Karanlık Su | Bellek Sızıntısı |
 | 6 | Galata | Kamondo Merdivenleri · Kuledibi · Çatı Arası (Hezarfen'in kanatları) | Sonsuz Döngü |
-| 7 | Boğaz Köprüsü | Ayak · Halatlar (bulut hizasında) · Tepe (gece) | DDoS Bulutu |
-| 8 | Gece çatıları | Bacalar · Antenler · Saat Kulesi (dev çarklar) | Glitch |
-| 9 | Çamlıca | Tepe Yolu · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
+| 7 | Haliç | Karaköy (Galata Köprüsü'nde balıkçılar) · Haliç Kıyısı (metro köprüsü, eski tersane) · Eyüp-Balat (renkli evler, Fener Rum Lisesi, teleferik) | Spagetti Kod |
+| 8 | Boğaz Köprüsü | Ayak · Halatlar (bulut hizasında) · Tepe (gece) | DDoS Bulutu |
+| 9 | Gece çatıları | Bacalar · Antenler · Saat Kulesi (dev çarklar) | Glitch |
+| 10 | Çamlıca | Tepe Yolu · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
+| 11 | Ümraniye | Çarşı (bakkal, fırın, çay ocağı) · Yeni Plazalar (M5) · Sanayi (torna, kaynak, dövme atölyesi) | Teknik Borç |
 
-Ana menüdeki **Bölüm seç** ile 27 bölümden istediğine doğrudan başlayabilirsin.
+Ana menüdeki **Bölüm seç** ile 33 bölümden istediğine doğrudan başlayabilirsin.
 
 Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam edersin. Oyun bitince
 "Devam et" ile o dünyanın başından yeniden başlarsın; ulaştığın en ileri dünya menüde kayıtlı kalır.
@@ -92,7 +95,7 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
   Koşarken zıplarsan daha yükseğe ve uzağa gidersin.
 - **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
 - **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
-- **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane ve Kısıklı'nın dış mekân bölümlerinde
+- **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane, Haliç, Kısıklı ve Ümraniye'nin dış mekân bölümlerinde
   metro girişi var. Üstünde ↓'ye bas: simit dolu bir istasyona inersin, yürüyen merdivenle bölümün ilerisine çıkarsın.
 - **DEPLOY anteni:** bölüm sonundaki merdivenden atla; antene ne kadar yüksekten değersen o kadar puan
   (100'den 5000'e). Kalan sürenin son hanesi tekse havai fişekler patlar.
@@ -101,14 +104,14 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 
 ```
 python3 -m http.server      # sonra http://localhost:8000
-node tests/core.test.js     # fizik, bloklar, düşmanlar, eşyalar, akış, 9 patron
-node tests/levels.test.js   # 27 bölümün hepsi gerçek zıplama fiziğiyle baştan sona geçilebiliyor mu
+node tests/core.test.js     # fizik, bloklar, düşmanlar, eşyalar, akış, 11 patron
+node tests/levels.test.js   # 33 bölümün hepsi gerçek zıplama fiziğiyle baştan sona geçilebiliyor mu
 python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 ```
 
 - `src/core.js`: oyun kuralları; çizimden bağımsızdır, testler Node'da çalıştırır.
-- `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 27 bölüm (tohumlu, her seferinde aynı çıkar).
-- `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 9 patron, her dünyanın karoları.
+- `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 33 bölüm (tohumlu, her seferinde aynı çıkar).
+- `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 11 patron, her dünyanın karoları.
 - `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı) ve başlık ekranının İstanbul silueti.
 - `src/places.js`: bölüm mekânları (gökdelenin içi, sunucu odası, balık pazarı, fırtına, saat kulesi...).
 - `src/story.js`: yazısız hikâye sahneleri (giriş, 8 ara sahne, son).

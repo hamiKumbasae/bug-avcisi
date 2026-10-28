@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bug Avcısı: İstanbul — 9 dünya × 3 bölüm haritalarını üretir ve src/levels.js'e yazar.
+"""Bug Avcısı: İstanbul — 11 dünya × 3 bölüm haritalarını üretir ve src/levels.js'e yazar.
 
     python3 tools/bolumler.py
 
@@ -41,12 +41,16 @@ WORLDS = [
      'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
     {'name': 'Galata', 'sub': 'Yokuşlar', 'enemies': 'emv', 'boss': 'dongu', 'boss_name': 'Sonsuz Döngü',
      'sections': ['Kamondo Merdivenleri', 'Kuledibi', 'Çatı Arası']},
+    {'name': 'Haliç', 'sub': 'Karaköy\'den Balat\'a', 'enemies': 'esm', 'boss': 'spagetti', 'boss_name': 'Spagetti Kod',
+     'sections': ['Karaköy', 'Haliç Kıyısı', 'Eyüp-Balat']},
     {'name': 'Köprü', 'sub': 'Boğaz Köprüsü', 'enemies': 'msv', 'boss': 'ddos', 'boss_name': 'DDoS Bulutu',
      'sections': ['Ayak', 'Halatlar', 'Tepe']},
     {'name': 'Çatılar', 'sub': 'Gece', 'enemies': 'evom', 'boss': 'glitch', 'boss_name': 'Glitch',
      'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
     {'name': 'Çamlıca', 'sub': 'Kule', 'enemies': 'esvmo', 'boss': 'maviekran', 'boss_name': 'Mavi Ekran',
      'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası']},
+    {'name': 'Ümraniye', 'sub': 'Ev', 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç',
+     'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi']},
 ]
 
 # Her bölüm ayrı bir mekân: parça karışımı (bölümün tipi), tavan (iç mekân) ve metro girişi.
@@ -82,6 +86,11 @@ PLACES = [
         {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'metro': True},
         {'parts': ['pillars', 'loop', 'spikes', 'blocks', 'gap', 'stairs', 'group', 'flat'], 'ceil': 2},
     ],
+    [  # Haliç: Karaköy'den Eyüp-Balat'a
+        {'parts': ['flat', 'blocks', 'gap', 'bridge', 'group', 'blockgap', 'step', 'moving']},
+        {'parts': ['flat', 'bridge', 'gap', 'moving', 'blocks', 'pillars', 'group', 'stairs'], 'metro': True},
+        {'parts': ['slope', 'slope', 'stairs', 'step', 'blocks', 'gap', 'spikes', 'loop', 'group']},
+    ],
     [  # Köprü
         {'parts': ['flat', 'blocks', 'gap', 'pillars', 'stairs', 'bridge', 'group', 'moving']},
         {'parts': ['bridge', 'bridge', 'moving', 'moving', 'vertical', 'blockgap', 'pillars']},
@@ -96,6 +105,11 @@ PLACES = [
         {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'metro': True},
         {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge']},
         {'parts': ['spikes', 'loop', 'tunnel', 'moving', 'pillars', 'blocks', 'gap', 'flat'], 'ceil': 2},
+    ],
+    [  # Ümraniye: çarşı ve mahalle, yeni plazalar ve metro, Dudullu sanayisi
+        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'metro': True},
+        {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'metro': True},
+        {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group']},
     ],
 ]
 
@@ -449,7 +463,7 @@ class Lv:
 
 
 def make(world, sec, r):
-    d = (world * 3 + sec) / 26
+    d = (world * 3 + sec) / (len(WORLDS) * 3 - 1)
     W = WORLDS[world]
     PL = PLACES[world][sec]
     lv = Lv(r, d, world)
@@ -531,7 +545,7 @@ def make(world, sec, r):
 
 def main():
     levels = []
-    for w in range(9):
+    for w in range(len(WORLDS)):
         W = WORLDS[w]
         for s in range(3):
             r = random.Random(w * 1000 + s * 37 + 11)
@@ -545,7 +559,7 @@ def main():
     worlds = [{'name': W['name'], 'sub': W['sub']} for W in WORLDS]
     out = Path(__file__).resolve().parent.parent / 'src' / 'levels.js'
     body = ',\n'.join('  ' + json.dumps(lv, ensure_ascii=False) for lv in levels)
-    out.write_text('// Bug Avcısı: İstanbul — 27 bölüm. Otomatik üretildi: python3 tools/bolumler.py\n'
+    out.write_text(f'// Bug Avcısı: İstanbul — {len(levels)} bölüm. Otomatik üretildi: python3 tools/bolumler.py\n'
                    f'window.BA_WORLDS = {json.dumps(worlds, ensure_ascii=False)};\n'
                    f'window.BA_LEVELS = [\n{body}\n];\n', encoding='utf-8')
     print(len(levels), 'bölüm →', out, '| genişlikler:', [len(l['map'][0]) for l in levels])

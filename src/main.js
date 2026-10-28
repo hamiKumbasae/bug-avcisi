@@ -176,10 +176,21 @@
   }
 
   // ---------- uygulama durumu ----------
+  // 11 dünya: eski (9 dünyalı) kayıtları yeni sıraya taşı — Haliç 7. dünya olarak araya girdi
+  const NW = WORLDS.length, NL = LEVELS.length;
+  // Galata'dan sonra her dünya için gösterilecek ara sahne; son dünyadan sonra 'son'
+  const STORY_AFTER = ['ara1', 'ara2', 'ara3', 'ara4', 'ara5', 'ara6', 'halic', 'ara7', 'ara8', 'eve'];
+  if (store.get('ba-kayit-surum', 1) < 2) {
+    const old = store.get('ba-parcalar', null);
+    if (Array.isArray(old) && old.length > 0 && old.length <= 9) store.set('ba-parcalar', [...old.slice(0, 6), false, ...old.slice(6, 9), false]);
+    const pr = store.get('ba-ilerleme', 1);
+    if (pr >= 7) store.set('ba-ilerleme', pr + 1);
+    store.set('ba-kayit-surum', 2);
+  }
   const app = {
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
     progress: store.get('ba-ilerleme', 1), best: store.get('ba-rekor', 0), titleT: 0, selW: 0, selS: 0,
-    pieces: store.get('ba-parcalar', [false, false, false, false, false, false, false, false, false]),
+    pieces: store.get('ba-parcalar', new Array(NW).fill(false)),
   };
   window.__ba = { app, BA, start: (stage) => startRun(stage || 0), render: () => render(), story: (id, then) => playStory(id, then || toTitle) };
 
@@ -230,7 +241,7 @@
   function titleItems() {
     const items = [{ label: 'OYNA', act: () => startRun(0, true) }];
     if (app.progress > 1) items.push({ label: `DEVAM: DÜNYA ${app.progress}`, act: () => startRun((app.progress - 1) * 3) });
-    items.push({ label: 'BÖLÜM SEÇ', act: () => { app.screen = 'select'; app.selW = Math.min(8, app.progress - 1); app.selS = 0; } });
+    items.push({ label: 'BÖLÜM SEÇ', act: () => { app.screen = 'select'; app.selW = Math.min(NW - 1, app.progress - 1); app.selS = 0; } });
     items.push({ label: 'NASIL OYNANIR', act: () => { app.screen = 'help'; } });
     if (window.__ba.bridge && window.__ba.bridge.open) items.push({ label: 'TELEFONLA OYNA', act: () => window.__ba.bridge.open() });
     return items;
@@ -245,8 +256,8 @@
     } else if (s === 'help') {
       if (k === 'ok' || k === 'back' || k === 'start') { app.screen = 'title'; AU.sfx('select'); }
     } else if (s === 'select') {
-      if (k === 'up') { app.selW = (app.selW + 8) % 9; AU.sfx('move'); }
-      if (k === 'down') { app.selW = (app.selW + 1) % 9; AU.sfx('move'); }
+      if (k === 'up') { app.selW = (app.selW + NW - 1) % NW; AU.sfx('move'); }
+      if (k === 'down') { app.selW = (app.selW + 1) % NW; AU.sfx('move'); }
       if (k === 'left') { app.selS = (app.selS + 2) % 3; AU.sfx('move'); }
       if (k === 'right') { app.selS = (app.selS + 1) % 3; AU.sfx('move'); }
       if (k === 'ok' || k === 'start') { AU.sfx('select'); startRun(app.selW * 3 + app.selS); }
@@ -333,14 +344,15 @@
         else { app.screen = 'over'; app.overT = 0; app.menu = 0; AU.sfx('over'); saveScore(); }
       } else if (G.result === 'clear') {
         BA.afterClear(app.S);
-        const w = Math.min(9, Math.floor(app.S.stage / 3) + 1);
-        if (w > app.progress && app.S.stage < 27) { app.progress = w; store.set('ba-ilerleme', w); }
+        const w = Math.min(NW, Math.floor(app.S.stage / 3) + 1);
+        if (w > app.progress && app.S.stage < NL) { app.progress = w; store.set('ba-ilerleme', w); }
         AU.stopAmbient(0.6);
-        if (app.S.stage >= 27) {
+        const after = STORY_AFTER[app.S.stage / 3 - 1];
+        if (app.S.stage >= NL) {
           saveScore();
           const toEnd = () => { app.screen = 'end'; app.endT = 0; AU.sfx('win'); setTimeout(() => { if (app.screen === 'end') AU.playMusic('son'); }, 1600); };
           if (ST.has('son')) playStory('son', toEnd); else toEnd();
-        } else if (app.S.stage % 3 === 0 && ST.has('ara' + app.S.stage / 3)) playStory('ara' + app.S.stage / 3, toIntro);
+        } else if (app.S.stage % 3 === 0 && after && ST.has(after)) playStory(after, toIntro);
         else toIntro();
       }
     } else if (app.screen === 'story') {
@@ -653,6 +665,29 @@
         ctx.restore();
         break;
       }
+      case 'noodle': {
+        // dolanmış erişte topu
+        ART.circle(ctx, cx, cy, w * 0.5, '#f2d06a', ART.K, 0.7);
+        ctx.strokeStyle = '#c89a3a'; ctx.lineWidth = 0.7;
+        for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(cx, cy, w * (0.18 + k * 0.1), app.t * 8 + k * 2, app.t * 8 + k * 2 + 3.4); ctx.stroke(); }
+        ART.circle(ctx, cx + 1, cy - 1.4, 1.1, '#d8302a', null);
+        break;
+      }
+      case 'box': {
+        // tavandan düşen eski kod kutusu; yerde gölgesi önceden belli olur
+        const a = Math.min(0.5, 0.15 + s.t * 0.3);
+        ART.ellipse(ctx, cx, 12 * TS - 1, w * 0.55, 1.6, `rgba(20,10,0,${a})`, null);
+        ART.box(ctx, x, y, w, h, 1.2, '#b8743a', ART.K, 0.7);
+        ctx.strokeStyle = '#7a3a14'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 1.5, y + 1.5); ctx.lineTo(x + w - 1.5, y + h - 1.5); ctx.stroke();
+        break;
+      }
+      case 'bolt': {
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(app.t * 14 * Math.sign(s.vx || 1));
+        ART.poly(ctx, [-4, -2.4, 0, -4.6, 4, -2.4, 4, 2.4, 0, 4.6, -4, 2.4], '#9aa0aa', ART.K, 0.7);
+        ART.circle(ctx, 0, 0, 1.6, '#4a4e58', null);
+        ctx.restore();
+        break;
+      }
       case 'sad': {
         ART.box(ctx, x, y, w, h, 1.6, '#2a5ad8');
         ctx.fillStyle = '#ffffff'; ctx.font = `600 ${h * 0.6}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(':(', cx, cy + 0.4);
@@ -813,7 +848,7 @@
   function drawHelp() {
     screenBg(7, 'rgba(14,12,34,0.78)', app.t * 6);
     text('NASIL OYNANIR', VW / 2, 10, '#f4c531', 10, 'center');
-    const story = ["Maslak'tan Çamlıca'ya, şehrin öbür ucuna git.", "Bug'ları temizle, her bölümü DEPLOY et,", 'patronları yen, 9 hatıra parçasını topla.'];
+    const story = ["Maslak'tan Ümraniye'ye, şehrin öbür ucuna git.", "Bug'ları temizle, her bölümü DEPLOY et,", `patronları yen, ${NW} hatıra parçasını topla.`];
     story.forEach((s, i) => text(s, VW / 2, 28 + i * 10, '#fff8ec', 6.4, 'center', null, 500));
     panel(10, 62, VW - 20, 58, 8);
     const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in, metroya gir']];
@@ -830,12 +865,12 @@
     });
     if (Math.floor(app.t * 2) % 2) text('DEVAM İÇİN Z', VW / 2, 228, '#f4c531', 6.6, 'center');
   }
-  // Bölüm seç: 9 dünya × 3 bölüm
-  const SEL = { y0: 30, row: 17, x0: 144, col: 36 };
+  // Bölüm seç: 11 dünya × 3 bölüm
+  const SEL = { y0: 27, row: 14.6, x0: 144, col: 36 };
   function selectTap(x, y) {
     if (y < 22 && x < 70) { menuKey('back'); return; }
     const w = Math.floor((y - SEL.y0 + 3) / SEL.row), c = Math.floor((x - SEL.x0 + 2) / SEL.col);
-    if (w < 0 || w > 8) return;
+    if (w < 0 || w > NW - 1) return;
     const sec = c >= 0 && c <= 2 ? c : app.selS;
     if (w === app.selW && sec === app.selS) { menuKey('ok'); return; }
     app.selW = w; app.selS = sec; AU.sfx('move');
@@ -845,33 +880,33 @@
     screenBg(w * 3 + app.selS, 'rgba(14,12,34,0.62)', app.t * 8);
     panel(4, 4, 52, 14, 7); ART.poly(ctx, [12, 11, 17, 7.6, 17, 14.4], '#c8ccdc', null); text('GERİ', 21, 6.8, '#c8ccdc', 6.4, 'left', null);
     text('BÖLÜM SEÇ', VW / 2, 6, '#f4c531', 9, 'center');
-    panel(4, SEL.y0 - 6, VW - 8, 9 * SEL.row + 2, 8, 'rgba(18,16,44,0.78)');
-    for (let i = 0; i < 9; i++) {
+    panel(4, SEL.y0 - 5, VW - 8, NW * SEL.row + 2, 8, 'rgba(18,16,44,0.78)');
+    for (let i = 0; i < NW; i++) {
       const y = SEL.y0 + i * SEL.row, on = i === w;
-      if (on) { ART.rr(ctx, 7, y - 4, VW - 14, SEL.row - 2, 6); ctx.fillStyle = 'rgba(244,197,49,0.16)'; ctx.fill(); }
-      ART.circle(ctx, 17, y + 4.5, 5.6, on ? '#f4c531' : '#2e3460', null);
-      text(`${i + 1}`, 17, y + 1.2, on ? '#2a1a10' : '#9af4e4', 6.4, 'center', null);
-      text(WORLDS[i].name, 28, y + 0.8, on ? '#ffffff' : '#d4d8e8', 6.8, 'left', null);
+      if (on) { ART.rr(ctx, 7, y - 3.2, VW - 14, SEL.row - 1.6, 6); ctx.fillStyle = 'rgba(244,197,49,0.16)'; ctx.fill(); }
+      ART.circle(ctx, 17, y + 3.9, 5.2, on ? '#f4c531' : '#2e3460', null);
+      text(`${i + 1}`, 17, y + 0.8, on ? '#2a1a10' : '#9af4e4', 6, 'center', null);
+      text(WORLDS[i].name, 28, y + 0.6, on ? '#ffffff' : '#d4d8e8', 6.6, 'left', null);
       ctx.globalAlpha = app.pieces[i] ? 1 : 0.22;
-      ART.drawPiece(ctx, i, 130, y + 4.5, 0.62, app.t);
+      ART.drawPiece(ctx, i, 130, y + 3.9, 0.56, app.t);
       ctx.globalAlpha = 1;
       for (let k = 0; k < 3; k++) {
         const x = SEL.x0 + k * SEL.col, sel = on && k === app.selS;
-        ART.rr(ctx, x, y - 3, 32, 13, 6.5);
+        ART.rr(ctx, x, y - 2.4, 32, 12, 6);
         ctx.fillStyle = sel ? '#f4c531' : k === 2 ? '#7a2e3a' : '#2e3460'; ctx.fill();
         if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.9; ctx.stroke(); }
-        text(`${i + 1}-${k + 1}`, x + 16, y + 0.4, sel ? '#2a1a10' : '#fff8ec', 6.4, 'center', null);
+        text(`${i + 1}-${k + 1}`, x + 16, y + 0.4, sel ? '#2a1a10' : '#fff8ec', 6, 'center', null);
       }
     }
     const L = LEVELS[w * 3 + app.selS];
-    panel(4, 186, VW - 8, 50, 9, 'rgba(18,16,44,0.88)');
-    text(WORLDS[w].name + ' · ' + L.name, VW / 2, 192, '#ffffff', 7.4, 'center', null);
-    text(L.boss ? 'Patron: ' + L.bossName : `${L.map[0].length} karo uzunluğunda`, VW / 2, 206, L.boss ? '#ffa288' : '#aab0c8', 6.4, 'center', null, 500);
-    if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 222, '#f4c531', 6.6, 'center', null);
+    panel(4, 192, VW - 8, 44, 9, 'rgba(18,16,44,0.88)');
+    text(WORLDS[w].name + ' · ' + L.name, VW / 2, 196, '#ffffff', 7.4, 'center', null);
+    text(L.boss ? 'Patron: ' + L.bossName : `${L.map[0].length} karo uzunluğunda`, VW / 2, 209, L.boss ? '#ffa288' : '#aab0c8', 6.4, 'center', null, 500);
+    if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 223, '#f4c531', 6.6, 'center', null);
   }
-  // ---------- İstanbul yol haritası: Maslak'tan Çamlıca'ya ----------
+  // ---------- İstanbul yol haritası: Maslak'tan Ümraniye'ye ----------
   // Dünyaların harita üzerindeki yerleri (kutuya göre 0..1)
-  const ROUTE = [[0.46, 0.22], [0.70, 0.84], [0.60, 0.86], [0.40, 0.75], [0.50, 0.77], [0.50, 0.625], [0.635, 0.46], [0.545, 0.555], [0.80, 0.62]];
+  const ROUTE = [[0.46, 0.22], [0.70, 0.84], [0.60, 0.86], [0.40, 0.75], [0.50, 0.77], [0.50, 0.625], [0.39, 0.665], [0.635, 0.46], [0.545, 0.555], [0.80, 0.62], [0.93, 0.55]];
   const STRAIT = [[0.67, -0.02], [0.69, 0.12], [0.63, 0.28], [0.645, 0.4], [0.625, 0.5], [0.605, 0.62], [0.585, 0.72], [0.575, 0.84]];
   const mapCache = ART.cache();
   function mapBase(w, h) {
@@ -911,7 +946,7 @@
         g.fillRect(px - 5, py - 6, 0.9, 7.6); g.fillRect(px + 4.2, py - 6, 0.9, 7.6);
       }
       { const [px, py] = M(0.598, 0.735); g.fillStyle = '#f4efe4'; g.fillRect(px - 1, py - 4, 2, 4); g.fillStyle = '#7e8c9e'; g.beginPath(); g.moveTo(px - 1.4, py - 4); g.lineTo(px + 1.4, py - 4); g.lineTo(px, py - 6.4); g.closePath(); g.fill(); }
-      for (let i = 0; i < 9; i++) { const [px, py] = M(0.85 + (i % 3) * 0.035, 0.5 + Math.floor(i / 3) * 0.045); g.fillStyle = '#5a8a4a'; g.beginPath(); g.moveTo(px - 2, py); g.lineTo(px + 2, py); g.lineTo(px, py - 4.4); g.closePath(); g.fill(); }
+      for (let i = 0; i < 9; i++) { const [px, py] = M(0.73 + (i % 3) * 0.035, 0.7 + Math.floor(i / 3) * 0.045); g.fillStyle = '#5a8a4a'; g.beginPath(); g.moveTo(px - 2, py); g.lineTo(px + 2, py); g.lineTo(px, py - 4.4); g.closePath(); g.fill(); }
     });
     mapCache.set(w + ':' + h, c);
     return c;
@@ -926,8 +961,11 @@
     ctx.setLineDash([2.2, 2.4]); ctx.strokeStyle = 'rgba(90,60,40,0.7)'; ctx.lineWidth = 1.2;
     ctx.beginPath(); P.forEach((p, i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, ...p)); ctx.stroke(); ctx.setLineDash([]);
     if (cur > 0) { ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 3.2; ctx.beginPath(); P.slice(0, cur + 1).forEach((p, i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, ...p)); ctx.stroke(); ctx.strokeStyle = '#f4c531'; ctx.lineWidth = 1.8; ctx.stroke(); }
-    // hedef: Çamlıca Kulesi
-    const [gx, gy] = P[8];
+    // yol üstünde Çamlıca Kulesi, hedef: Ümraniye'deki ev ve atölye
+    const [gx, gy] = P[9], [ux, uy] = P[10];
+    ART.box(ctx, ux - 4, uy - 9, 8, 6, 0.6, '#e8d8b8', '#1a1430', 0.6); ART.poly(ctx, [ux - 5, uy - 9, ux + 5, uy - 9, ux, uy - 13], '#c8503a', '#1a1430', 0.6);
+    ART.box(ctx, ux + 2, uy - 14, 2, 4, 0.3, '#6a5a5a', null);
+    for (let k = 0; k < 3; k++) ART.circle(ctx, ux + 3 + k * 1.4, uy - 16 - k * 2.4 - (app.t * 3 % 2), 0.9 + k * 0.4, `rgba(220,220,220,${0.6 - k * 0.15})`, null);
     ART.lin(ctx, gx + 6, gy + 2, gx + 6, gy - 16, '#5a6488', 1.6);
     ART.ellipse(ctx, gx + 6, gy - 18, 3.2, 4, '#7ac0f0', '#1a1430', 0.6);
     ART.lin(ctx, gx + 6, gy - 22, gx + 6, gy - 27, '#5a6488', 0.8); ART.circle(ctx, gx + 6, gy - 27.5, 0.9, '#ff4a4a', null);
@@ -943,7 +981,7 @@
     ART.drawHead(ctx, hx, hy - 9 - Math.abs(Math.sin(app.t * 4)) * 1.5, 4.2, { skin: app.S.power === 2 ? 'hacker' : 'normal' });
     ctx.restore();
     text('MASLAK', P[0][0], P[0][1] + 4, '#5a3a24', 5, 'center', null);
-    text('ÇAMLICA', gx, gy + 4.5, '#5a3a24', 5, 'center', null);
+    text('ÜMRANİYE', Math.min(ux, x + w - 18), uy + 4.5, '#5a3a24', 5, 'center', null);
   }
   function drawIntro() {
     const L = LEVELS[app.S.stage], Wd = WORLDS[L.world - 1], wi = L.world - 1;
@@ -954,10 +992,10 @@
     text(Wd.name + ' · ' + L.name, VW / 2, 38, '#9af4e4', 7, 'center', null, 500);
     routeMap(20, 50, VW - 40, 132, wi);
     // hatıra parçaları: toplananlar parlak, kalanlar soluk
-    for (let i = 0; i < 9; i++) {
-      const px = 40 + i * 22, py = 196;
-      ART.circle(ctx, px, py, 8.4, i === wi ? 'rgba(244,197,49,0.25)' : 'rgba(255,255,255,0.06)', null);
-      ctx.globalAlpha = app.pieces[i] ? 1 : 0.2; ART.drawPiece(ctx, i, px, py, 0.5, app.t); ctx.globalAlpha = 1;
+    for (let i = 0; i < NW; i++) {
+      const px = 28 + i * 20, py = 196;
+      ART.circle(ctx, px, py, 7.6, i === wi ? 'rgba(244,197,49,0.25)' : 'rgba(255,255,255,0.06)', null);
+      ctx.globalAlpha = app.pieces[i] ? 1 : 0.2; ART.drawPiece(ctx, i, px, py, 0.46, app.t); ctx.globalAlpha = 1;
     }
     const big = app.S.power > 0, hy = 228;
     if (L.boss) text('Patron: ' + L.bossName, 20, 214, '#ffa288', 6.6, 'left', null);
@@ -973,7 +1011,7 @@
     menu(['DEVAM', 'BÖLÜMÜ BAŞTAN AL', 'ANA MENÜ'], 100, app.menu);
   }
   function drawOver() {
-    const w = app.S ? Math.min(8, Math.floor(app.S.stage / 3)) : 0;
+    const w = app.S ? Math.min(NW - 1, Math.floor(app.S.stage / 3)) : 0;
     screenBg(w * 3, 'rgba(10,8,28,0.82)', 0);
     text('OYUN BİTTİ', VW / 2, 64, '#ff7a6a', 16, 'center');
     text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 96, '#fff8ec', 8, 'center', null);
@@ -985,11 +1023,11 @@
     // hikâyenin son karesi (atölye) sürer; üstte yalnız skor ve toplanan parçalar
     const dur = ST.SCENES.son.dur;
     ST.draw(ctx, 'son', dur - 3 + (app.endT % 2), { pieces: app.pieces });
-    panel(VW / 2 - 66, 6, 132, 34, 10, 'rgba(22,18,48,0.78)');
+    panel(VW / 2 - 78, 6, 156, 34, 10, 'rgba(22,18,48,0.78)');
     text(String(app.S.score).padStart(6, '0'), VW / 2, 9.5, '#ffe08a', 8, 'center', null);
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < NW; i++) {
       ctx.globalAlpha = app.pieces[i] ? 1 : 0.22;
-      ART.drawPiece(ctx, i, VW / 2 - 52 + i * 13, 30, 0.62, app.t);
+      ART.drawPiece(ctx, i, VW / 2 - 65 + i * 13, 30, 0.6, app.t);
     }
     ctx.globalAlpha = 1;
     app.menuItems = [];

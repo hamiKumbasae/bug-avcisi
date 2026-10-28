@@ -354,9 +354,11 @@
     { stops: [[0, '#1c0f0a'], [0.6, '#3e2416'], [1, '#5a3420']] },
     { stops: [[0, '#05090c'], [0.6, '#0e1a1e'], [1, '#14262a']] },
     { stops: [[0, '#5a4a9a'], [0.4, '#e2706a'], [0.75, '#f9a86a'], [1, '#ffd08f']], sun: [190, 176, 22, '#ffe4a0'] },
+    null, // 7 Haliç: üç bölümü de places.js'te
     { stops: [[0, '#26245e'], [0.45, '#6a4a9a'], [0.8, '#e2807a'], [1, '#f6a07a']], stars: 30 },
     { stops: [[0, '#070b26'], [0.6, '#18205a'], [1, '#2c3474']], moon: [196, 46, 14], stars: 90 },
     { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
+    null, // 11 Ümraniye: üç bölümü de places.js'te
   ];
   function drawSky(g, d, vw, vh, seed) {
     if (d.draw) { d.draw(g, vw, vh); return; }
@@ -520,6 +522,7 @@
         cat(g, 440, 214, 0.8, '#d0d0d4', null, 1);
       },
     },
+    null, // Haliç
     // 7 Köprü: alacakaranlıkta Boğaz Köprüsü, önde Ortaköy Camii
     {
       far(g) {
@@ -592,6 +595,7 @@
         for (let x = 0; x < W; x += 12 + r() * 14) { if (Math.abs(x - 150) < 20 || Math.abs(x - 372) < 74) continue; pine(g, x, 216, 0.8 + r() * 0.5); }
       },
     },
+    null, // Ümraniye
   ];
   // ---- dünya parçaları ----
   function glassTower(g, x, by, w, h, k) {
@@ -734,7 +738,7 @@
 
   // ---------- mekânlar: her dünyanın 3 bölümü ayrı bir yer (yer = dünya*3 + bölüm) ----------
   // Dünyanın ilk çizimi hangi bölümde kullanılıyor; diğer iki bölüm PLACES'ta
-  const BASE_AT = [0, 0, 1, 0, 0, 1, 0, 0, 0];
+  const BASE_AT = [0, 0, 1, 0, 0, 1, -1, 0, 0, 0, -1];
   const PLACES = {};
   function placeDef(p) {
     const w = Math.floor(p / 3), s = p % 3;
@@ -768,7 +772,7 @@
   // dünya → [istasyon, hat, hat rengi]
   const STATIONS = {
     0: ['İTÜ-AYAZAĞA', 'M2', '#2fa84f'], 1: ['KADIKÖY', 'M4', '#e5427f'], 3: ['VEZNECİLER', 'M2', '#2fa84f'],
-    5: ['ŞİŞHANE', 'M2', '#2fa84f'], 8: ['KISIKLI', 'M5', '#8a4fae'],
+    5: ['ŞİŞHANE', 'M2', '#2fa84f'], 6: ['HALİÇ', 'M2', '#2fa84f'], 9: ['KISIKLI', 'M5', '#8a4fae'], 10: ['ÜMRANİYE', 'M5', '#8a4fae'],
   };
   const station = (w) => STATIONS[w] || ['METRO', 'M', '#2fa84f'];
   const metroCache = A.cache();
