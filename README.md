@@ -16,7 +16,8 @@ Ayasofya, Sultanahmet Camii, Kız Kulesi, Galata Kulesi, Boğaz Köprüsü, Orta
 ## Hikâye
 
 Oyun yazısız bir hikâye anlatır: Ümraniye'de, kendi atölyesinde demir döven ve gece kod yazan bir mühendis
-büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz, ama vazgeçmez ve sonunda kendi yerini kurar.
+büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz. Yolun sonuna doğru plazanın kapısı da açılır,
+ama o artık kendi yerinin neresi olduğunu bilir: gece otobüsünde laptopunu kapatır ve kendi durağında iner.
 
 - **Sahneler:** oyunun başında, her dünyanın sonunda ve en sonda kısa, sessiz sahneler var. Tek kelime yok;
   hikâyeyi ışık, kompozisyon, hareket ve şehir sesleri anlatır. Işık dili Edward Hopper'ın resimlerinden

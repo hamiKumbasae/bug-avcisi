@@ -276,6 +276,8 @@
       case 'carve': for (let i = 0; i < 3; i++) noise(t + i * 0.5, 0.35, 0.06, 2600, B, true); break;
       case 'car': { const s = loopNoise(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.linearRampToValueAtTime(900, t + 1.2); f.frequency.linearRampToValueAtTime(250, t + 2.6); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 1.2); g.gain.linearRampToValueAtTime(0.0001, t + 2.6); s.connect(f).connect(g).connect(B); s.start(t); s.stop(t + 2.7); break; }
       case 'meow': osc('triangle', 700, t, 0.45, 0.04, B, 1.4, 0.08); break;
+      case 'kapak': noise(t, 0.05, 0.12, 1400, B); osc('triangle', 170, t, 0.08, 0.06, B, 0.7); break;           // laptop kapanır
+      case 'durak': osc('sine', 1175, t, 0.11, 0.06, B); osc('sine', 1175, t + 0.17, 0.16, 0.06, B); break;     // otobüste durak düğmesi
       case 'bell': for (const [f, v] of [[660, 0.05], [1320, 0.025], [1980, 0.012]]) osc('sine', f, t, 1.6, v, B, 1, 0.003); break;
       case 'beep': for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i++) osc('square', [1760, 2093, 1568][i % 3], t + i * 0.12, 0.05, 0.012, B); break;
       case 'thunder': { noise(t, 2.4, 0.5, 220, B); noise(t + 0.05, 0.4, 0.3, 900, B); break; }

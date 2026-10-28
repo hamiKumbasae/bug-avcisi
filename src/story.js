@@ -97,11 +97,11 @@
     A.circle(g, head[0], head[1], hr, o.skin);
     g.save(); g.beginPath(); g.arc(head[0], head[1], hr, 0, TAU); g.clip();
     g.fillStyle = o.hair;
-    if (o.pose === 'back') g.fillRect(head[0] - hr, head[1] - hr, hr * 2, hr * 1.5);
+    if (o.pose === 'back' || o.away) g.fillRect(head[0] - hr, head[1] - hr, hr * 2, hr * 1.5);
     else { g.beginPath(); g.ellipse(head[0] - hr * 0.35, head[1] - hr * 0.45, hr * 1.05, hr * 0.8, -0.2, 0, TAU); g.fill(); }
     g.restore();
     A.circle(g, head[0], head[1], hr, null);
-    if (o.glasses && o.pose !== 'back') {
+    if (o.glasses && o.pose !== 'back' && !o.away) {
       const gy = o.look === 'up' ? head[1] - hr * 0.35 : head[1] + hr * 0.05;
       A.circle(g, head[0] + hr * 0.62, gy, hr * 0.32, 'rgba(210,236,255,0.5)', A.K, Math.max(0.5, 0.9 * u));
     }
@@ -605,20 +605,108 @@
     },
   };
 
-  // 7 — Köprüden sonra: gece otobüsü. Kahraman cam kenarında, Anadolu yakasına geçiyor.
+  // plazanın giriş kartı: mavi başlıkta cam kule, fotoğrafta kahramanın kendisi, altta yeşil şerit (kapı artık açık)
+  function badge(g, x, y) {
+    const L = x - 10, T = y - 12;
+    // boyun askısı
+    g.strokeStyle = '#2c5f94'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x - 2.4, T + 1.6); g.lineTo(x - 9, T - 16); g.moveTo(x + 2.4, T + 1.6); g.lineTo(x + 9, T - 16); g.stroke();
+    A.box(g, x - 2.6, T - 1.6, 5.2, 3.6, 0.8, '#b8bec8', A.K, 0.4);
+    A.box(g, L, T, 20, 24, 2, '#ffffff', A.K, 0.6);
+    g.save(); A.rr(g, L, T, 20, 24, 2); g.clip();
+    rect(g, L, T + 3.6, 20, 5.4, '#3a7ab8');
+    rect(g, L + 2.6, T + 4.4, 4.4, 3.8, '#9ad8ff');
+    g.strokeStyle = '#3a7ab8'; g.lineWidth = 0.35; g.beginPath();
+    for (const k of [1.1, 2.2, 3.3]) { g.moveTo(L + 2.6 + k, T + 4.4); g.lineTo(L + 2.6 + k, T + 8.2); }
+    g.moveTo(L + 2.6, T + 6.3); g.lineTo(L + 7, T + 6.3); g.stroke();
+    rect(g, L + 9, T + 5.6, 8, 1, 'rgba(255,255,255,0.75)');
+    // fotoğraf: kendisi (kahverengi saç, gözlük, turkuaz kapüşon)
+    rect(g, L + 2.4, T + 10.4, 7.4, 8.4, '#cfe3f5');
+    A.ellipse(g, L + 6.1, T + 18.8, 3.6, 2.4, HERO.shirt, null);
+    A.circle(g, L + 6.1, T + 14.4, 2.4, HERO.skin, null);
+    A.ellipse(g, L + 5.6, T + 13.1, 2.6, 1.5, HERO.hair, null);
+    A.circle(g, L + 7.2, T + 14.6, 0.75, 'rgba(210,236,255,0.6)', A.K, 0.3);
+    // ad çizgileri (yazısız)
+    rect(g, L + 11.4, T + 11.4, 6.4, 1.2, '#7d8490'); rect(g, L + 11.4, T + 14.2, 5, 1, '#c8ccd4'); rect(g, L + 11.4, T + 16.6, 6, 1, '#c8ccd4');
+    rect(g, L, T + 20.4, 20, 3.6, '#3fbf6a');
+    g.restore();
+    A.box(g, x - 3, T + 1.1, 6, 1.6, 0.8, '#c8ccd4', null);
+    A.rr(g, L, T, 20, 24, 2); A.fs(g, null, A.K, 0.6);
+  }
+  // laptop ekranının büyütülmüş hâli: zarf açılır, içinden giriş kartı yükselir. k: balonun açıklığı (kapanırken laptopa döner)
+  function mailBubble(g, t, k, kOpen, kCard) {
+    const cx = lerp(125, 102, k), cy = lerp(168, 112, k);
+    if (k > 0.96) for (let i = 0; i < 3; i++) { const q = (i + 1) / 4; A.circle(g, lerp(cx + 8, 124, q), lerp(cy + 27, 164, q), 1.9 - i * 0.35, '#e9f1fa', A.K, 0.5); }
+    g.save(); g.translate(cx, cy); g.scale(k, k);
+    glow(g, 0, 0, 44, 'rgba(160,220,255,A)', 0.22);
+    A.box(g, -33, -25, 66, 50, 5, '#2a2e38', A.K, 0.8);
+    A.box(g, -29, -21, 58, 42, 2.4, '#e9f1fa', null);
+    A.box(g, -29, -21, 58, 4.6, 2.4, '#3a7ab8', null); rect(g, -29, -18.8, 58, 2.4, '#3a7ab8');
+    for (const x of [-26, -23, -20]) A.circle(g, x, -18.7, 0.8, 'rgba(255,255,255,0.7)', null);
+    g.save(); A.rr(g, -29, -21, 58, 42, 2.4); g.clip();
+    const ey = 6, open = kOpen > 0.5;
+    // açılmış kapak kartın arkasında kalır
+    if (open) A.poly(g, [-14, ey, 14, ey, 0, ey - lerp(0, 10, (kOpen - 0.5) * 2)], '#f2ead2', A.K, 0.6);
+    if (kCard > 0) {
+      glow(g, 0, lerp(ey + 10, -5, kCard), 22, 'rgba(120,230,150,A)', 0.35 * kCard * (0.75 + 0.25 * Math.sin(t * 5)));
+      badge(g, 0, lerp(ey + 10, -5, ease(kCard)));
+    }
+    // zarfın gövdesi (kartın alt ucu içinde kalır)
+    A.box(g, -14, ey, 28, 15, 1.4, '#fffbe8', A.K, 0.6);
+    A.lin(g, -13.4, ey + 14.4, -2, ey + 6, '#d8ccb0', 0.5); A.lin(g, 13.4, ey + 14.4, 2, ey + 6, '#d8ccb0', 0.5);
+    if (!open) A.poly(g, [-14, ey, 14, ey, 0, ey + lerp(10, 0, kOpen * 2)], '#f2ead2', A.K, 0.6);
+    g.restore();
+    g.restore();
+  }
+
+  // 7 — Köprüden sonra: gece otobüsü Anadolu yakasına geçiyor. Kahraman geriye dönük oturmuş, laptopta yazıyor.
+  // Kadıköy'de yolladığı zarflardan biri geri döner: plazanın giriş kartı, üstünde kendi fotoğrafı (Maslak'taki kapı artık açık).
+  // Karta bakar; sonra camdan Anadolu yakasının ışıklarına, tepede yanıp sönen Çamlıca'ya bakar. Laptopu kapatır,
+  // çantasını alıp ayağa kalkar, yüzünü gidilen yöne çevirir ve durak düğmesine basar: kendi yakasında inecek.
   SCENES.ara7 = {
-    dur: 10, amb: 'kopru',
+    dur: 14, amb: 'kopru',
+    cues: [[0.5, 'keys'], [1.8, 'keys'], [3.35, 'ding'], [9.1, 'kapak'], [10.2, 'durak']],
     draw(g, t) {
-      const shake = Math.sin(t * 31) * 0.3 + Math.sin(t * 7) * 0.4;
+      // otobüs sonda durağa yaklaşıp yavaşlar: manzara alınan yol (s) ile kayar
+      const slow = Math.max(0, t - 11.5), s = t - 0.16 * slow * slow, sp = 1 - 0.32 * slow;
+      const shake = (Math.sin(t * 31) * 0.3 + Math.sin(t * 7) * 0.4) * sp;
+      // kamera yavaşça kahramana yaklaşır
+      const z = lerp(1, 1.08, seg(t, 2.5, 13.5)), fx = 140, fy = 150;
+      g.save(); g.translate(fx, fy); g.scale(z, z); g.translate(-fx, -fy);
       // dışarısı: gece, köprü halatları akıp gider, karşı kıyının ışıkları
       g.fillStyle = grad(g, 0, 0, 0, 130, [[0, '#0c1236'], [1, '#2a2a5e']]); g.fillRect(0, 0, VW, 130);
       const r = A.rng(5);
-      for (let i = 0; i < 90; i++) { const x = (r() * 400 - t * 6) % 400, y = 88 + r() * 30; rect(g, (x + 400) % 400 - 40, y, 1, 1, r() < 0.5 ? '#ffd27a' : '#bfe0ff'); }
+      for (let i = 0; i < 90; i++) { const x = (r() * 400 - s * 6) % 400, y = 88 + r() * 30; rect(g, (x + 400) % 400 - 40, y, 1, 1, r() < 0.5 ? '#ffd27a' : '#bfe0ff'); }
       g.fillStyle = '#121638'; g.beginPath(); g.moveTo(0, 100); g.quadraticCurveTo(128, 80, 256, 96); g.lineTo(256, 130); g.lineTo(0, 130); g.closePath(); g.fill();
-      g.strokeStyle = 'rgba(200,210,255,0.5)'; g.lineWidth = 1;
-      for (let i = 0; i < 8; i++) { const x = ((i * 40 - t * 160) % 320 + 320) % 320 - 30; g.beginPath(); g.moveTo(x, 20); g.lineTo(x + 30, 130); g.stroke(); }
-      g.strokeStyle = 'rgba(220,230,255,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(0, 30); g.quadraticCurveTo(128, 54, 256, 24); g.stroke();
-      for (let i = 0; i < 12; i++) { const x = ((i * 26 - t * 160) % 312 + 312) % 312 - 28; rect(g, x, 118, 6, 1.6, '#ffe9a0'); }
+      // köprü biter: halatlar silinir, yakındaki mahallenin ışıkları ve tepede Çamlıca Kulesi belirir
+      const br = 1 - seg(t, 6, 7.6), near = seg(t, 6.4, 8.4);
+      const tx = 214 - (s - 6) * 5;
+      if (near > 0) {
+        g.globalAlpha = near; SC.pen(null);
+        K.camlicaTower(g, tx, 98, 0.2, { wall: '#2e3062', wallD: '#262856', glass: '#3c3e7a', band: '#5a5c98' });
+        if (Math.floor(t * 1.6) % 2) { glow(g, tx, 98 - 0.2 * 172, 6, 'rgba(255,90,70,A)', 0.8); A.circle(g, tx, 98 - 0.2 * 172, 1.1, '#ff4a3a', null); }
+        g.globalAlpha = 1;
+      }
+      if (br > 0) {
+        g.globalAlpha = br;
+        g.strokeStyle = 'rgba(200,210,255,0.5)'; g.lineWidth = 1;
+        for (let i = 0; i < 8; i++) { const x = ((i * 40 - s * 160) % 320 + 320) % 320 - 30; g.beginPath(); g.moveTo(x, 20); g.lineTo(x + 30, 130); g.stroke(); }
+        g.strokeStyle = 'rgba(220,230,255,0.8)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(0, 30); g.quadraticCurveTo(128, 54, 256, 24); g.stroke();
+        g.globalAlpha = 1;
+      }
+      if (near > 0) {
+        g.globalAlpha = near;
+        const sc = s * 30, j0 = Math.floor((sc - 20) / 16), hof = (j) => 103 + (((j * 7919) % 5) + 5) % 5 * 3;
+        g.fillStyle = '#0e1230'; g.beginPath(); g.moveTo(-20, 130);
+        for (let j = j0; j < j0 + 20; j++) { const x = j * 16 - sc; g.lineTo(x, hof(j)); g.lineTo(x + 15, hof(j)); }
+        g.lineTo(VW + 20, 130); g.closePath(); g.fill();
+        for (let j = j0; j < j0 + 20; j++) {
+          const x = j * 16 - sc;
+          for (let w = 0; w < 3; w++) if ((((j * 31 + w * 17) % 7) + 7) % 7 < 3) rect(g, x + 2 + w * 4.6, hof(j) + 4 + (w % 2) * 5, 2, 2, '#ffd27a');
+        }
+        g.globalAlpha = 1;
+      }
+      for (let i = 0; i < 12; i++) { const x = ((i * 26 - s * 160) % 312 + 312) % 312 - 28; rect(g, x, 118, 6, 1.6, '#ffe9a0'); }
       g.save(); g.translate(0, shake);
       // otobüsün içi: soğuk floresan ışığı
       rect(g, 0, 0, VW, 14, '#c8d4d0'); rect(g, 0, 12, VW, 3, '#e8f4f0');
@@ -627,16 +715,43 @@
       rect(g, 0, 130, VW, 110, '#6a7c7a');
       g.fillStyle = grad(g, 0, 130, 0, 240, [[0, 'rgba(230,255,240,0.25)'], [1, 'rgba(0,0,0,0.25)']]); g.fillRect(0, 130, VW, 110);
       A.lin(g, 0, 40, VW, 40, '#9aa8a6', 1.6);
+      // tutunma direği ve durak düğmesi (basılınca yanar)
+      A.box(g, 158.6, 14, 2.8, 176, 1.2, '#d8c24a', A.K, 0.5);
+      const pressed = t >= 10.2;
+      A.box(g, 156.4, 142.6, 7.2, 7.4, 1.8, '#ece6d4', A.K, 0.5);
+      if (pressed) glow(g, 160, 146.3, 9, 'rgba(255,80,60,A)', 0.55 + 0.25 * Math.sin(t * 9));
+      A.circle(g, 160, 146.3, 2.1, pressed ? '#ff5a46' : '#a82a2a', A.K, 0.4);
       // koltuklar ve yolcular
       for (const [x, sh, hc] of [[40, '#5a4a3a', '#3a2a20'], [214, '#2a3a5a', '#1a1a1a']]) {
         A.box(g, x - 22, 136, 8, 42, 3, '#2a5a8a'); A.box(g, x - 22, 172, 30, 7, 3, '#2a5a8a');
         figure(g, x - 14, 188, 46, { pose: 'sit', dir: 1, shirt: sh, hair: hc });
       }
       A.box(g, 134, 136, 8, 42, 3, '#2a5a8a'); A.box(g, 112, 172, 30, 7, 3, '#2a5a8a');
-      hero(g, 134, 188, 46, { pose: 'sit', dir: -1, bag: false });
-      A.box(g, 100, 164, 10, 14, 3, '#3a3440');
-      // durak düğmesi
-      A.circle(g, 160, 60, 3, '#d02a2a', A.K, 0.6);
+      if (t < 9.5) {
+        // oturuyor, geriye (geldiği yakaya) dönük; dizinde laptop
+        A.box(g, 100, 164, 10, 14, 3, '#3a3440');
+        // ekrandan başını kaldırıp cama, Çamlıca'nın ışığına döner
+        hero(g, 134, 188, 46, { pose: 'sit', dir: -1, bag: false, typing: t < 3.2, phase: t, away: t > 7 && t < 8.7 });
+        const lid = seg(t, 8.6, 9.3);
+        A.box(g, 121, 174, 11, 2, 0.6, '#c9ccd4', A.K, 0.5);
+        const ly = lerp(166, 172.6, lid), lx = lerp(-2, 0, lid);
+        A.poly(g, [130, 174, 121, 174, 121 + lx, ly, 130 + lx, ly], lid < 1 ? '#2a2e38' : '#9aa0aa', A.K, 0.5);
+        if (lid < 1) glow(g, 126, 167, 13, 'rgba(160,220,255,A)', 0.45 * (1 - lid));
+      } else {
+        // ayakta, çantası sırtında, yüzü gidilen yöne: direğe uzanıp düğmeye basar, sonra direğe tutunur
+        const press = seg(t, 9.8, 10.2) * (1 - seg(t, 10.5, 10.9));
+        hero(g, 148, 189, 46, { pose: 'stand', dir: 1, bag: true, reach: [26, lerp(-72, -91, press)] });
+      }
+      g.restore();
+      // Kadıköy'de yolladığı zarflardan biri geri döner, kanat çırparak laptopa iner
+      const ke = (t - 1.9) / 1.4;
+      if (ke > 0 && ke < 1) {
+        const es = ke < 0.75 ? lerp(0.6, 1.5, ke / 0.75) : lerp(1.5, 0.5, (ke - 0.75) / 0.25);
+        envelope(g, lerp(-12, 124, ease(ke)), lerp(58, 166, ke * ke) - Math.sin(ke * Math.PI) * 18, es, Math.sin(t * 16));
+      }
+      // ekranda: zarf açılır, giriş kartı çıkar; laptop kapanınca balon ekrana geri döner
+      const pop = seg(t, 3.3, 3.6) * (1 - seg(t, 8.6, 9.05));
+      if (pop > 0.01) mailBubble(g, t, pop, seg(t, 3.7, 4.3), seg(t, 4.3, 5.2));
       g.restore();
     },
   };
