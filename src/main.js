@@ -212,14 +212,14 @@
     app.screen = 'play';
     AU.setRate(1);
     AU.playMusic(AU.WORLD_SONG[app.G.world]);
-    AU.ambient(AU.WORLD_AMB[app.G.world], 0.45);
+    AU.ambient(AU.PLACE_AMB[app.G.place], 0.45);
   }
   function pauseGame() { if (app.screen !== 'play') return; app.screen = 'pause'; app.menu = 0; AU.sfx('pause'); AU.stopMusic(); AU.stopAmbient(0.3); }
   function resume() {
     app.screen = 'play';
     const G = app.G;
     AU.playMusic(G.boss && !G.boss.dead ? 'boss' : AU.WORLD_SONG[G.world]);
-    AU.ambient(AU.WORLD_AMB[G.world], 0.45);
+    AU.ambient(AU.PLACE_AMB[G.place], 0.45);
     AU.setRate(G.hurry ? 1.25 : 1);
   }
   function saveScore() {
@@ -370,21 +370,22 @@
     for (; X < canvas.width; X += Wd) ctx.drawImage(c, X, 0, Wd, Hd);
     ctx.setTransform(S, 0, 0, S, 0, 0);
   }
-  function backdrop(w, cam, t) {
-    full(SC.sky(w, VW, VH));
-    const L = SC.layers(w);
+  // pl: mekân (dünya*3 + bölüm)
+  function backdrop(pl, cam, t) {
+    full(SC.sky(pl, VW, VH));
+    const L = SC.layers(pl);
     layerDraw(L.far, cam * 0.15 + (t || 0) * 0.3);
     layerDraw(L.near, cam * 0.4 + (t || 0));
-    if (!ART.WORLD[w].water) {
+    if (!ART.placeWater(pl)) {
       // zemin hizasının altı kararır: çukurlar çukur gibi görünsün
       const gr = ctx.createLinearGradient(0, TOP + 12.2 * TS, 0, VH);
       gr.addColorStop(0, 'rgba(12,10,30,0)'); gr.addColorStop(1, 'rgba(12,10,30,0.7)');
       ctx.fillStyle = gr; ctx.fillRect(0, TOP + 12.2 * TS, VW, VH);
     }
-    water(w, cam + (t || 0) * 2.5);
+    water(pl, cam + (t || 0) * 2.5);
   }
-  function water(w, cam) {
-    const col = ART.WORLD[w].water;
+  function water(pl, cam) {
+    const col = ART.placeWater(pl);
     if (!col) return;
     const y0 = TOP + 12.4 * TS;
     const gr = ctx.createLinearGradient(0, y0, 0, VH);
@@ -447,11 +448,11 @@
 
   const TILEK = { 2: 'solid', 8: 'solid', 3: 'oneway', 5: 'used', 6: 'crack', 7: 'spike', 10: 'crack' };
   function drawPlay() {
-    const G = app.G, w = G.world;
+    const G = app.G, w = G.world, pl = G.place, theme = ART.placeTiles(pl);
     let sx = 0, sy = 0;
     if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
     const cam = Math.round(G.cam * TS * S) / S;
-    if (G.area === 'room') full(SC.metro(w, VW, VH)); else backdrop(w, cam);
+    if (G.area === 'room') full(SC.metro(w, VW, VH)); else backdrop(pl, cam);
     const ox = -cam + sx, oy = TOP + sy;
     // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
     const x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
@@ -472,7 +473,7 @@
         const i = ty * G.W + tx, t = G.grid[i];
         if (!t) continue;
         const px = tx * TS, py = ty * TS + (bumpOff.get(i) || 0);
-        const tw = G.room && tx >= G.room.x0 ? ART.METRO : w; // bonus odası metro karolarıyla
+        const tw = G.room && tx >= G.room.x0 ? ART.METRO : theme; // bonus odası metro karolarıyla
         if (t === 1) put(ART.tile(tw, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
         else if (t === 4) put(ART.tile(tw, 'block', blink), px, py);
         else if (TILEK[t]) put(ART.tile(tw, TILEK[t]), px, py);
@@ -514,7 +515,7 @@
     // hareketli platformlar ve dönen kıvılcımlar
     for (const pl of G.plats) ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
     for (const b of G.bars) {
-      img(ART.tile(w, 'anchor'), (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
+      img(ART.tile(theme, 'anchor'), (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
       for (let k = 1; k <= b.n; k++) ART.drawSpark(ctx, (b.cx + Math.cos(b.a) * k * 0.45) * TS, (b.cy + Math.sin(b.a) * k * 0.45) * TS, app.t + k);
     }
     // eşyalar
@@ -544,7 +545,7 @@
     // atışlar ve efektler
     for (const s of G.shots) ART.drawShot(ctx, s.x * TS, s.y * TS, app.t);
     for (const s of G.bshots) drawBossShot(s);
-    for (const f of G.fx) drawFx(f, w);
+    for (const f of G.fx) drawFx(f, theme);
     ctx.restore();
     // patron canı
     if (G.boss && !G.boss.dead) {
@@ -805,14 +806,14 @@
     menu(items, 98, app.menu);
     if (app.best) { panel(VW / 2 - 40, 226, 80, 11, 5.5); text('REKOR ' + String(app.best).padStart(6, '0'), VW / 2, 228.2, '#ffe08a', 6, 'center', null); }
   }
-  function screenBg(w, dim, t) {
-    backdrop(w, 0, t || 0);
+  function screenBg(pl, dim, t) {
+    backdrop(pl, 0, t || 0);
     ctx.fillStyle = dim; ctx.fillRect(0, 0, VW, VH);
   }
   function drawHelp() {
-    screenBg(2, 'rgba(14,12,34,0.78)', app.t * 6);
+    screenBg(7, 'rgba(14,12,34,0.78)', app.t * 6);
     text('NASIL OYNANIR', VW / 2, 10, '#f4c531', 10, 'center');
-    const story = ["İstanbul'un sistemlerine bug'lar sızdı!", 'Her bölümün sonundaki DEPLOY', 'terminaline ulaş, patronları yen.'];
+    const story = ["Maslak'tan Çamlıca'ya, şehrin öbür ucuna git.", "Bug'ları temizle, her bölümü DEPLOY et,", 'patronları yen, 9 hatıra parçasını topla.'];
     story.forEach((s, i) => text(s, VW / 2, 28 + i * 10, '#fff8ec', 6.4, 'center', null, 500));
     panel(10, 62, VW - 20, 58, 8);
     const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in, metroya gir']];
@@ -841,7 +842,7 @@
   }
   function drawSelect() {
     const w = app.selW;
-    screenBg(w, 'rgba(14,12,34,0.62)', app.t * 8);
+    screenBg(w * 3 + app.selS, 'rgba(14,12,34,0.62)', app.t * 8);
     panel(4, 4, 52, 14, 7); ART.poly(ctx, [12, 11, 17, 7.6, 17, 14.4], '#c8ccdc', null); text('GERİ', 21, 6.8, '#c8ccdc', 6.4, 'left', null);
     text('BÖLÜM SEÇ', VW / 2, 6, '#f4c531', 9, 'center');
     panel(4, SEL.y0 - 6, VW - 8, 9 * SEL.row + 2, 8, 'rgba(18,16,44,0.78)');
@@ -868,20 +869,101 @@
     text(L.boss ? 'Patron: ' + L.bossName : `${L.map[0].length} karo uzunluğunda`, VW / 2, 206, L.boss ? '#ffa288' : '#aab0c8', 6.4, 'center', null, 500);
     if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 222, '#f4c531', 6.6, 'center', null);
   }
+  // ---------- İstanbul yol haritası: Maslak'tan Çamlıca'ya ----------
+  // Dünyaların harita üzerindeki yerleri (kutuya göre 0..1)
+  const ROUTE = [[0.46, 0.22], [0.70, 0.84], [0.60, 0.86], [0.40, 0.75], [0.50, 0.77], [0.50, 0.625], [0.635, 0.46], [0.545, 0.555], [0.80, 0.62]];
+  const STRAIT = [[0.67, -0.02], [0.69, 0.12], [0.63, 0.28], [0.645, 0.4], [0.625, 0.5], [0.605, 0.62], [0.585, 0.72], [0.575, 0.84]];
+  const mapCache = ART.cache();
+  function mapBase(w, h) {
+    let c = mapCache.get(w + ':' + h);
+    if (c) return c;
+    c = ART.mk(w, h, (g) => {
+      const M = (u, v) => [u * w, v * h];
+      g.fillStyle = '#efe2c2'; g.fillRect(0, 0, w, h);
+      // Asya yakası biraz daha yeşil
+      g.fillStyle = 'rgba(150,190,120,0.18)'; g.beginPath(); g.moveTo(w, 0); STRAIT.forEach(([u, v]) => g.lineTo(...M(u, v))); g.lineTo(w, h); g.closePath(); g.fill();
+      const sea = '#6ab4e0';
+      // Karadeniz ve Marmara
+      g.fillStyle = sea; g.beginPath(); g.moveTo(0, 0); for (let u = 0; u <= 1.001; u += 0.05) g.lineTo(u * w, (0.05 + 0.02 * Math.sin(u * 17)) * h); g.lineTo(w, 0); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(0, h);
+      for (const [u, v] of [[0, 0.8], [0.12, 0.82], [0.28, 0.83], [0.42, 0.85], [0.52, 0.84], [0.57, 0.82], [0.6, 0.83], [0.63, 0.88], [0.7, 0.9], [0.78, 0.89], [0.86, 0.92], [1, 0.95]]) g.lineTo(...M(u, v));
+      g.lineTo(w, h); g.closePath(); g.fill();
+      // Boğaz ve Haliç
+      g.strokeStyle = sea; g.lineJoin = 'round'; g.lineCap = 'round';
+      g.lineWidth = w * 0.034; g.beginPath(); STRAIT.forEach(([u, v], i) => (i ? g.lineTo : g.moveTo).call(g, ...M(u, v))); g.stroke();
+      for (const [lw, pts] of [[w * 0.022, [[0.59, 0.71], [0.52, 0.68]]], [w * 0.016, [[0.52, 0.68], [0.44, 0.645]]], [w * 0.01, [[0.44, 0.645], [0.36, 0.6]]]]) { g.lineWidth = lw; g.beginPath(); g.moveTo(...M(...pts[0])); g.lineTo(...M(...pts[1])); g.stroke(); }
+      // kıyı çizgisi gölgesi, köprüler
+      g.fillStyle = 'rgba(255,255,255,0.35)'; for (let k = 0; k < 18; k++) { const u = (k * 0.137) % 1, v = 0.88 + (k % 4) * 0.025; if (v > 0.9) g.fillRect(u * w, v * h, 4, 0.6); }
+      for (const [v, u] of [[0.46, 0.635], [0.3, 0.64]]) {
+        g.strokeStyle = '#6a5a4a'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(...M(u - 0.045, v)); g.lineTo(...M(u + 0.045, v)); g.stroke();
+        for (const du of [-0.025, 0.025]) { g.lineWidth = 1; g.beginPath(); g.moveTo(...M(u + du, v)); g.lineTo(M(u + du, v)[0], M(u + du, v)[1] - 5); g.stroke(); }
+        g.lineWidth = 0.5; g.beginPath(); g.moveTo(...M(u - 0.045, v)); g.quadraticCurveTo(M(u - 0.025, v)[0], M(u, v)[1] - 7, M(u - 0.025, v)[0], M(u, v)[1] - 5); g.moveTo(M(u - 0.025, v)[0], M(u, v)[1] - 5); g.quadraticCurveTo(M(u, v)[0], M(u, v)[1] - 1, M(u + 0.025, v)[0], M(u, v)[1] - 5); g.stroke();
+      }
+      // mahalle dokusu
+      const r = ART.rng(77);
+      for (let i = 0; i < 140; i++) { const u = r(), v = 0.1 + r() * 0.75; g.fillStyle = 'rgba(160,130,100,0.18)'; g.fillRect(u * w, v * h, 2, 1.4); }
+      // küçük simgeler: Maslak plazaları, Galata Kulesi, tarihi yarımadanın kubbeleri, Kız Kulesi, Çamlıca çamları
+      const K = '#5a4a3a';
+      for (const [du, hh] of [[-0.06, 9], [-0.045, 13], [-0.03, 7]]) { const [px, py] = M(0.46 + du, 0.2); g.fillStyle = '#7ab0d8'; g.fillRect(px, py - hh, 3.4, hh); g.strokeStyle = K; g.lineWidth = 0.4; g.strokeRect(px, py - hh, 3.4, hh); }
+      { const [px, py] = M(0.465, 0.6); g.fillStyle = '#d8c8a8'; g.fillRect(px - 1.6, py - 7, 3.2, 7); g.fillStyle = '#4e5a70'; g.beginPath(); g.moveTo(px - 2.2, py - 7); g.lineTo(px + 2.2, py - 7); g.lineTo(px, py - 11); g.closePath(); g.fill(); }
+      for (const [u, v] of [[0.43, 0.715], [0.53, 0.73]]) {
+        const [px, py] = M(u, v); g.fillStyle = '#b8b0c8'; g.beginPath(); g.arc(px, py, 3, Math.PI, 0); g.fill(); g.fillRect(px - 3.4, py, 6.8, 1.6);
+        g.fillRect(px - 5, py - 6, 0.9, 7.6); g.fillRect(px + 4.2, py - 6, 0.9, 7.6);
+      }
+      { const [px, py] = M(0.598, 0.735); g.fillStyle = '#f4efe4'; g.fillRect(px - 1, py - 4, 2, 4); g.fillStyle = '#7e8c9e'; g.beginPath(); g.moveTo(px - 1.4, py - 4); g.lineTo(px + 1.4, py - 4); g.lineTo(px, py - 6.4); g.closePath(); g.fill(); }
+      for (let i = 0; i < 9; i++) { const [px, py] = M(0.85 + (i % 3) * 0.035, 0.5 + Math.floor(i / 3) * 0.045); g.fillStyle = '#5a8a4a'; g.beginPath(); g.moveTo(px - 2, py); g.lineTo(px + 2, py); g.lineTo(px, py - 4.4); g.closePath(); g.fill(); }
+    });
+    mapCache.set(w + ':' + h, c);
+    return c;
+  }
+  function routeMap(x, y, w, h, cur) {
+    ART.rr(ctx, x - 2, y - 2, w + 4, h + 4, 6); ctx.fillStyle = '#2a1e14'; ctx.fill();
+    ctx.save(); ART.rr(ctx, x, y, w, h, 5); ctx.clip();
+    img(mapBase(w, h), x, y);
+    const P = ROUTE.map(([u, v]) => [x + u * w, y + v * h]);
+    // gidilecek yol kesik, geçilen yol altın
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.setLineDash([2.2, 2.4]); ctx.strokeStyle = 'rgba(90,60,40,0.7)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); P.forEach((p, i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, ...p)); ctx.stroke(); ctx.setLineDash([]);
+    if (cur > 0) { ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 3.2; ctx.beginPath(); P.slice(0, cur + 1).forEach((p, i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, ...p)); ctx.stroke(); ctx.strokeStyle = '#f4c531'; ctx.lineWidth = 1.8; ctx.stroke(); }
+    // hedef: Çamlıca Kulesi
+    const [gx, gy] = P[8];
+    ART.lin(ctx, gx + 6, gy + 2, gx + 6, gy - 16, '#5a6488', 1.6);
+    ART.ellipse(ctx, gx + 6, gy - 18, 3.2, 4, '#7ac0f0', '#1a1430', 0.6);
+    ART.lin(ctx, gx + 6, gy - 22, gx + 6, gy - 27, '#5a6488', 0.8); ART.circle(ctx, gx + 6, gy - 27.5, 0.9, '#ff4a4a', null);
+    // duraklar
+    P.forEach(([px, py], i) => {
+      const done = i < cur, now = i === cur;
+      if (now) { const k = 3 + (Math.sin(app.t * 6) + 1) * 1.6; ART.circle(ctx, px, py, k + 2, null, 'rgba(255,255,255,0.8)', 1); }
+      ART.circle(ctx, px, py, now ? 3.6 : 2.8, done ? '#f4c531' : now ? '#ffffff' : '#c8bca8', '#1a1430', 0.8);
+      if (app.pieces[i]) ART.circle(ctx, px, py, 1.2, '#2a8a5a', null);
+    });
+    // bulunulan yerin üstünde kahramanın başı
+    const [hx, hy] = P[cur];
+    ART.drawHead(ctx, hx, hy - 9 - Math.abs(Math.sin(app.t * 4)) * 1.5, 4.2, { skin: app.S.power === 2 ? 'hacker' : 'normal' });
+    ctx.restore();
+    text('MASLAK', P[0][0], P[0][1] + 4, '#5a3a24', 5, 'center', null);
+    text('ÇAMLICA', gx, gy + 4.5, '#5a3a24', 5, 'center', null);
+  }
   function drawIntro() {
-    const L = LEVELS[app.S.stage], Wd = WORLDS[L.world - 1];
-    screenBg(L.world - 1, 'rgba(10,8,28,0.66)', app.introT * 10);
+    const L = LEVELS[app.S.stage], Wd = WORLDS[L.world - 1], wi = L.world - 1;
+    screenBg(wi * 3 + L.section - 1, 'rgba(10,8,28,0.7)', app.introT * 10);
     hud(null);
-    const ph = (L.boss ? 128 : 114) - (app.S.power > 0 ? 0 : 14);
-    panel(36, 50, VW - 72, ph, 12);
-    text(`DÜNYA ${L.world}-${L.section}`, VW / 2, 60, '#fff8ec', 13, 'center');
-    text(Wd.name, VW / 2, 86, '#f4c531', 8.4, 'center', null);
-    text(L.name, VW / 2, 101, '#9af4e4', 7, 'center', null, 500);
-    if (L.boss) text('Patron: ' + L.bossName, VW / 2, 115, '#ffa288', 7, 'center', null);
-    const big = app.S.power > 0, hy = 50 + ph - 10;
-    ART.rr(ctx, 92, hy - 1, 72, 4, 2); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fill();
-    ART.drawHero(ctx, 114, hy, { big, face: 1, mode: 'stand', skin: app.S.power === 2 ? 'hacker' : 'normal', t: app.t });
-    text('× ' + app.S.lives, 126, hy - 13, '#fff8ec', 9, 'left');
+    panel(10, 20, VW - 20, 216, 10);
+    text(`DÜNYA ${L.world}-${L.section}`, VW / 2, 24, '#fff8ec', 9.4, 'center');
+    text(Wd.name + ' · ' + L.name, VW / 2, 38, '#9af4e4', 7, 'center', null, 500);
+    routeMap(20, 50, VW - 40, 132, wi);
+    // hatıra parçaları: toplananlar parlak, kalanlar soluk
+    for (let i = 0; i < 9; i++) {
+      const px = 40 + i * 22, py = 196;
+      ART.circle(ctx, px, py, 8.4, i === wi ? 'rgba(244,197,49,0.25)' : 'rgba(255,255,255,0.06)', null);
+      ctx.globalAlpha = app.pieces[i] ? 1 : 0.2; ART.drawPiece(ctx, i, px, py, 0.5, app.t); ctx.globalAlpha = 1;
+    }
+    const big = app.S.power > 0, hy = 228;
+    if (L.boss) text('Patron: ' + L.bossName, 20, 214, '#ffa288', 6.6, 'left', null);
+    ART.drawHero(ctx, VW - 66, hy, { big: false, face: 1, mode: 'stand', skin: app.S.power === 2 ? 'hacker' : 'normal', t: app.t });
+    text('× ' + app.S.lives, VW - 56, hy - 10, '#fff8ec', 8, 'left');
+    void big;
   }
   function drawPause() {
     drawPlay();
@@ -892,7 +974,7 @@
   }
   function drawOver() {
     const w = app.S ? Math.min(8, Math.floor(app.S.stage / 3)) : 0;
-    screenBg(w, 'rgba(10,8,28,0.82)', 0);
+    screenBg(w * 3, 'rgba(10,8,28,0.82)', 0);
     text('OYUN BİTTİ', VW / 2, 64, '#ff7a6a', 16, 'center');
     text('SKOR ' + String(app.S.score).padStart(6, '0'), VW / 2, 96, '#fff8ec', 8, 'center', null);
     const wn = Math.floor(app.S.stage / 3) + 1;

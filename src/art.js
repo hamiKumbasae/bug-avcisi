@@ -532,8 +532,21 @@
     { key: 'catilar', sky: ['#0b1236', '#2c3170'], water: false },
     { key: 'camlica', sky: ['#070a1e', '#24205a'], water: false },
     { key: 'metro', sky: ['#2a2e3a', '#3a3f4e'], water: false },   // 9: yer altı bonus odası
+    // 10-15: bölüm mekânlarının zeminleri
+    { key: 'ofis', sky: ['#cfe4f2', '#f2f6fa'], water: false },
+    { key: 'sunucu', sky: ['#0c1220', '#18223a'], water: false },
+    { key: 'iskele', sky: ['#f6c8a8', '#fde8d0'], water: false },
+    { key: 'bedesten', sky: ['#2a2018', '#4a3a2a'], water: false },
+    { key: 'celik', sky: ['#7ab8e8', '#e8d0b0'], water: false },
+    { key: 'ahsap', sky: ['#1a1428', '#3a2a3a'], water: false },
   ];
   const METRO = 9;
+  // mekân (dünya*3 + bölüm) → karo teması ve su rengi (yoksa false)
+  const PLACE_TILES = [0, 10, 11, 1, 1, 1, 12, 2, 2, 3, 3, 13, 4, 4, 4, 5, 5, 15, 6, 14, 14, 7, 7, 15, 8, 8, 8];
+  const PLACE_WATER = [false, false, false, '#2f7fa8', false, '#3a7ab0', '#2a8ac0', '#2a86c8', '#2a4a6a', false, false, false,
+    '#0f4a50', '#0e5a58', '#081c22', false, false, false, '#24387a', false, false, false, false, false, false, false, false];
+  const placeTiles = (p) => PLACE_TILES[p] ?? 0;
+  const placeWater = (p) => PLACE_WATER[p] || false;
   const GROUND = [
     { top: '#7cc84e', topD: '#5aa63a', fill: '#c7ccd6', fillD: '#a8aeba', line: '#8e95a4' },   // Maslak: çim + granit
     { top: '#cfc3ad', topD: '#a99a82', fill: '#9a8b76', fillD: '#7c6e5c', line: '#5e5446' },   // Kadıköy: parke taşı
@@ -545,6 +558,12 @@
     { top: '#d9774e', topD: '#b25a36', fill: '#a54e30', fillD: '#8a3e24', line: '#6a2c18' },   // kiremit
     { top: '#3ae0ff', topD: '#1a8ab0', fill: '#3c4352', fillD: '#2e3442', line: '#20252f' },   // metal ızgara
     { top: '#d8dce4', topD: '#f4c531', fill: '#8e939e', fillD: '#7a7f8a', line: '#5c616c' },   // metro peronu: granit + sarı hissedilebilir şerit
+    { top: '#56688c', topD: '#3e4c6a', fill: '#b9bdc6', fillD: '#a4a9b3', line: '#8a909c' },   // ofis halısı + beton
+    { top: '#a4acba', topD: '#6e7686', fill: '#20242c', fillD: '#2c323c', line: '#12151a' },   // sunucu odası yükseltilmiş taban
+    { top: '#b8783e', topD: '#7a4a22', fill: '#3a2a20', fillD: '#55402c', line: '#20160e' },   // iskele tahtası + ahşap kazıklar
+    { top: '#b0a28c', topD: '#8a7c68', fill: '#8a7c6a', fillD: '#7a6c5a', line: '#5a4e40' },   // Bedesten taşı
+    { top: '#c2cad6', topD: '#7a8496', fill: '#353c4a', fillD: '#4a5466', line: '#20252e' },   // çelik kiriş
+    { top: '#a87244', topD: '#6a4424', fill: '#4a3020', fillD: '#5a3c28', line: '#2a1a10' },   // ahşap döşeme
   ];
   const tileCache = cache();
   function tile(w, kind, extra) {
@@ -561,7 +580,8 @@
       case 'solid': solidTile(g, w, false); break;
       case 'crack': solidTile(g, w, true); break;
       case 'oneway': {
-        const cols = [['#9aa6b8', '#6a7488'], ['#b98a52', '#7a5428'], ['#f4f2ea', '#8a96a8'], ['#d8b884', '#8a6a3a'], ['#7a6a5a', '#4a3e34'], ['#a07a52', '#6a4a2a'], ['#d0603a', '#7a2e18'], ['#8a6a4a', '#4e3a26'], ['#5a6270', '#3ae0ff'], ['#c9ced8', '#6a7080']][w];
+        const cols = [['#9aa6b8', '#6a7488'], ['#b98a52', '#7a5428'], ['#f4f2ea', '#8a96a8'], ['#d8b884', '#8a6a3a'], ['#7a6a5a', '#4a3e34'], ['#a07a52', '#6a4a2a'], ['#d0603a', '#7a2e18'], ['#8a6a4a', '#4e3a26'], ['#5a6270', '#3ae0ff'], ['#c9ced8', '#6a7080'],
+          ['#eef1f5', '#8a909c'], ['#6e7686', '#3a4250'], ['#b8783e', '#5a3818'], ['#a89a86', '#6a5e50'], ['#b8c0cc', '#5a6474'], ['#a87244', '#5a3818']][w];
         box(g, 0.2, 0.3, 15.6, 4.4, 1.6, cols[0], K, 0.8);
         g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(1.4, 1, 13, 0.8);
         g.fillStyle = cols[1]; g.fillRect(2.6, 4.7, 2, 3.4); g.fillRect(11.4, 4.7, 2, 3.4);
@@ -615,6 +635,27 @@
     } else if (key === 'camlica') {
       g.fillStyle = C.fillD; for (let i = 0; i < 16; i += 4) { g.fillRect(i, 0, 1, 16); g.fillRect(0, i, 16, 1); }
       g.fillStyle = 'rgba(58,224,255,0.15)'; g.fillRect(0, 0, 16, 16);
+    } else if (key === 'ofis') {
+      g.fillStyle = C.fillD; for (const [x, y] of [[3, 4], [11, 2], [7, 9], [13, 12], [2, 13], [9, 14]]) g.fillRect(x, y, 1, 1);
+      g.fillStyle = C.line; g.fillRect(0, 15.4, 16, 0.6);
+    } else if (key === 'sunucu') {
+      g.strokeStyle = '#3a6ad8'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 6); g.quadraticCurveTo(8, 9, 16, 6); g.stroke();
+      g.strokeStyle = '#d8a828'; g.beginPath(); g.moveTo(0, 11); g.quadraticCurveTo(8, 8, 16, 11); g.stroke();
+      g.fillStyle = C.fillD; g.fillRect(6, 0, 1.4, 16);
+    } else if (key === 'iskele') {
+      for (const x of [2, 10]) { box(g, x, -1, 4.4, 18, 1.2, C.fillD, null); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x + 3, 0, 1.4, 16); }
+      g.fillStyle = C.line; g.fillRect(0, 7, 16, 1.2);
+    } else if (key === 'bedesten') {
+      g.strokeStyle = C.line; g.lineWidth = 0.6;
+      g.strokeRect(0.3, 0.3, 15.4, 7.4); g.strokeRect(-8, 8.3, 16, 7.4); g.strokeRect(8, 8.3, 16, 7.4);
+      g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(0.6, 0.6, 15, 1); g.fillRect(0, 8.6, 16, 1);
+    } else if (key === 'celik') {
+      g.strokeStyle = C.fillD; g.lineWidth = 1.4; g.beginPath(); g.moveTo(0, 0); g.lineTo(16, 16); g.moveTo(16, 0); g.lineTo(0, 16); g.stroke();
+      g.fillStyle = C.fillD; g.fillRect(0, 0, 1.6, 16); g.fillRect(14.4, 0, 1.6, 16);
+    } else if (key === 'ahsap') {
+      g.strokeStyle = C.fillD; g.lineWidth = 0.6;
+      for (const y of [3, 7, 11]) { g.beginPath(); g.moveTo(0, y); g.quadraticCurveTo(8, y + 1.4, 16, y); g.stroke(); }
+      g.fillStyle = C.line; g.fillRect(0, 15.2, 16, 0.8);
     } else if (key === 'carsi') {
       g.fillStyle = C.fillD; g.fillRect(0, 0, 8, 8); g.fillRect(8, 8, 8, 8);
       g.strokeStyle = C.line; g.lineWidth = 0.4; g.strokeRect(0, 0, 16, 16); g.strokeRect(0, 0, 8, 8); g.strokeRect(8, 8, 8, 8);
@@ -656,6 +697,38 @@
       case 'camlica':
         g.shadowColor = '#3ae0ff'; g.shadowBlur = 2 * S; g.fillStyle = C.top; g.fillRect(0, 0, 16, 1.6); g.shadowBlur = 0;
         g.fillStyle = C.topD; g.fillRect(0, 1.6, 16, 0.8);
+        break;
+      case 'ofis':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 4);
+        g.fillStyle = 'rgba(255,255,255,0.14)'; for (let x = 0.5; x < 16; x += 2) g.fillRect(x, 1 + (x % 4 ? 1 : 0), 0.8, 0.8);
+        g.fillStyle = C.topD; g.fillRect(0, 4, 16, 0.8);
+        break;
+      case 'sunucu':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 4.4);
+        g.fillStyle = C.topD; for (let x = 1.4; x < 16; x += 2.4) for (const y of [1.2, 2.9]) g.fillRect(x, y, 0.9, 0.9);
+        g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(0, 0, 16, 0.6);
+        g.fillStyle = '#0c0e12'; g.fillRect(0, 4.4, 16, 0.8); g.fillRect(15.4, 0, 0.6, 4.4);
+        break;
+      case 'iskele':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 4.6);
+        g.fillStyle = 'rgba(255,230,190,0.35)'; g.fillRect(0, 0, 16, 0.8);
+        g.fillStyle = C.topD; g.fillRect(5.2, 0, 0.6, 4.6); g.fillRect(10.6, 0, 0.6, 4.6); g.fillRect(0, 4.6, 16, 1);
+        g.fillStyle = '#3a2410'; for (const x of [2.6, 8, 13.4]) g.fillRect(x, 2, 0.7, 0.7);
+        break;
+      case 'bedesten':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 3.4); g.fillStyle = C.topD; g.fillRect(0, 3.4, 16, 0.8); g.fillRect(9.6, 0, 0.5, 3.4);
+        g.fillStyle = 'rgba(255,240,210,0.3)'; g.fillRect(0, 0, 16, 0.7);
+        break;
+      case 'celik':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 3.6); g.fillStyle = C.topD; g.fillRect(0, 3.6, 16, 1); g.fillRect(0, 0, 16, 0.5);
+        g.fillStyle = '#e8edf4'; g.fillRect(0, 0.6, 16, 0.7);
+        for (const x of [2, 6, 10, 14]) circle(g, x, 2.3, 0.55, '#6a7484', null);
+        break;
+      case 'ahsap':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 3.8);
+        g.fillStyle = 'rgba(255,220,170,0.3)'; g.fillRect(0, 0, 16, 0.7);
+        g.fillStyle = C.topD; g.fillRect(0, 3.8, 16, 0.8); g.fillRect(7.6, 0, 0.5, 3.8);
+        g.fillStyle = '#2a1a0c'; g.fillRect(3, 1.8, 0.7, 0.7); g.fillRect(12, 1.8, 0.7, 0.7);
         break;
       case 'metro':
         g.fillStyle = C.top; g.fillRect(0, 0, 16, 4.6);
@@ -719,6 +792,54 @@
       case 'catilar': {
         g.fillStyle = '#4a2418'; g.fillRect(0, 0, 16, 16);
         for (let y = 0; y < 16; y += 4) for (let x = (y % 8 ? -4 : 0); x < 16; x += 8) box(g, x + 0.5, y + 0.5, 7, 3, 0.5, y % 8 ? '#a6583e' : '#94503a', null);
+        break;
+      }
+      case 'ofis': {
+        // beyaz dolap/bölme paneli, mavi şerit, kulp
+        box(g, 0.4, 0.4, 15.2, 15.2, 1.4, '#eef1f5', '#7a8090', 0.8);
+        g.fillStyle = '#d4d8e0'; g.fillRect(1.2, 11.6, 13.6, 3.4);
+        g.fillStyle = '#3d7be0'; g.fillRect(1.2, 4, 13.6, 1.4);
+        box(g, 6, 8, 4, 1.4, 0.6, '#9aa0aa', null);
+        g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(1.6, 1.2, 12.8, 0.8);
+        break;
+      }
+      case 'sunucu': {
+        // kabin kapağı: havalandırma yarıkları, yanıp sönen ışıklar
+        box(g, 0.4, 0.4, 15.2, 15.2, 1, '#1c2028', '#06080c', 0.8);
+        g.fillStyle = '#2c323e'; for (let y = 2.4; y < 14; y += 2.2) g.fillRect(2, y, 9, 1);
+        circle(g, 13, 3, 0.8, '#7cff6a', null); circle(g, 13, 5.4, 0.8, '#3ab0ff', null); circle(g, 13, 7.8, 0.8, '#7cff6a', null);
+        g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(1, 1, 14, 0.6);
+        break;
+      }
+      case 'iskele': {
+        // ahşap sandık
+        box(g, 0.5, 0.5, 15, 15, 1, '#c08a4e', '#4a2c12', 0.8);
+        g.fillStyle = '#a06c36'; g.fillRect(1.2, 5, 13.6, 0.8); g.fillRect(1.2, 10.2, 13.6, 0.8);
+        g.strokeStyle = '#7a4a22'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(2, 2); g.lineTo(14, 14); g.stroke();
+        g.fillStyle = 'rgba(255,230,190,0.35)'; g.fillRect(1.2, 1.2, 13.6, 0.8);
+        break;
+      }
+      case 'bedesten': {
+        box(g, 0.4, 0.4, 15.2, 15.2, 1.2, '#b8aa92', '#4e4436', 0.8);
+        g.fillStyle = 'rgba(255,245,220,0.35)'; g.fillRect(1.4, 1.2, 13, 1); g.fillRect(1.2, 1.2, 1, 13);
+        g.fillStyle = 'rgba(60,40,20,0.25)'; g.fillRect(1.4, 13.6, 13.4, 1); g.fillRect(13.8, 1.4, 1, 13);
+        g.fillStyle = 'rgba(80,60,40,0.3)'; g.fillRect(5, 6, 3, 0.6); g.fillRect(9, 9.6, 2.4, 0.6);
+        break;
+      }
+      case 'celik': {
+        box(g, 0.4, 0.4, 15.2, 15.2, 1, '#a8b2c0', '#3a4250', 0.8);
+        g.strokeStyle = '#7a8496'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(2, 2); g.lineTo(14, 14); g.moveTo(14, 2); g.lineTo(2, 14); g.stroke();
+        g.fillStyle = '#d8dee8'; g.fillRect(1, 1, 14, 1.4);
+        for (const [x, y] of [[2.4, 2.4], [13.6, 2.4], [2.4, 13.6], [13.6, 13.6]]) circle(g, x, y, 0.75, '#5a6474', null);
+        break;
+      }
+      case 'ahsap': {
+        // kalın kiriş: yatay tahtalar ve cıvatalar
+        box(g, 0.4, 0.4, 15.2, 15.2, 1, '#8a5a32', '#2a1a0c', 0.8);
+        g.fillStyle = '#6e4626'; g.fillRect(1, 5.2, 14, 0.7); g.fillRect(1, 10.4, 14, 0.7);
+        g.strokeStyle = 'rgba(40,20,8,0.35)'; g.lineWidth = 0.4; for (const y of [2.6, 8, 13.2]) { g.beginPath(); g.moveTo(1.4, y); g.quadraticCurveTo(8, y + 1, 14.6, y); g.stroke(); }
+        circle(g, 3, 3, 0.8, '#3a3a40', null); circle(g, 13, 13, 0.8, '#3a3a40', null);
+        g.fillStyle = 'rgba(255,220,170,0.25)'; g.fillRect(1, 1, 14, 0.7);
         break;
       }
       case 'metro': {
@@ -911,6 +1032,6 @@
     PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
-    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO,
+    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
   };
 })(window);

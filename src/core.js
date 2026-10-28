@@ -70,7 +70,7 @@
     const rows = L.map;
     const W = rows[0].length;
     const G = {
-      S, idx, L, W, H, world: L.world - 1, section: L.section - 1,
+      S, idx, L, W, H, world: L.world - 1, section: L.section - 1, place: (L.world - 1) * 3 + (L.section - 1),
       grid: new Uint8Array(W * H), content: new Map(), coins: new Uint8Array(W * H),
       spawns: [], ents: [], items: [], shots: [], bshots: [], plats: [], bars: [], fx: [], bumps: [],
       goal: null, checkpoint: null, arena: null, boss: null, bossKind: L.boss || null,

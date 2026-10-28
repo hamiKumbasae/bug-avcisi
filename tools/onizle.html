@@ -16,6 +16,7 @@
 <canvas id="c"></canvas>
 <script src="../src/art.js"></script>
 <script src="../src/scenes.js"></script>
+<script src="../src/places.js"></script>
 <script>
 (async function () {
   const q = new URLSearchParams(location.search);
@@ -32,19 +33,23 @@
     const L = SC.layers(w);
     draw(L.far, -off, 0); if (off) draw(L.far, 512 - off, 0);
     draw(L.near, -off, 0); if (off) draw(L.near, 512 - off, 0);
-    if (A.WORLD[w].water) { g.fillStyle = A.WORLD[w].water; g.fillRect(0, 214, 512, 26); }
-    for (let x = 0; x < 512; x += 16) draw(A.tile(w, 'surf'), x, 224);
+    // w burada mekân numarası (dünya*3 + bölüm)
+    if (A.placeWater(w)) { g.fillStyle = A.placeWater(w); g.fillRect(0, 214, 512, 26); }
+    for (let x = 0; x < 512; x += 16) draw(A.tile(A.placeTiles(w), 'surf'), x, 224);
   } else if (mode === 'title') {
     c.width = 256 * S; c.height = 240 * S; g.scale(S, S);
     draw(SC.title(256, 240), 0, 0);
   } else if (mode === 'tiles') {
-    c.width = 9 * 120 * S; c.height = 3 * 40 * S; g.scale(S, S);
-    for (let i = 0; i < 9; i++) {
-      const x0 = i * 120;
+    const NT = A.WORLD.length;
+    c.width = 8 * 120 * S; c.height = Math.ceil(NT / 8) * 125 * S; g.scale(S, S);
+    for (let i = 0; i < NT; i++) {
+      const x0 = (i % 8) * 120;
+      g.save(); g.translate(0, Math.floor(i / 8) * 125);
       g.fillStyle = A.WORLD[i].sky[0]; g.fillRect(x0, 0, 120, 120);
       ['surf', 'fill', 'solid', 'crack', 'oneway', 'block', 'used', 'spike', 'anchor'].forEach((k, j) => draw(A.tile(i, k), x0 + 4 + (j % 5) * 22, 6 + Math.floor(j / 5) * 24));
       for (let x = 0; x < 7; x++) { draw(A.tile(i, 'surf'), x0 + x * 16, 72); draw(A.tile(i, 'fill'), x0 + x * 16, 88); draw(A.tile(i, 'fill'), x0 + x * 16, 104); }
       for (let x = 0; x < 3; x++) draw(A.tile(i, 'solid'), x0 + 60 + x * 16, 40);
+      g.restore();
     }
   } else if (mode === 'sprites') {
     c.width = 400 * S; c.height = 230 * S; g.scale(S, S);

@@ -30,27 +30,76 @@ from pathlib import Path
 H = 14
 WORLDS = [
     {'name': 'Maslak', 'sub': 'Plazalar', 'enemies': 'e', 'boss': 'kralbug', 'boss_name': 'Kral Bug',
-     'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group'], 'sections': ['Açık Ofis', 'Toplantı Katı', 'Sunucu Katı']},
+     'sections': ['Büyükdere Caddesi', 'Toplantı Katı', 'Sunucu Katı']},
     {'name': 'Kadıköy', 'sub': 'Çarşı', 'enemies': 'es', 'boss': 'spam', 'boss_name': 'Spam Kraliçesi',
-     'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'sections': ['Rıhtım Caddesi', 'Balık Pazarı', 'Moda Yokuşu']},
+     'sections': ['Rıhtım Caddesi', 'Balık Pazarı', 'Moda Yokuşu']},
     {'name': 'Vapur', 'sub': 'Boğaz', 'enemies': 'ems', 'boss': 'marti', 'boss_name': 'Dev Martı',
-     'parts': ['flat', 'blocks', 'gap', 'gap', 'moving', 'bridge', 'step', 'blockgap'], 'sections': ['İskele', 'Güverte', 'Kaptan Köşkü']},
+     'sections': ['İskele', 'Güverte', 'Kaptan Köşkü']},
     {'name': 'Kapalıçarşı', 'sub': 'Kubbeler', 'enemies': 'esv', 'boss': 'truva', 'boss_name': 'Truva Atı',
-     'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'sections': ['Kuyumcular', 'Halıcılar', 'Bedesten']},
+     'sections': ['Kuyumcular', 'Halıcılar', 'Bedesten']},
     {'name': 'Yerebatan', 'sub': 'Sarnıç', 'enemies': 'evo', 'boss': 'sizinti', 'boss_name': 'Bellek Sızıntısı',
-     'parts': ['tunnel', 'tunnel', 'gap', 'pillars', 'moving', 'spikes', 'loop', 'blocks', 'group'], 'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
+     'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
     {'name': 'Galata', 'sub': 'Yokuşlar', 'enemies': 'emv', 'boss': 'dongu', 'boss_name': 'Sonsuz Döngü',
-     'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'sections': ['Kamondo Merdivenleri', 'Kuledibi', 'Çatı Arası']},
+     'sections': ['Kamondo Merdivenleri', 'Kuledibi', 'Çatı Arası']},
     {'name': 'Köprü', 'sub': 'Boğaz Köprüsü', 'enemies': 'msv', 'boss': 'ddos', 'boss_name': 'DDoS Bulutu',
-     'parts': ['bridge', 'bridge', 'moving', 'moving', 'gap', 'pillars', 'vertical', 'blockgap'], 'sections': ['Ayak', 'Halatlar', 'Tepe']},
+     'sections': ['Ayak', 'Halatlar', 'Tepe']},
     {'name': 'Çatılar', 'sub': 'Gece', 'enemies': 'evom', 'boss': 'glitch', 'boss_name': 'Glitch',
-     'parts': ['pillars', 'pillars', 'gap', 'bridge', 'spikes', 'loop', 'step', 'vertical', 'blocks', 'group', 'blockgap'], 'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
+     'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
     {'name': 'Çamlıca', 'sub': 'Kule', 'enemies': 'esvmo', 'boss': 'maviekran', 'boss_name': 'Mavi Ekran',
-     'parts': ['pillars', 'moving', 'vertical', 'spikes', 'loop', 'gap', 'bridge', 'tunnel', 'blocks', 'stairs', 'group'], 'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası']},
+     'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası']},
+]
+
+# Her bölüm ayrı bir mekân: parça karışımı (bölümün tipi), tavan (iç mekân) ve metro girişi.
+# Dış mekân bölümleri koşu ve bloklar; iç mekânlar tavanlı ve dar; patron bölümleri kale gibi tuzaklı.
+PLACES = [
+    [  # Maslak
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group'], 'metro': True},
+        {'parts': ['flat', 'blocks', 'blocks', 'pillars', 'stairs', 'vertical', 'group', 'gap'], 'ceil': 2},
+        {'parts': ['flat', 'spikes', 'loop', 'pillars', 'blocks', 'gap', 'tunnel', 'group'], 'ceil': 2},
+    ],
+    [  # Kadıköy
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'metro': True},
+        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'metro': True},
+        {'parts': ['slope', 'slope', 'step', 'stairs', 'gap', 'bridge', 'flat', 'pillars']},
+    ],
+    [  # Vapur
+        {'parts': ['flat', 'gap', 'gap', 'bridge', 'blocks', 'moving', 'blockgap']},
+        {'parts': ['flat', 'blocks', 'gap', 'gap', 'moving', 'bridge', 'step', 'blockgap']},
+        {'parts': ['moving', 'moving', 'gap', 'blockgap', 'bridge', 'pillars', 'loop', 'flat']},
+    ],
+    [  # Kapalıçarşı
+        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'metro': True},
+        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'pillars', 'group', 'stairs', 'blockgap'], 'ceil': 2},
+        {'parts': ['spikes', 'loop', 'pillars', 'gap', 'blocks', 'tunnel', 'group', 'flat'], 'ceil': 2},
+    ],
+    [  # Yerebatan
+        {'parts': ['tunnel', 'tunnel', 'gap', 'pillars', 'moving', 'spikes', 'loop', 'blocks', 'group'], 'ceil': 2},
+        {'parts': ['pillars', 'pillars', 'gap', 'moving', 'loop', 'bridge', 'blocks', 'flat'], 'ceil': 2},
+        {'parts': ['tunnel', 'spikes', 'loop', 'loop', 'gap', 'pillars', 'moving', 'group'], 'ceil': 2},
+    ],
+    [  # Galata
+        {'parts': ['stairs', 'stairs', 'step', 'step', 'slope', 'blocks', 'group', 'gap'], 'metro': True},
+        {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'metro': True},
+        {'parts': ['pillars', 'loop', 'spikes', 'blocks', 'gap', 'stairs', 'group', 'flat'], 'ceil': 2},
+    ],
+    [  # Köprü
+        {'parts': ['flat', 'blocks', 'gap', 'pillars', 'stairs', 'bridge', 'group', 'moving']},
+        {'parts': ['bridge', 'bridge', 'moving', 'moving', 'vertical', 'blockgap', 'pillars']},
+        {'parts': ['pillars', 'pillars', 'moving', 'vertical', 'loop', 'bridge', 'gap']},
+    ],
+    [  # Çatılar
+        {'parts': ['pillars', 'pillars', 'gap', 'bridge', 'spikes', 'loop', 'step', 'vertical', 'blocks', 'group', 'blockgap']},
+        {'parts': ['pillars', 'pillars', 'vertical', 'loop', 'gap', 'step', 'blockgap', 'blocks']},
+        {'parts': ['loop', 'loop', 'moving', 'vertical', 'spikes', 'pillars', 'blocks', 'flat'], 'ceil': 2},
+    ],
+    [  # Çamlıca
+        {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'metro': True},
+        {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge']},
+        {'parts': ['spikes', 'loop', 'tunnel', 'moving', 'pillars', 'blocks', 'gap', 'flat'], 'ceil': 2},
+    ],
 ]
 
 
-METRO_WORLDS = (0, 1, 3, 5, 8)  # gerçekten metrosu olan semtler: Maslak, Kadıköy, Vezneciler, Şişhane, Kısıklı
 
 # bonus odası (16 × 14): yer altı istasyonu, simit sıraları ve bloklar
 ROOM = [
@@ -205,6 +254,8 @@ class Lv:
     def stairs(self):
         n = self.r.randint(3, 5 if self.d > 0.3 else 4)
         base = self.top()
+        if self.ceil:
+            n = max(2, min(n, base - self.ceil - 4))
         coins = self.r.random() < 0.5
         for i in range(1, n + 1):
             x = self.col()
@@ -348,6 +399,29 @@ class Lv:
         self.ceil = old
 
 
+    def awnings(self):
+        # pazar tezgâhları: tentelerin üstü ince platform, altında düşman
+        xs = self.flat(self.r.randint(10, 13), enemies=False)
+        t = self.top()
+        k = 0
+        for x0 in range(xs[1], xs[-3], 4):
+            h = 3 if k % 2 == 0 else 5
+            for i in range(3):
+                self.set(x0 + i, t - h, '-')
+            if self.r.random() < 0.5:
+                self.set(x0 + 1, t - h - 2, 'b')
+            k += 1
+        if self.r.random() < 0.5 + 0.4 * self.d:
+            self.enemy(xs[len(xs) // 2], kinds='e')
+
+    def slope(self):
+        # yokuş: art arda birer karo yükselen kısa düzlükler
+        up = self.gh < 5 or self.r.random() < 0.3
+        for _ in range(self.r.randint(2, 3)):
+            self.gh = max(1, min(6, self.gh + (1 if up else -1)))
+            self.flat(self.r.randint(3, 4), enemies=False)
+        self.flat(3)
+
     def metro_in(self):
         xs = self.flat(7, enemies=False)
         self.set(xs[2], self.top() - 1, 'E')
@@ -377,19 +451,19 @@ class Lv:
 def make(world, sec, r):
     d = (world * 3 + sec) / 26
     W = WORLDS[world]
+    PL = PLACES[world][sec]
     lv = Lv(r, d, world)
-    # Sarnıç ve kulede tavan baştan sona; diğerlerinde açık hava
-    if W['name'] == 'Yerebatan':
-        lv.ceil = 2
+    # iç mekânlarda tavan baştan sona; dış mekânlarda açık hava
+    lv.ceil = PL.get('ceil', 0)
     xs = lv.flat(8, enemies=False)
     lv.set(xs[2], lv.top() - 1, 'P')
     boss = sec == 2
     target = (95 if boss else 150) + int(40 * d)
-    parts = W['parts']
+    parts = PL['parts']
     last = None
     first_power = True
     checkpoint = False
-    metro = world in METRO_WORLDS and not boss
+    metro = PL.get('metro', False) and not boss
     metro_x = None
     secret_at = None if boss else int(target * r.uniform(0.25, 0.42))
     while lv.x < target:

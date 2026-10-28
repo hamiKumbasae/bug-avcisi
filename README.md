@@ -30,19 +30,24 @@ büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz, ama vazgeçmez 
 
 ## Dünyalar
 
-9 dünya, her biri 3 bölüm (toplam 27). Her dünyanın 3. bölümünün sonunda bir patron var.
+9 dünya, her biri 3 bölüm (toplam 27). Her bölüm ayrı bir mekânda geçer: kendi arka planı, zemini,
+şehir sesi ve bölüm tipi vardır (dış mekânda koşu ve bloklar; iç mekânda tavanlı dar koridorlar;
+patron bölümlerinde kale gibi tuzaklar). Her dünyanın 3. bölümünün sonunda bir patron var.
+
+**Amaç:** Maslak'tan başlayıp şehri geçerek Çamlıca'ya varmak, yol boyunca 9 hatıra parçasını toplamak.
+Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve topladığın parçaları gösterir.
 
 | Dünya | Yer | Bölümler | Patron |
 |---|---|---|---|
-| 1 | Maslak plazaları | Açık Ofis · Toplantı Katı · Sunucu Katı | Kral Bug |
-| 2 | Kadıköy çarşısı | Rıhtım Caddesi · Balık Pazarı · Moda Yokuşu | Spam Kraliçesi |
-| 3 | Boğaz vapuru | İskele · Güverte · Kaptan Köşkü | Dev Martı |
-| 4 | Kapalıçarşı | Kuyumcular · Halıcılar · Bedesten | Truva Atı |
-| 5 | Yerebatan Sarnıcı | Sütunlar · Medusa · Karanlık Su | Bellek Sızıntısı |
-| 6 | Galata yokuşları | Kamondo Merdivenleri · Kuledibi · Çatı Arası | Sonsuz Döngü |
-| 7 | Boğaz Köprüsü | Ayak · Halatlar · Tepe | DDoS Bulutu |
-| 8 | Gece çatıları | Bacalar · Antenler · Saat Kulesi | Glitch |
-| 9 | Çamlıca Kulesi | Tepe Yolu · Asansör · Yayın Odası | Mavi Ekran |
+| 1 | Maslak | Büyükdere Caddesi · Toplantı Katı (gökdelenin içi) · Sunucu Katı | Kral Bug |
+| 2 | Kadıköy | Rıhtım Caddesi · Balık Pazarı (tenteler) · Moda Yokuşu (gün batımı) | Spam Kraliçesi |
+| 3 | Vapur | İskele (sabah) · Güverte · Kaptan Köşkü (fırtına) | Dev Martı |
+| 4 | Kapalıçarşı | Kuyumcular · Halıcılar · Bedesten (kubbeli taş salon) | Truva Atı |
+| 5 | Yerebatan Sarnıcı | Sütunlar · Medusa (yeşil ışık) · Karanlık Su | Bellek Sızıntısı |
+| 6 | Galata | Kamondo Merdivenleri · Kuledibi · Çatı Arası (Hezarfen'in kanatları) | Sonsuz Döngü |
+| 7 | Boğaz Köprüsü | Ayak · Halatlar (bulut hizasında) · Tepe (gece) | DDoS Bulutu |
+| 8 | Gece çatıları | Bacalar · Antenler · Saat Kulesi (dev çarklar) | Glitch |
+| 9 | Çamlıca | Tepe Yolu · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
 
 Ana menüdeki **Bölüm seç** ile 27 bölümden istediğine doğrudan başlayabilirsin.
 
@@ -87,7 +92,7 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
   Koşarken zıplarsan daha yükseğe ve uzağa gidersin.
 - **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
 - **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
-- **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane ve Kısıklı'nın normal bölümlerinde
+- **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane ve Kısıklı'nın dış mekân bölümlerinde
   metro girişi var. Üstünde ↓'ye bas: simit dolu bir istasyona inersin, yürüyen merdivenle bölümün ilerisine çıkarsın.
 - **DEPLOY anteni:** bölüm sonundaki merdivenden atla; antene ne kadar yüksekten değersen o kadar puan
   (100'den 5000'e). Kalan sürenin son hanesi tekse havai fişekler patlar.
@@ -105,6 +110,7 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 - `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 27 bölüm (tohumlu, her seferinde aynı çıkar).
 - `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 9 patron, her dünyanın karoları.
 - `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı) ve başlık ekranının İstanbul silueti.
+- `src/places.js`: bölüm mekânları (gökdelenin içi, sunucu odası, balık pazarı, fırtına, saat kulesi...).
 - `src/story.js`: yazısız hikâye sahneleri (giriş, 8 ara sahne, son).
 - `tools/onizle.html`: bütün çizimleri ve arka planları tek sayfada görmek için geliştirme önizlemesi.
 - `src/audio.js`: sentezlenmiş efektler, şehir sesleri ve her dünyanın özgün çiptün müziği

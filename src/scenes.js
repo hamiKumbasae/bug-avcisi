@@ -358,12 +358,12 @@
     { stops: [[0, '#070b26'], [0.6, '#18205a'], [1, '#2c3474']], moon: [196, 46, 14], stars: 90 },
     { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
   ];
-  function drawSky(g, w, vw, vh) {
-    const d = SKY[w];
+  function drawSky(g, d, vw, vh, seed) {
+    if (d.draw) { d.draw(g, vw, vh); return; }
     const gr = g.createLinearGradient(0, 0, 0, vh);
     d.stops.forEach(([o, c]) => gr.addColorStop(o, c));
     g.fillStyle = gr; g.fillRect(0, 0, vw, vh);
-    if (d.stars) { const r = rng(w * 31 + 7); for (let i = 0; i < d.stars; i++) { const x = r() * vw, y = r() * vh * 0.6, a = 0.3 + r() * 0.7; g.fillStyle = `rgba(255,255,240,${a})`; g.beginPath(); g.arc(x, y, 0.35 + r() * 0.5, 0, TAU); g.fill(); } }
+    if (d.stars) { const r = rng(seed * 31 + 7); for (let i = 0; i < d.stars; i++) { const x = r() * vw, y = r() * vh * 0.6, a = 0.3 + r() * 0.7; g.fillStyle = `rgba(255,255,240,${a})`; g.beginPath(); g.arc(x, y, 0.35 + r() * 0.5, 0, TAU); g.fill(); } }
     if (d.sun) {
       const [x, y, r, c] = d.sun;
       const gl = g.createRadialGradient(x, y, r * 0.5, x, y, r * 4); gl.addColorStop(0, 'rgba(255,240,200,0.65)'); gl.addColorStop(1, 'rgba(255,240,200,0)');
@@ -645,7 +645,7 @@
     // ahşap dükkân çerçevesi
     B(g, x + 4, 66, 120, 150, 2, '#6a3a1e');
     B(g, x + 10, 86, 108, 128, 1, '#3a2012');
-    const signs = ['BAHARAT', 'HALI', 'LAMBA', 'NAZAR'];
+    const signs = ['BAHARAT', 'KUYUMCU', 'LAMBA', 'NAZAR'];
     B(g, x + 22, 70, 84, 13, 3, '#f2d48a');
     g.fillStyle = '#6a2a14'; g.font = '600 9px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(signs[i % 4], x + 64, 77);
     const k = i % 4;
@@ -656,9 +656,13 @@
       for (let j = 0; j < 6; j++) { const cx = x + 22 + j * 17; E(g, cx, 178, 8, 2.4, '#5a3418'); P(g, [cx - 7.4, 178, cx + 7.4, 178, cx, 162 - (j % 2) * 4], cols[j]); }
       for (let j = 0; j < 5; j++) { lin(g, x + 24 + j * 20, 88, x + 24 + j * 20, 104, '#c8a060', 0.6); E(g, x + 24 + j * 20, 110, 4, 6, ['#a83a1e', '#5a7a2a', '#c8601e'][j % 3]); }
     } else if (k === 1) {
-      const pats = [['#a8201e', '#f2d48a', '#1e3a6a'], ['#1e3a6a', '#e8c070', '#a8201e'], ['#7a2a4a', '#f4e4c0', '#2a6a5a']];
-      for (let j = 0; j < 3; j++) carpet(g, x + 16 + j * 34, 92, 30, 72 + (j % 2) * 18, pats[j]);
-      for (let j = 0; j < 3; j++) { const y = 196 - j * 6; B(g, x + 20, y, 88, 6, 2, ['#a8201e', '#1e3a6a', '#d8a040'][j]); }
+      // kuyumcu vitrini: kadife zeminde altın bilezikler, kolyeler, ışıltı
+      B(g, x + 14, 92, 100, 80, 2, '#f4f0e0'); B(g, x + 18, 96, 92, 72, 1, '#5a1a2a');
+      for (let r2 = 0; r2 < 3; r2++) for (let j = 0; j < 5; j++) { g.strokeStyle = '#f4c531'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(x + 30 + j * 17, 108 + r2 * 20, 5, 3.4, 0, 0, TAU); g.stroke(); }
+      for (let j = 0; j < 4; j++) { g.strokeStyle = '#ffe07a'; g.lineWidth = 0.8; g.beginPath(); g.arc(x + 34 + j * 20, 152, 6, 0.2, Math.PI - 0.2); g.stroke(); C(g, x + 34 + j * 20, 158, 1.6, '#e2483a'); }
+      g.fillStyle = 'rgba(255,255,255,0.35)'; P(g, [x + 22, 168, x + 32, 168, x + 56, 96, x + 46, 96], 'rgba(255,255,255,0.25)');
+      for (let j = 0; j < 6; j++) star(g, x + 26 + j * 15, 100 + (j % 3) * 22, 1.6, '#ffffff');
+      B(g, x + 14, 176, 100, 38, 1, '#7a4a28');
     } else if (k === 2) {
       for (let j = 0; j < 7; j++) {
         const lx = x + 20 + j * 14.6, ly = 108 + (j % 3) * 18;
@@ -728,25 +732,35 @@
     g.restore();
   }
 
+  // ---------- mekânlar: her dünyanın 3 bölümü ayrı bir yer (yer = dünya*3 + bölüm) ----------
+  // Dünyanın ilk çizimi hangi bölümde kullanılıyor; diğer iki bölüm PLACES'ta
+  const BASE_AT = [0, 0, 1, 0, 0, 1, 0, 0, 0];
+  const PLACES = {};
+  function placeDef(p) {
+    const w = Math.floor(p / 3), s = p % 3;
+    if (s === BASE_AT[w] || !PLACES[p]) return { sky: SKY[w], far: WORLDS[w].far, near: WORLDS[w].near };
+    return PLACES[p];
+  }
+
   // ---------- önbellek ----------
   const layerCache = A.cache();
   function bgScale() { return A.S; }
-  function layers(w) {
-    let L = layerCache.get(w);
+  function layers(p) {
+    let L = layerCache.get(p);
     if (!L) {
       const sc = bgScale();
-      const D = WORLDS[w];
-      L = { far: A.mk(W, H, (g) => D.far(g), sc), near: A.mk(W, H, (g) => D.near(g), sc) };
-      layerCache.set(w, L);
+      const D = placeDef(p);
+      L = { far: A.mk(W, H, (g) => { pen(null); D.far(g); }, sc), near: A.mk(W, H, (g) => { pen(null); D.near(g); }, sc) };
+      layerCache.set(p, L);
       if (layerCache.size > 2) layerCache.delete(layerCache.keys().next().value);
     }
     return L;
   }
   const skyCache = A.cache();
-  function sky(w, vw, vh) {
-    const k = w + ':' + vw;
+  function sky(p, vw, vh) {
+    const k = p + ':' + vw;
     let c = skyCache.get(k);
-    if (!c) { c = A.mk(vw, vh, (g) => drawSky(g, w, vw, vh), bgScale()); skyCache.set(k, c); }
+    if (!c) { c = A.mk(vw, vh, (g) => drawSky(g, placeDef(p).sky, vw, vh, p), bgScale()); skyCache.set(k, c); if (skyCache.size > 4) skyCache.delete(skyCache.keys().next().value); }
     return c;
   }
 
@@ -859,9 +873,10 @@
   }
 
   root.BA_SCENE = {
-    W, H, layers, sky, title, metro, station, SKY, pen, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
+    W, H, layers, sky, title, metro, station, SKY, pen, BASE_AT, PLACES, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
-      cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky },
+      cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,
+      homeTower, lonelyWindow, windowsRow, hex },
   };
 })(window);

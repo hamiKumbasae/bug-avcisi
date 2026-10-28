@@ -224,6 +224,13 @@
         break;
       }
       case 'fire': { const a = nz('bandpass', 1800, 0.5, 0.35); lfo(7, 0.2, a.g.gain); nz('lowpass', 200, 0.5, 0.5); break; }
+      case 'hum': {
+        // sunucu/klima uğultusu: 100 Hz ve harmonikleri, hafif fan hışırtısı
+        for (const [f, v] of [[100, 0.12], [200, 0.05], [300, 0.025]]) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; g.gain.value = v; o.connect(g).connect(out); o.start(); nodes.push(o); }
+        nz('bandpass', 1400, 0.5, 0.25);
+        break;
+      }
+      case 'rain': nz('highpass', 2600, 0.4, 0.9); nz('bandpass', 900, 0.8, 0.4); break;
     }
     return { out, nodes };
   }
@@ -243,6 +250,10 @@
       case 'car': { const s = loopNoise(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.linearRampToValueAtTime(900, t + 1.2); f.frequency.linearRampToValueAtTime(250, t + 2.6); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 1.2); g.gain.linearRampToValueAtTime(0.0001, t + 2.6); s.connect(f).connect(g).connect(B); s.start(t); s.stop(t + 2.7); break; }
       case 'meow': osc('triangle', 700, t, 0.45, 0.04, B, 1.4, 0.08); break;
       case 'bell': for (const [f, v] of [[660, 0.05], [1320, 0.025], [1980, 0.012]]) osc('sine', f, t, 1.6, v, B, 1, 0.003); break;
+      case 'beep': for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i++) osc('square', [1760, 2093, 1568][i % 3], t + i * 0.12, 0.05, 0.012, B); break;
+      case 'thunder': { noise(t, 2.4, 0.5, 220, B); noise(t + 0.05, 0.4, 0.3, 900, B); break; }
+      case 'tick': for (let i = 0; i < 8; i++) noise(t + i * 0.5, 0.02, i % 2 ? 0.08 : 0.12, i % 2 ? 2600 : 3400, B, true); break;
+      case 'creak': osc('sawtooth', 90 + Math.random() * 40, t, 0.6, 0.02, B, 1.5, 0.2); break;
     }
   }
   // ad: { katmanlar: [[tür, ses]], olaylar: [[tür, ortalama aralık sn]] }
@@ -258,8 +269,27 @@
     catilar: { beds: [['wind', 0.1], ['city', 0.04]], events: [['keys', 3.5], ['meow', 12], ['car', 10]] },
     camlica: { beds: [['wind', 0.1]], events: [['bird', 5], ['car', 12]] },
     safak: { beds: [['wind', 0.06], ['sea', 0.05]], events: [['bird', 1.8], ['gull', 7], ['horn', 18]] },
+    // bölüm mekânları
+    ofis: { beds: [['city', 0.04], ['hum', 0.05]], events: [['keys', 3], ['ding', 9], ['step', 7]] },
+    sunucu: { beds: [['hum', 0.16]], events: [['beep', 2.5], ['keys', 9]] },
+    pazar: { beds: [['murmur', 0.1], ['city', 0.04]], events: [['gull', 5], ['bell', 13], ['step', 4]] },
+    moda: { beds: [['sea', 0.1], ['wind', 0.07]], events: [['gull', 5], ['bird', 6], ['horn', 20]] },
+    firtina: { beds: [['sea', 0.28], ['wind', 0.2], ['rain', 0.1]], events: [['thunder', 9], ['horn', 22]] },
+    bedesten: { beds: [['cave', 0.08], ['murmur', 0.03]], events: [['step', 6], ['bell', 15], ['carve', 9]] },
+    karanlik: { beds: [['cave', 0.18]], events: [['drip', 3.5]] },
+    kamondo: { beds: [['city', 0.08], ['wind', 0.04]], events: [['step', 3], ['bird', 6], ['gull', 9]] },
+    cati: { beds: [['wind', 0.08], ['cave', 0.05]], events: [['creak', 4], ['bell', 18]] },
+    halat: { beds: [['wind', 0.24]], events: [['horn', 18], ['gull', 11]] },
+    tepe: { beds: [['wind', 0.18], ['engine', 0.04]], events: [['car', 7]] },
+    saat: { beds: [['cave', 0.06], ['wind', 0.04]], events: [['tick', 4.1], ['creak', 6], ['bell', 20]] },
+    asansor: { beds: [['engine', 0.08], ['wind', 0.06]], events: [['ding', 8]] },
+    yayin: { beds: [['hum', 0.12]], events: [['beep', 2], ['keys', 6]] },
   };
   const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'kopru', 'catilar', 'camlica'];
+  // her bölümün mekânı (dünya*3 + bölüm)
+  const PLACE_AMB = ['plaza', 'ofis', 'sunucu', 'iskele', 'pazar', 'moda', 'iskele', 'vapur', 'firtina',
+    'carsi', 'carsi', 'bedesten', 'sarnic', 'sarnic', 'karanlik', 'kamondo', 'galata', 'cati',
+    'kopru', 'halat', 'tepe', 'catilar', 'catilar', 'saat', 'camlica', 'asansor', 'yayin'];
   function stopAmbient(fade) {
     if (!amb || !ac) { amb = null; return; }
     const t = ac.currentTime, f = fade === undefined ? 0.8 : fade, a = amb;
@@ -291,7 +321,7 @@
   }
 
   root.BA_AUDIO = {
-    unlock: ctx, sfx, playMusic, stopMusic, setRate, WORLD_SONG, ambient, stopAmbient, WORLD_AMB, ambEvent: ev,
+    unlock: ctx, sfx, playMusic, stopMusic, setRate, WORLD_SONG, ambient, stopAmbient, WORLD_AMB, PLACE_AMB, ambEvent: ev,
     get ambName() { return amb ? amb.name : null; },
     get muted() { return muted; }, setMuted, SONGS,
     current: () => (cur ? cur.name : null),
