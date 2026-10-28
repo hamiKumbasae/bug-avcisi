@@ -298,15 +298,63 @@ const flat = (w, extraRows) => {
   ok(G.phase === 'clear', 'metrodan sonra bölüm bitirilebildi');
 }
 
+// ---------- dikey bölümler: tırmanış ve iniş boşluklarında kamera izler, düşüş doğru yerde öldürür ----------
+{
+  let tall = 0, climbs = 0, falls = 0;
+  for (let idx = 0; idx < NL; idx++) {
+    if (!LV[idx].vcam) continue;
+    tall++;
+    const G = BA.loadStage(BA.newRun(), idx);
+    // boşluk sütunları: kameranın oynayabildiği yerler
+    for (let x = 1; x < G.W - 1; x++) {
+      if (G.camLo[x] === G.camHi[x] || G.camLo[x - 1] !== G.camHi[x - 1]) continue;
+      const lo = G.camLo[x], hi = G.camHi[x];
+      // boşluğun tepesinden bırak: ölmeden dibe iner, kamera aşağı iner
+      const G2 = BA.loadStage(BA.newRun(), idx);
+      G2.player.inv = 99; G2.player.x = x + 2.1; G2.player.y = lo + 3; G2.player.vy = 0; G2.cam = Math.max(0, x - 6); G2.camY = lo;
+      run(G2, (g) => { g.player.inv = 99; return {}; }, 2.5);
+      if (!G2.player.dead && G2.player.onGround && G2.camY > lo + 0.5) falls++;
+      climbs++;
+    }
+  }
+  ok(tall >= 20, `uzun (dikey) bölüm sayısı ${tall}`);
+  ok(climbs > 0 && falls === climbs, `dikey boşluklarda düşen oyuncu ölmeden iner, kamera izler (${falls}/${climbs})`);
+  // düz bantta çukura düşünce bandın altında ölür
+  const idx = LV.findIndex((L) => L.vcam);
+  const G = BA.loadStage(BA.newRun(), idx);
+  const p = G.player, cx = Math.floor(p.x);
+  p.y = G.camHi[cx] + 15; BA.step(G, {}, dt);
+  ok(p.dead, 'bandın altına düşen oyuncu ölür');
+}
+
+// ---------- gerçek bölümlerde metro: uzun bölümlerde oda en alt bantta ----------
+{
+  let n = 0, good = 0;
+  LV.forEach((L, idx) => {
+    if (idx >= NL || !L.room) return;
+    n++;
+    const G = BA.loadStage(BA.newRun(), idx), p = G.player, mi = G.metroIn;
+    p.x = mi.x + 1 - p.w / 2; p.y = mi.y + 1 - p.h; p.vy = 0; p.onGround = true; G.cam = Math.max(0, mi.x - 7);
+    run(G, { down: true }, 0.05); run(G, NONE, 2);
+    const inRoom = G.area === 'room' && p.onGround && !p.dead && Math.abs(G.camY - G.room.y0) < 0.01;
+    const e = G.room.exit; p.x = e.x - 1.2; p.y = e.y + 1 - p.h;
+    run(G, { right: true }, 1); run(G, NONE, 2.5);
+    const cx = Math.floor(p.x + p.w / 2);
+    const back = G.area === 'main' && !p.dead && p.onGround && G.camY >= G.camLo[cx] - 0.01 && G.camY <= G.camHi[cx] + 0.01;
+    if (inRoom && back) good++;
+  });
+  ok(n === 10 && good === n, `bütün metro girişleri odaya iner, çıkıştan yukarı çıkılır (${good}/${n})`);
+}
+
 // ---------- bitiş merdiveni ve DEPLOY anteni ----------
 {
   // merdivenin tepesinden kenara gelen oyuncu verilen hızla zıplar; anten bonusunu döndürür
   const leap = (idx, vx, jump) => {
     const G = BA.loadStage(BA.newRun(), idx), g = G.goal, p = G.player;
+    const top = g.y + 2 - 5; // merdivenin tepesi: DEPLOY zemininden 5 karo yukarı
     let sx = g.x - 1;
-    while (sx > 0 && !BA.solid(G, sx, BA.H - 2 - 5)) sx--;
-    const top = BA.H - 2 - 5;
-    p.x = sx + 1 - p.w - 0.02; p.y = top - p.h; p.vx = vx; G.cam = Math.max(0, g.x - 12); G.time = 200.5;
+    while (sx > 0 && !BA.solid(G, sx, top)) sx--;
+    p.x = sx + 1 - p.w - 0.02; p.y = top - p.h; p.vx = vx; G.cam = Math.max(0, g.x - 12); G.camY = G.camLo[g.x]; G.time = 200.5;
     run(G, (gg, t) => ({ right: true, run: vx > BA.PH.walk, jump: jump && t < 0.8 }), 3, (gg) => gg.phase === 'clear');
     return G.phase === 'clear' ? G.goalBonus : -1;
   };

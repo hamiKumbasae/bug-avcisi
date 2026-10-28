@@ -375,31 +375,46 @@
     if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 0.8; ctx.stroke(); }
   }
   // tekrarlanan arka plan katmanı: kopyalar cihaz pikseline oturur, ek yeri görünmez
-  function layerDraw(c, off) {
-    const Wd = Math.round(c.lw * S), Hd = Math.round(c.lh * S);
+  function layerDraw(c, off, dy) {
+    const Wd = Math.round(c.lw * S), Hd = Math.round(c.lh * S), Y = Math.round((dy || 0) * S);
     let X = -Math.round((((off % c.lw) + c.lw) % c.lw) * S);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (; X < canvas.width; X += Wd) ctx.drawImage(c, X, 0, Wd, Hd);
+    for (; X < canvas.width; X += Wd) ctx.drawImage(c, X, Y, Wd, Hd);
     ctx.setTransform(S, 0, 0, S, 0, 0);
   }
   // pl: mekân (dünya*3 + bölüm)
-  function backdrop(pl, cam, t) {
-    full(SC.sky(pl, VW, VH));
-    const L = SC.layers(pl);
-    layerDraw(L.far, cam * 0.15 + (t || 0) * 0.3);
-    layerDraw(L.near, cam * 0.4 + (t || 0));
-    if (!ART.placeWater(pl)) {
-      // zemin hizasının altı kararır: çukurlar çukur gibi görünsün
-      const gr = ctx.createLinearGradient(0, TOP + 12.2 * TS, 0, VH);
-      gr.addColorStop(0, 'rgba(12,10,30,0)'); gr.addColorStop(1, 'rgba(12,10,30,0.7)');
-      ctx.fillStyle = gr; ctx.fillRect(0, TOP + 12.2 * TS, VW, VH);
+  // up: kamera başlangıç bandının kaç karo üstünde (tırmanınca arka plan aşağı kayar, gökyüzü açılır);
+  // pitY / waterY: çukur kararması ve su çizgisinin ekrandaki yeri (karo satırı, ekranın üstünden)
+  function backdrop(pl, cam, t, up, pitY, waterY) {
+    const sky = SC.sky(pl, VW, VH), L = SC.layers(pl);
+    if (app.mapShift !== undefined) {
+      // harita çıkarma kipi: arka plan dünyaya yapışık, üst bantlarda gökyüzü kesintisiz sürer
+      const m = Math.round(app.mapShift * S);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(sky, 0, m, canvas.width, canvas.height);
+      if (m > 0) ctx.drawImage(sky, 0, 0, sky.width, 1, 0, 0, canvas.width, m);
+      ctx.setTransform(S, 0, 0, S, 0, 0);
+      layerDraw(L.far, cam * 0.15, app.mapShift); layerDraw(L.near, cam * 0.4, app.mapShift);
+    } else {
+      full(sky);
+      const u = Math.max(0, up || 0) * TS;
+      layerDraw(L.far, cam * 0.15 + (t || 0) * 0.3, u * 0.15);
+      layerDraw(L.near, cam * 0.4 + (t || 0), u * 0.4);
     }
-    water(pl, cam + (t || 0) * 2.5);
+    const py = TOP + (pitY === undefined ? 12.2 : pitY) * TS;
+    if (!ART.placeWater(pl) && py < VH) {
+      // zemin hizasının altı kararır: çukurlar çukur gibi görünsün
+      const gr = ctx.createLinearGradient(0, py, 0, py + 2 * TS);
+      gr.addColorStop(0, 'rgba(12,10,30,0)'); gr.addColorStop(1, 'rgba(12,10,30,0.7)');
+      ctx.fillStyle = gr; ctx.fillRect(0, py, VW, VH - py);
+    }
+    water(pl, cam + (t || 0) * 2.5, waterY);
   }
-  function water(pl, cam) {
+  function water(pl, cam, wy) {
     const col = ART.placeWater(pl);
     if (!col) return;
-    const y0 = TOP + 12.4 * TS;
+    const y0 = TOP + (wy === undefined ? 12.4 : wy) * TS;
+    if (y0 >= VH) return;
     const gr = ctx.createLinearGradient(0, y0, 0, VH);
     gr.addColorStop(0, shade(col, 0.18)); gr.addColorStop(1, shade(col, -0.4));
     ctx.fillStyle = gr; ctx.fillRect(0, y0, VW, VH - y0);
@@ -463,9 +478,11 @@
     const G = app.G, w = G.world, pl = G.place, theme = ART.placeTiles(pl);
     let sx = 0, sy = 0;
     if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
-    const cam = Math.round(G.cam * TS * S) / S;
-    if (G.area === 'room') full(SC.metro(w, VW, VH)); else backdrop(pl, cam);
-    const ox = -cam + sx, oy = TOP + sy;
+    const cam = Math.round(G.cam * TS * S) / S, camY = Math.round(G.camY * TS * S) / S / TS;
+    const pcx = Math.max(0, Math.min(G.W - 1, Math.floor(G.player.x + G.player.w / 2)));
+    if (G.area === 'room') full(SC.metro(w, VW, VH));
+    else backdrop(pl, cam, 0, G.base0 - camY, G.camHi[pcx] + 12.2 - camY, G.H - 1.6 - camY);
+    const ox = -cam + sx, oy = TOP + sy - camY * TS;
     // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
     const x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
     const bumpOff = new Map();
@@ -480,7 +497,8 @@
       ctx.drawImage(c, X0, Y0, Math.round((lx + 16 + ox) * S) - X0, Math.round((ly + 16 + oy) * S) - Y0);
     };
     const blink = Math.floor(app.t * 2.5) % 2 ? 'off' : '';
-    for (let ty = 0; ty < BA.H; ty++) {
+    const y0 = Math.max(0, Math.floor(camY) - 1), y1 = Math.min(G.H - 1, Math.floor(camY) + BA.VHT + 1);
+    for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
         const i = ty * G.W + tx, t = G.grid[i];
         if (!t) continue;

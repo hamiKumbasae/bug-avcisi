@@ -23,7 +23,7 @@ function analyse(idx, revealHidden) {
   const S = BA.newRun();
   S.power = 1; // büyük: başı en çok takılan hâl
   const G = BA.loadStage(S, idx);
-  const W = G.W;
+  const W = G.W, H = G.H;
   // gizli bloklar açığa çıkmış (katı) hâlde de bölüm geçilebilmeli
   if (revealHidden) for (let i = 0; i < G.grid.length; i++) if (G.grid[i] === T.HIDDEN) G.grid[i] = T.USED;
   // patron arenası için duvarı da ekle (gerçekte kilitlendiğinde gelir; geçiş denetimi için önemsiz)
@@ -101,7 +101,7 @@ function analyse(idx, revealHidden) {
         if (left) return hitSpike ? null : findSeg(b);
         if (hitSpike) return null;
       } else left = true;
-      if (b.y > H) return null;
+      if (b.y > BA.deathY(G, b.x + b.w / 2)) return null;
     }
     return null;
   }
@@ -138,7 +138,7 @@ function analyse(idx, revealHidden) {
     const exSeg = ex && (segOf(ex.x, ex.y) || segOf(ex.x - 1, ex.y));
     const outSeg = G.metroOut && (segOf(G.metroOut.x, G.metroOut.y) || segOf(G.metroOut.x + 1, G.metroOut.y));
     // odaya giriş noktasından aşağı düş
-    const b = { x: G.room.x0 + 2.1, y: 2.05, w: PW, h: BIG_H };
+    const b = { x: G.room.x0 + 2.1, y: G.room.y0 + 2.05, w: PW, h: BIG_H };
     let vy = 0, land = null;
     for (let k = 0; k < 400 && !land; k++) { vy = Math.min(PH.maxFall, vy + PH.gFall * dt); if (BA.moveY(G, b, vy * dt, true).down) land = findSeg(b); }
     metro = { inSeg, exSeg, outSeg, land };
@@ -179,7 +179,8 @@ function analyse(idx, revealHidden) {
 for (let i = 0; i < LEVELS.length; i++) {
   const L = LEVELS[i];
   const rows = L.map;
-  ok(rows.length === H, `${L.world}-${L.section}: ${H} satır`);
+  ok(rows.length === H || (rows.length > H && Array.isArray(L.vcam)), `${L.world}-${L.section}: ${H} satır ya da dikey kamera bilgisi`);
+  if (L.boss) ok(rows.length === H, `${L.world}-${L.section}: patron bölümü tek bant`);
   ok(rows.every((r) => r.length === rows[0].length), `${L.world}-${L.section}: satırlar eşit uzunlukta`);
   const count = (ch) => rows.reduce((n, r) => n + r.split(ch).length - 1, 0);
   ok(count('P') === 1, `${L.world}-${L.section}: tek başlangıç`);

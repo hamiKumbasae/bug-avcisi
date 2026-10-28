@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
 
-  const H = 14, VW = 16;
+  // H: ekranın (ve tek bantlı bölümün) satır sayısı; uzun bölümlerde haritanın boyu G.H'tır.
+  const H = 14, VW = 16, VHT = 14;
   // Klasik platform hissi: yavaş yavaş hız kazanılır, bırakınca bir süre kayılır, ters yöne basınca savrulunur;
   // koşarken zıplama hızla orantılı olarak daha yüksek ve uzun olur.
   const PH = {
@@ -70,10 +71,11 @@
   function loadStage(S, idx) {
     const L = levels()[idx];
     const rows = L.map;
-    const W = rows[0].length;
+    const W = rows[0].length, MH = rows.length;
     const G = {
-      S, idx, L, W, H, world: L.world - 1, section: L.section - 1, place: (L.world - 1) * 3 + (L.section - 1),
-      grid: new Uint8Array(W * H), content: new Map(), coins: new Uint8Array(W * H),
+      S, idx, L, W, H: MH, world: L.world - 1, section: L.section - 1, place: (L.world - 1) * 3 + (L.section - 1),
+      grid: new Uint8Array(W * MH), content: new Map(), coins: new Uint8Array(W * MH),
+      camY: 0, camLo: new Float32Array(W), camHi: new Float32Array(W),
       spawns: [], ents: [], items: [], shots: [], bshots: [], plats: [], bars: [], fx: [], bumps: [],
       goal: null, checkpoint: null, arena: null, boss: null, bossKind: L.boss || null,
       time: L.time, t: 0, phase: 'play', result: null, ev: [], cam: 0, shake: 0,
@@ -81,9 +83,15 @@
       prev: { jump: false, run: false },
       multi: new Map(), area: 'main', mainW: L.room || W, room: null, metroIn: null, metroOut: null, warp: null,
     };
-    if (L.room) G.room = { x0: L.room, x1: L.room + ROOM_W, exit: null, used: false };
+    if (L.room) G.room = { x0: L.room, x1: L.room + ROOM_W, y0: MH - VHT, exit: null, used: false };
+    // dikey kamera aralıkları: her sütunda kameranın üst satırı [lo, hi] arasında kalır (düz bölümlerde 0)
+    const vc = L.vcam || [[0, MH - VHT, MH - VHT]];
+    for (let k = 0; k < vc.length; k++) {
+      const [x0, lo, hi] = vc[k], x1 = k + 1 < vc.length ? vc[k + 1][0] : W;
+      for (let x = x0; x < x1; x++) { G.camLo[x] = lo; G.camHi[x] = hi; }
+    }
     let start = { x: 2, y: 11 };
-    for (let y = 0; y < H; y++) {
+    for (let y = 0; y < MH; y++) {
       for (let x = 0; x < W; x++) {
         const ch = rows[y][x], i = y * W + x;
         switch (ch) {
@@ -136,16 +144,21 @@
       sq: 0, sqv: 0, dustT: 0, isPlayer: true,
     };
     G.cam = clamp(G.player.x - 6, 0, G.mainW - VW);
+    { const cx = colAt(G, G.player.x + G.player.w / 2); G.camY = clamp(G.player.y + G.player.h - 12, G.camLo[cx], G.camHi[cx]); }
+    G.base0 = G.camY;
     return G;
   }
+  const colAt = (G, x) => clamp(Math.floor(x), 0, G.W - 1);
+  // ekranın altından düşünce ölüm: o sütunda kameranın inebileceği en alt yerin de altı
+  const deathY = (G, x) => G.camHi[colAt(G, x)] + VHT + 0.5;
 
   // ---------------- karo yardımcıları ----------------
   function tile(G, tx, ty) {
     if (tx < 0 || tx >= G.W) return T.WALL;
-    if (ty < 0 || ty >= H) return T.EMPTY;
+    if (ty < 0 || ty >= G.H) return T.EMPTY;
     return G.grid[ty * G.W + tx];
   }
-  function setTile(G, tx, ty, v) { if (tx >= 0 && tx < G.W && ty >= 0 && ty < H) G.grid[ty * G.W + tx] = v; }
+  function setTile(G, tx, ty, v) { if (tx >= 0 && tx < G.W && ty >= 0 && ty < G.H) G.grid[ty * G.W + tx] = v; }
   const solid = (G, tx, ty) => SOLID[tile(G, tx, ty)];
 
   function moveX(G, b, dx) {
@@ -333,7 +346,7 @@
         break;
       }
     }
-    if (e.y > H + 2) return false;
+    if (e.y > G.H + 2 || e.y > deathY(G, e.x) + 2) return false;
     if (e.x < G.cam - 6 || e.x > G.W + 2) return false;
     return true;
   }
@@ -359,6 +372,21 @@
     }
   }
 
+  // Dikey kamera: düz bantlarda sabit; tırmanış ve iniş boşluklarında oyuncunun ayakları ekranın
+  // 10. satırı civarında kalacak şekilde yukarı-aşağı yumuşakça kayar.
+  function updateCamY(G, dt) {
+    const p = G.player, cx = colAt(G, p.x + p.w / 2);
+    const lo = G.camLo[cx], hi = G.camHi[cx];
+    let target = lo === hi ? lo : p.y + p.h - 10;
+    target = clamp(target, lo, hi);
+    const d = target - G.camY;
+    G.camY += clamp(d * Math.min(1, 6 * dt), -14 * dt, 14 * dt);
+    // oyuncu ekrandan çıkmasın: boşlukta tamamen görünür kalır, düz bantta yalnız yukarı zıplayınca izlenir
+    if (lo !== hi) G.camY = clamp(G.camY, p.y + p.h - VHT + 1, p.y - 0.5);
+    else G.camY = Math.min(G.camY, p.y - 0.5);
+    G.camY = clamp(G.camY, 0, G.H - VHT);
+  }
+
   // ---------------- metro geçişi ----------------
   function updateWarp(G, dt) {
     const w = G.warp, p = G.player;
@@ -368,8 +396,8 @@
       if (w.t < 0.6) p.y += 2.3 * dt; // merdivenden aşağı
       if (!w.moved && w.t >= 0.85) {
         w.moved = true; G.area = 'room'; w.clip = null;
-        p.x = G.room.x0 + 2.1; p.y = 2.05; p.onGround = false; p.plat = null;
-        G.cam = G.room.x0; G.room.used = true;
+        p.x = G.room.x0 + 2.1; p.y = G.room.y0 + 2.05; p.onGround = false; p.plat = null;
+        G.cam = G.room.x0; G.camY = G.room.y0; G.room.used = true;
       }
       if (w.t >= 1.1) G.warp = null;
     } else {
@@ -380,6 +408,7 @@
         p.x = R.x + 1 - p.w / 2; p.y = R.y + 1; p.plat = null;
         w.rise = R.y + 1 - p.h; w.clip = { y1: R.y + 1 };
         G.cam = clamp(p.x - 6.5, 0, G.mainW - VW);
+        { const cx = colAt(G, p.x + p.w / 2); G.camY = clamp(w.rise + p.h - 12, G.camLo[cx], G.camHi[cx]); }
         for (const s of G.spawns) if (!s.done && s.x <= G.cam - 2) s.done = true;
       }
       if (w.moved) {
@@ -582,7 +611,7 @@
     {
       const x0 = Math.floor(p.x + 0.05), x1 = Math.floor(p.x + p.w - 0.05);
       const y0 = Math.floor(p.y + 0.05), y1 = Math.floor(p.y + p.h - 0.05);
-      for (let ty = Math.max(0, y0); ty <= Math.min(H - 1, y1); ty++) for (let tx = x0; tx <= x1; tx++) {
+      for (let ty = Math.max(0, y0); ty <= Math.min(G.H - 1, y1); ty++) for (let tx = x0; tx <= x1; tx++) {
         const i = ty * G.W + tx;
         if (G.coins[i]) { G.coins[i] = 0; addSimit(G, 1); G.fx.push({ k: 'spark', x: tx + 0.5, y: ty + 0.5, t: 0 }); }
       }
@@ -597,7 +626,7 @@
       ev(G, 'piece', { world: G.world });
     }
     // çukura düştü
-    if (p.y > H + 0.5) die(G, true);
+    if (p.y > deathY(G, p.x + p.w / 2)) die(G, true);
   }
 
   // ---------------- eşyalar / atışlar ----------------
@@ -622,7 +651,7 @@
         }
       }
       if (!p.dead && it.state === 'move' && overlap(p, it)) { powerUp(G, it.kind, it); return false; }
-      if (it.y > H + 1 || it.x < G.cam - 4) return false;
+      if (it.y > G.H + 1 || it.y > deathY(G, it.x) + 1 || it.x < G.cam - 4) return false;
       return true;
     });
   }
@@ -644,7 +673,7 @@
         if (b.hurtT <= 0) damageBoss(G, 1 / 3, false);
         return false;
       }
-      if (s.t > 2.5 || s.x < G.cam - 1 || s.x > G.cam + VW + 1 || s.y > H + 1) return false;
+      if (s.t > 2.5 || s.x < G.cam - 1 || s.x > G.cam + VW + 1 || s.y > G.H + 1) return false;
       return true;
     });
     G.bshots = G.bshots.filter((s) => {
@@ -654,7 +683,7 @@
       if (s.kind === 'drop' && s.y + s.h >= 12) { s.y = 12 - s.h; s.vy = 0; s.g = 0; }
       if (!G.player.dead && overlap(G.player, shrink(s, 0.1))) hurt(G);
       if (s.solidKill && solid(G, Math.floor(s.x + s.w / 2), Math.floor(s.y + s.h / 2))) return false;
-      return s.t < (s.life || 5) && s.y < H + 1 && s.x > G.cam - 2 && s.x < G.cam + VW + 2;
+      return s.t < (s.life || 5) && s.y < G.H + 1 && s.x > G.cam - 2 && s.x < G.cam + VW + 2;
     });
   }
   const shrink = (b, m) => ({ x: b.x + m, y: b.y + m, w: b.w - 2 * m, h: b.h - 2 * m });
@@ -981,7 +1010,7 @@
     const born = [];
     G.fx = G.fx.filter((f) => {
       f.t += dt;
-      if (f.k === 'debris') { f.vy += 40 * dt; f.x += f.vx * dt; f.y += f.vy * dt; return f.y < H + 1; }
+      if (f.k === 'debris') { f.vy += 40 * dt; f.x += f.vx * dt; f.y += f.vy * dt; return f.y < G.H + 1; }
       if (f.k === 'score') { f.y -= (f.t < 0.5 ? 1.6 : 0.4) * dt; return f.t < 0.95; }
       if (f.k === 'simitpop') { if (f.t >= 0.55) { born.push({ k: 'spark', x: f.x + 0.5, y: f.y + 0.5 - (19 * f.t - 29 * f.t * f.t), t: 0 }); return false; } return true; }
       if (f.k === 'dust') { f.x += f.vx * dt; f.vx *= Math.exp(-6 * dt); f.y -= 0.6 * dt; return f.t < 0.4; }
@@ -1018,7 +1047,7 @@
       // havai fişekler: sayım bitince şehrin üstünde patlar
       if (G.tallyDone && G.fireworks < (G.fireworkN || 0) && G.clearT - G.tallyDone > 0.3 + G.fireworks * 0.5) {
         const k = G.fireworks++;
-        const fx = G.cam + 3 + ((k * 5 + G.idx * 3) % 10) + G.rand() * 1.5, fy = 2.2 + G.rand() * 2.5;
+        const fx = G.cam + 3 + ((k * 5 + G.idx * 3) % 10) + G.rand() * 1.5, fy = G.camY + 2.2 + G.rand() * 2.5;
         G.fx.push({ k: 'firework', x: fx, y: fy, t: 0, hue: (k * 97 + G.idx * 40) % 360 });
         G.S.score += 500; G.fx.push({ k: 'score', x: fx, y: fy + 1, t: 0, text: '500' });
         ev(G, 'firework');
@@ -1066,7 +1095,7 @@
 
     // kamera
     if (G.area === 'room') {
-      G.cam = G.room.x0;
+      G.cam = G.room.x0; G.camY = G.room.y0;
     } else if (G.arena && G.arena.locked) {
       G.cam = approach(G.cam, G.arena.cam, 10 * dt);
     } else {
@@ -1075,6 +1104,7 @@
       else if (p.x - G.cam < 4.5) G.cam = Math.max(0, p.x - 4.5);
       G.cam = clamp(G.cam, 0, G.mainW - VW);
     }
+    if (G.area !== 'room') updateCamY(G, dt);
 
     // düşman doğurma (bonus odasındayken yukarıdakiler beklesin)
     if (G.area === 'main') for (const s of G.spawns) {
@@ -1133,7 +1163,7 @@
     const a = G.arena;
     if (a && !a.locked && p.x > a.ax + 3.5 && G.bossKind) {
       a.locked = true;
-      for (let y = 0; y < H; y++) setTile(G, a.ax + 2, y, T.WALL);
+      for (let y = 0; y < G.H; y++) setTile(G, a.ax + 2, y, T.WALL);
       spawnBoss(G);
     }
     if (G.boss) {
@@ -1167,7 +1197,7 @@
   function afterDeath(S) { S.lives -= 1; S.power = 0; return S.lives > 0; }
 
   root.BA = {
-    H, VW, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, GOAL_MAST, GOAL_STEPS,
+    H, VW, VHT, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, GOAL_MAST, GOAL_STEPS, deathY,
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
     levels, moveX, moveY, runUpSpeed, jumpSpeed,
   };

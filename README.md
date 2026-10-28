@@ -93,6 +93,9 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 
 - **Hız ve zıplama:** yavaş yavaş hızlanırsın, bırakınca biraz kayarsın, ters yöne basınca savrulursun.
   Koşarken zıplarsan daha yükseğe ve uzağa gidersin.
+- **Tırmanış ve iniş:** normal bölümlerin çoğunda kamera yukarı-aşağı da kayar. Zikzak platformlarla
+  bir kat yukarı tırmanırsın (Galata'nın merdivenleri, köprü kulesi, Çamlıca'nın asansör boşluğu) ya da
+  simitlerin aşağı aktığı bir boşluktan inersin (Yerebatan'ın derinlikleri, iskelenin altı, çarşının mahzeni).
 - **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
 - **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
 - **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane, Haliç, Kısıklı ve Ümraniye'nin dış mekân bölümlerinde

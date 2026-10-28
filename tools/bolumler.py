@@ -22,6 +22,8 @@ Harita işaretleri (14 satır):
   O  bonus odasının çıkışı (yürüyen merdiven; içine yürüyünce yukarı çıkılır)
   R  metrodan çıkış noktası (bölümde daha ileride)
 Bonus odası, bölümün bitiş duvarından sonra 16 sütunluk ayrı bir alandır (levels.js'te room: başlangıç sütunu).
+Tırmanış (climb) ve iniş (descent) parçaları bandı yukarı/aşağı kaydırır; harita o kadar uzar ve levels.js'te
+vcam: [[sütun, kameranın en üst satırı, en alt satırı], ...] kameranın dikey hareket aralığını verir.
 """
 import json
 import random
@@ -57,58 +59,58 @@ WORLDS = [
 # Dış mekân bölümleri koşu ve bloklar; iç mekânlar tavanlı ve dar; patron bölümleri kale gibi tuzaklı.
 PLACES = [
     [  # Maslak
-        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group'], 'metro': True},
-        {'parts': ['flat', 'blocks', 'blocks', 'pillars', 'stairs', 'vertical', 'group', 'gap'], 'ceil': 2},
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'blocks', 'blocks', 'pillars', 'stairs', 'vertical', 'group', 'gap'], 'ceil': 2, 'vert': ['climb', 'climb']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'blocks', 'gap', 'tunnel', 'group'], 'ceil': 2},
     ],
     [  # Kadıköy
-        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'metro': True},
-        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'metro': True},
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'metro': True, 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'metro': True, 'vert': ['climb', 'descent']},
         {'parts': ['slope', 'slope', 'step', 'stairs', 'gap', 'bridge', 'flat', 'pillars']},
     ],
     [  # Vapur
-        {'parts': ['flat', 'gap', 'gap', 'bridge', 'blocks', 'moving', 'blockgap']},
-        {'parts': ['flat', 'blocks', 'gap', 'gap', 'moving', 'bridge', 'step', 'blockgap']},
+        {'parts': ['flat', 'gap', 'gap', 'bridge', 'blocks', 'moving', 'blockgap'], 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'blocks', 'gap', 'gap', 'moving', 'bridge', 'step', 'blockgap'], 'vert': ['climb', 'descent']},
         {'parts': ['moving', 'moving', 'gap', 'blockgap', 'bridge', 'pillars', 'loop', 'flat']},
     ],
     [  # Kapalıçarşı
-        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'metro': True},
-        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'pillars', 'group', 'stairs', 'blockgap'], 'ceil': 2},
+        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'pillars', 'group', 'stairs', 'blockgap'], 'ceil': 2, 'vert': ['descent', 'climb']},
         {'parts': ['spikes', 'loop', 'pillars', 'gap', 'blocks', 'tunnel', 'group', 'flat'], 'ceil': 2},
     ],
     [  # Yerebatan
-        {'parts': ['tunnel', 'tunnel', 'gap', 'pillars', 'moving', 'spikes', 'loop', 'blocks', 'group'], 'ceil': 2},
-        {'parts': ['pillars', 'pillars', 'gap', 'moving', 'loop', 'bridge', 'blocks', 'flat'], 'ceil': 2},
+        {'parts': ['tunnel', 'tunnel', 'gap', 'pillars', 'moving', 'spikes', 'loop', 'blocks', 'group'], 'ceil': 2, 'vert': ['descent', 'descent']},
+        {'parts': ['pillars', 'pillars', 'gap', 'moving', 'loop', 'bridge', 'blocks', 'flat'], 'ceil': 2, 'vert': ['descent', 'climb']},
         {'parts': ['tunnel', 'spikes', 'loop', 'loop', 'gap', 'pillars', 'moving', 'group'], 'ceil': 2},
     ],
     [  # Galata
-        {'parts': ['stairs', 'stairs', 'step', 'step', 'slope', 'blocks', 'group', 'gap'], 'metro': True},
-        {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'metro': True},
+        {'parts': ['stairs', 'stairs', 'step', 'step', 'slope', 'blocks', 'group', 'gap'], 'metro': True, 'vert': ['climb', 'climb']},
+        {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'metro': True, 'vert': ['climb', 'descent']},
         {'parts': ['pillars', 'loop', 'spikes', 'blocks', 'gap', 'stairs', 'group', 'flat'], 'ceil': 2},
     ],
     [  # Haliç: Karaköy'den Eyüp-Balat'a
-        {'parts': ['flat', 'blocks', 'gap', 'bridge', 'group', 'blockgap', 'step', 'moving']},
-        {'parts': ['flat', 'bridge', 'gap', 'moving', 'blocks', 'pillars', 'group', 'stairs'], 'metro': True},
+        {'parts': ['flat', 'blocks', 'gap', 'bridge', 'group', 'blockgap', 'step', 'moving'], 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'bridge', 'gap', 'moving', 'blocks', 'pillars', 'group', 'stairs'], 'metro': True, 'vert': ['climb', 'descent']},
         {'parts': ['slope', 'slope', 'stairs', 'step', 'blocks', 'gap', 'spikes', 'loop', 'group']},
     ],
     [  # Köprü
-        {'parts': ['flat', 'blocks', 'gap', 'pillars', 'stairs', 'bridge', 'group', 'moving']},
-        {'parts': ['bridge', 'bridge', 'moving', 'moving', 'vertical', 'blockgap', 'pillars']},
+        {'parts': ['flat', 'blocks', 'gap', 'pillars', 'stairs', 'bridge', 'group', 'moving'], 'vert': ['climb', 'climb']},
+        {'parts': ['bridge', 'bridge', 'moving', 'moving', 'vertical', 'blockgap', 'pillars'], 'vert': ['climb', 'descent']},
         {'parts': ['pillars', 'pillars', 'moving', 'vertical', 'loop', 'bridge', 'gap']},
     ],
     [  # Çatılar
-        {'parts': ['pillars', 'pillars', 'gap', 'bridge', 'spikes', 'loop', 'step', 'vertical', 'blocks', 'group', 'blockgap']},
-        {'parts': ['pillars', 'pillars', 'vertical', 'loop', 'gap', 'step', 'blockgap', 'blocks']},
+        {'parts': ['pillars', 'pillars', 'gap', 'bridge', 'spikes', 'loop', 'step', 'vertical', 'blocks', 'group', 'blockgap'], 'vert': ['descent', 'climb']},
+        {'parts': ['pillars', 'pillars', 'vertical', 'loop', 'gap', 'step', 'blockgap', 'blocks'], 'vert': ['climb', 'descent']},
         {'parts': ['loop', 'loop', 'moving', 'vertical', 'spikes', 'pillars', 'blocks', 'flat'], 'ceil': 2},
     ],
     [  # Çamlıca
-        {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'metro': True},
-        {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge']},
+        {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'metro': True, 'vert': ['climb', 'climb']},
+        {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge'], 'vert': ['climb', 'climb']},
         {'parts': ['spikes', 'loop', 'tunnel', 'moving', 'pillars', 'blocks', 'gap', 'flat'], 'ceil': 2},
     ],
     [  # Ümraniye: çarşı ve mahalle, yeni plazalar ve metro, Dudullu sanayisi
-        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'metro': True},
-        {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'metro': True},
+        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'metro': True, 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'metro': True, 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group']},
     ],
 ]
@@ -135,9 +137,14 @@ ROOM = [
 
 
 class Lv:
+    # Bölüm, 14 satırlık 'bant'lardan oluşur. Her sütunun bandı (base) dikey konumunu verir; tırmanış ve
+    # inişlerde bant yukarı/aşağı kayar, harita da o kadar uzar. Sütun hücreleri banda göre (0..13) tutulur;
+    # bandın dışındaki hücreler (dikey boşluklardaki platformlar) extra'da mutlak satırla durur.
     def __init__(self, r, d, w):
         self.r, self.d, self.w = r, d, w
         self.cols = []
+        self.base = 0          # şu anki bandın üst satırı (göreli; yukarısı eksi)
+        self.cbase, self.ctop, self.cceil, self.cwall, self.extra = [], [], [], [], []
         self.gh = 2          # zemin kalınlığı (satır)
         self.ceil = 0        # tavan kalınlığı (tünel)
         self.hidden = 0      # yerleştirilen gizli blok sayısı
@@ -150,7 +157,7 @@ class Lv:
     def top(self, gh=None):
         return H - (gh if gh is not None else self.gh)
 
-    def col(self, ground=True):
+    def col(self, ground=True, top=None):
         c = ['.'] * H
         if ground:
             for y in range(self.top(), H):
@@ -158,7 +165,117 @@ class Lv:
         for y in range(self.ceil):
             c[y] = '='
         self.cols.append(c)
+        self.cbase.append(self.base)
+        self.ctop.append(self.base if top is None else top)
+        self.cceil.append(self.ceil)
+        self.cwall.append(False)
+        self.extra.append({})
         return self.x - 1
+
+    def put(self, x, row, ch):
+        # mutlak (göreli) satıra yaz: bant içindeyse banda, değilse extra'ya
+        b = self.cbase[x]
+        if b <= row < b + H:
+            self.set(x, row - b, ch)
+        else:
+            self.extra[x][row] = ch
+
+    def wall(self):
+        x = self.col()
+        self.cwall[x] = True
+        for y in range(H):
+            self.set(x, y, '=')
+        return x
+
+    # ---------- dikey parçalar ----------
+    def climb(self):
+        # tırmanış: zikzak ince platformlarla R satır yukarı; üstte yeni bant sağa devam eder
+        R = self.r.choice([9, 12])
+        self.gh = 2
+        self.flat(3, enemies=False)
+        base, up = self.base, self.base - R
+        xs = []
+        for _ in range(7):
+            x = self.col(top=up)
+            for y in range(self.ceil):
+                self.set(x, y, '.')
+            xs.append(x)
+        g = base + self.top()
+        n = R // 3 - 1
+        for k in range(n):
+            h = 3 * (k + 1)
+            right = (n - 1 - k) % 2 == 0
+            cs = xs[3:6] if right else xs[1:4]
+            for c in cs:
+                self.put(c, g - h, '-')
+            if self.r.random() < 0.5:
+                self.put(cs[1], g - h - 2, 'b')
+        if self.r.random() < 0.35 + 0.3 * self.d:
+            self.put(xs[3], g - 5, self.r.choice('sm') if any(k in WORLDS[self.w]['enemies'] for k in 'sm') else 'e')
+        self.base = up
+        self.flat(3, enemies=False)
+
+    def descent(self):
+        # iniş: bant D satır aşağı; boşlukta kenarlarda basamaklar, ortada aşağı akan simitler
+        D = self.r.choice([9, 12])
+        self.gh = 2
+        self.flat(3, enemies=False)
+        top, low = self.base, self.base + D
+        self.base = low
+        xs = []
+        for _ in range(6):
+            x = self.col(top=top)
+            for y in range(self.ceil):
+                self.set(x, y, '.')
+            xs.append(x)
+        g = low + self.top()
+        k = 0
+        for h in range(D - 3, 2, -3):
+            cs = xs[0:2] if k % 2 == 0 else xs[4:6]
+            for c in cs:
+                self.put(c, g - h, '-')
+            k += 1
+        for row in range(top + self.ceil + 3, g - 1, 2):
+            self.put(xs[2 + (row // 2) % 2], row, 'b')
+        self.flat(3, enemies=False)
+
+    # ---------- haritayı birleştir ----------
+    def assemble(self, room=None):
+        main_n = self.x
+        if room is not None:
+            rb = max(self.cbase)
+            for cx in range(16):
+                self.cols.append([room[y][cx] for y in range(H)])
+                self.cbase.append(rb); self.ctop.append(rb); self.cceil.append(2); self.cwall.append(False); self.extra.append({})
+        lo = min(min(self.ctop), min(self.cbase))
+        hi = max(self.cbase) + H - 1
+        rows = []
+        for R in range(lo, hi + 1):
+            line = []
+            for x in range(self.x):
+                b, t, ce = self.cbase[x], self.ctop[x], self.cceil[x]
+                inside = ce > 0
+                if self.cwall[x]:
+                    ch = '='
+                elif R in self.extra[x]:
+                    ch = self.extra[x][R]
+                elif R < t:
+                    ch = '=' if inside else '.'
+                elif R < b:
+                    ch = '=' if inside and R < t + ce else '.'
+                elif R < b + H:
+                    ch = self.cols[x][R - b]
+                else:
+                    ch = '#' if self.cols[x][H - 1] in '#=' else '.'
+                line.append(ch)
+            rows.append(''.join(line))
+        # dikey kamera aralıkları: [x, üst, alt] (değiştiği yerlerde)
+        vcam = []
+        for x in range(self.x):
+            v = [self.ctop[x] - lo, self.cbase[x] - lo]
+            if not vcam or vcam[-1][1:] != v:
+                vcam.append([x] + v)
+        return rows, vcam
 
     def set(self, x, y, ch):
         if 0 <= y < H and 0 <= x < self.x:
@@ -480,7 +597,13 @@ def make(world, sec, r):
     metro = PL.get('metro', False) and not boss
     metro_x = None
     secret_at = None if boss else int(target * r.uniform(0.25, 0.42))
+    vert = [] if boss else list(PL.get('vert', []))
+    vert_at = [int(target * 0.3), int(target * 0.68)]
     while lv.x < target:
+        if vert and lv.x > vert_at[2 - len(vert)]:
+            getattr(lv, vert.pop(0))()
+            last = None
+            continue
         if secret_at is not None and lv.x > secret_at and lv.hidden == 0:
             lv.secret()
         if metro and metro_x is None and lv.x > 34:
@@ -523,24 +646,16 @@ def make(world, sec, r):
             lv.set(a + i, lv.top() - 4, '-')
         lv.set(a + 11, lv.top() - 2, 'B')
         lv.set(a + 15, lv.top() - 1, 'G')
-        x = lv.col()
-        for y in range(H):
-            lv.set(x, y, '=')
+        lv.wall()
     else:
         if metro and metro_x is not None and metro_x > 0:  # çıkış hâlâ konmadıysa
             lv.metro_out()
         # bitiş: merdiven, DEPLOY terminali ve bitiş duvarı
         lv.finale()
-        x = lv.col()
-        for y in range(H):
-            lv.set(x, y, '=')
-    room = None
-    if metro:
-        room = lv.x
-        for cx in range(16):
-            lv.cols.append([ROOM[y][cx] for y in range(H)])
-    rows = [''.join(c[y] for c in lv.cols) for y in range(H)]
-    return rows, room
+        lv.wall()
+    room = lv.x if metro else None
+    rows, vcam = lv.assemble(ROOM if metro else None)
+    return rows, room, vcam
 
 
 def main():
@@ -549,12 +664,14 @@ def main():
         W = WORLDS[w]
         for s in range(3):
             r = random.Random(w * 1000 + s * 37 + 11)
-            rows, room = make(w, s, r)
+            rows, room, vcam = make(w, s, r)
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
                   'time': 300 if s < 2 else 360, 'map': rows}
             if room is not None:
                 lv['room'] = room
+            if len(rows) > H:
+                lv['vcam'] = vcam
             levels.append(lv)
     worlds = [{'name': W['name'], 'sub': W['sub']} for W in WORLDS]
     out = Path(__file__).resolve().parent.parent / 'src' / 'levels.js'
