@@ -83,7 +83,9 @@
       const h = (o.t * 720) % 360;
       C = { hood: `hsl(${h},85%,55%)`, hoodD: `hsl(${h},85%,38%)`, jeans: `hsl(${(h + 180) % 360},70%,45%)`, jeansD: `hsl(${(h + 180) % 360},70%,32%)` };
     }
+    if (o.stone) C = { hood: '#9a9e9a', hoodD: '#7a7e7a', jeans: '#8a8e8a', jeansD: '#6a6e6a' };
     g.save();
+    if (o.stone) g.filter = 'grayscale(1) brightness(1.05)';
     g.translate(cx, by);
     // ezilme/esneme: ayak tabanı sabit kalır
     if (o.sq) { const q = Math.max(-0.5, Math.min(0.6, o.sq)); g.scale(1 + q * 0.42, 1 - q * 0.36); }

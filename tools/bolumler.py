@@ -38,7 +38,10 @@ import carsi    # noqa: E402  Kapalıçarşı
 import sisli    # noqa: E402  Şişli
 import uskudar  # noqa: E402  Üsküdar
 import atasehir  # noqa: E402  Ataşehir
-HAND = {0: maslak, 1: carsi, 2: sisli, 3: uskudar, 4: atasehir}   # elle tasarlanan dünyalar; öteki dünyalar üretilir
+import yerebatan  # noqa: E402  Yerebatan
+import kopru  # noqa: E402  Köprü
+import eyup  # noqa: E402  Eyüp
+HAND = {0: maslak, 1: carsi, 2: sisli, 3: uskudar, 4: atasehir, 5: yerebatan, 6: kopru, 7: eyup}   # elle tasarlanan dünyalar; öteki dünyalar üretilir
 
 H = 14
 # v2.0: iki katmanlı İstanbul. Yukarısı bugünün şehri (Maslak, Şişli, Ataşehir, Köprü, Çamlıca), aşağısı eski İstanbul

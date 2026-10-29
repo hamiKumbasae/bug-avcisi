@@ -31,6 +31,12 @@ function analyse(idx, revealHidden) {
   BA.updateFans(G, 0);
   // borsa panoları yanık sayılır; yatay alarm kapakları (yangın kapağı) kapalı, dikey kapılar açık sayılır
   for (const b of G.boards) for (let x = b.x0; x <= b.x1; x++) G.grid[b.y * W + x] = T.PANO;
+  // Medusa: bakışın uzak ucuna gelen bug taşa döner; orada bir taş blok varsayılır (basamak)
+  for (const m of G.medusas) {
+    if (m.dir === 'd') continue;
+    const bx = BA.gazeBox(G, m), x = m.dir === 'l' ? bx.x + 1 : bx.x + bx.w - 2, y = m.y + m.w - 1;
+    if (BA.tile(G, x, y) === T.EMPTY && SOLID[BA.tile(G, x, y + 1)]) G.grid[y * W + x] = T.STONE;
+  }
   for (const g of G.agates) {
     const bridge = !g.inv && g.x1 - g.x0 > g.y1 - g.y0;
     for (let y = g.y0; y <= g.y1; y++) for (let x = g.x0; x <= g.x1; x++) G.grid[y * W + x] = bridge ? T.GATE : T.EMPTY;
@@ -38,7 +44,7 @@ function analyse(idx, revealHidden) {
   const isHot = (x, y) => BA.tile(G, x, y) === T.HOT;
   // patron arenası için duvarı da ekle (gerçekte kilitlendiğinde gelir; geçiş denetimi için önemsiz)
   // hareketli platformları menzilleri boyunca sabit say
-  const statics = [], rides = [];
+  const statics = [], rides = [], launches = [];
   for (const p of G.plats) {
     if (p.train) {
       // tren: iki ucunda durur; bir ucundan binip öbür ucunda inilir
@@ -53,9 +59,33 @@ function analyse(idx, revealHidden) {
       // vapur ve kayık: iki iskele arasındaki yolu boyunca (üst güverte de)
       const b = p.boat, off = p.upper ? 3 : 0;
       statics.push({ x: b.a + off, y: p.y, w: b.b - b.a + p.w, h: 0.5, dy: 0 });
+    } else if (p.kind === 'rope') {
+      statics.push({ x: p.x, y: p.y, w: p.w, h: 0.5, dy: 0, rope: true });   // çamaşır ipi: üstüne düşeni sektirir
+    } else if (p.kind === 'cabin') {
+      // teleferik: hat boyunca taşır (her kabin aynı hatta)
+      const ln = p.line;
+      if (ln.cabins[0] === p) {
+        const pts = [0, 0.25, 0.5, 0.75, 1].map((u) => ({ x: ln.x0 + (ln.x1 - ln.x0) * u - ln.w / 2, y: ln.y0 + (ln.y1 - ln.y0) * u, w: ln.w, h: 0.5, dy: 0 }));
+        statics.push(...pts);
+        for (let k = 0; k + 1 < pts.length; k++) rides.push([pts[k], pts[k + 1]]);
+      }
+    } else if (p.kind === 'swing') {
+      // bakım sepeti: iki uçta ve ortada durur, aralarında taşır
+      const sw = p.sw, pts = [-sw.amp, 0, sw.amp].map((a) => ({ x: sw.px + Math.sin(a) * sw.len - sw.w / 2, y: sw.py + Math.cos(a) * sw.len, w: sw.w, h: 0.5, dy: 0 }));
+      statics.push(...pts); rides.push([pts[0], pts[1]], [pts[1], pts[2]], [pts[0], pts[2]]);
+    } else if (p.kind === 'trolley') {
+      // halat makarası: baştan uca taşır, uçtaki tampon fırlatır
+      const tr = p.tr, a = { x: tr.x0 - tr.w / 2, y: tr.y0, w: tr.w, h: 0.5, dy: 0 }, z = { x: tr.x1 - tr.w / 2, y: tr.y1, w: tr.w, h: 0.5, dy: 0 };
+      statics.push(a, z); rides.push([a, z]);
+      const acc = 9 * Math.max(0, tr.y1 - tr.y0) / tr.L + 1.2, v = Math.min(11, Math.sqrt(2 * acc * tr.L));
+      launches.push({ z, vx: v * (tr.x1 - tr.x0) / tr.L * 0.9, vy: tr.fling || 7 });
+    } else if (p.kind === 'sandal') {
+      // sandal: havuz boyunca (zıplayarak itilir)
+      const b = p.boat;
+      statics.push({ x: b.x0, y: p.y, w: b.x1 - b.x0 + b.w, h: 0.5, dy: 0 });
     } else if (p.kind === 'float') {
-      // sal: suyla alçalıp yükselir
-      const td = G.tides.reduce((m, d) => (!m || Math.abs((d.x0 + d.x1) / 2 - p.x) < Math.abs((m.x0 + m.x1) / 2 - p.x) ? d : m), null);
+      // sal: suyla alçalıp yükselir (dalga ya da taşkın)
+      const td = [...G.tides, ...G.floods].reduce((m, d) => (!m || Math.abs((d.x0 + d.x1) / 2 - p.x) < Math.abs((m.x0 + m.x1) / 2 - p.x) ? d : m), null);
       if (td) { const a = { x: p.x, y: td.lo - p.off, w: p.w, h: 0.5, dy: 0 }, z = { x: p.x, y: td.hi - p.off, w: p.w, h: 0.5, dy: 0 }; statics.push(a, z); rides.push([a, z]); }
     } else if (p.kind === 'tray') {
       // çaycının tepsisi: yürüdüğü yol boyunca
@@ -123,10 +153,12 @@ function analyse(idx, revealHidden) {
   };
   const dt = 1 / 120;
   // Tek bir zıplama/düşme denemesi
-  function sim(x, y, dir, speed, hold, startV, delayDir, tmax) {
+  function sim(x, y, dir, speed, hold, startV, delayDir, tmax, opt) {
     const b = { x, y, w: PW, h: BIG_H };
-    let vx = startV * dir, vy = 0, t = 0, jumping = hold > 0, left = false, bounce = false;
+    let vx = startV * dir, vy = 0, t = 0, jumping = hold > 0, left = false, bounce = false, top = y;
     if (hold > 0) vy = -BA.jumpSpeed(vx);
+    const wind = opt && opt.wind, carry = (opt && opt.carry) || 0;
+    if (opt && opt.launch) { vy = -opt.launch; bounce = true; }
     let hitSpike = false;
     while (t < (tmax || 3)) {
       t += dt;
@@ -138,8 +170,17 @@ function analyse(idx, revealHidden) {
       const fs = G.fans.length ? BA.fanAt(G, b) : 0;
       vy = fs ? BA.fanVy(vy, fs, dt) : Math.min(PH.maxFall, vy + g * dt);
       if (BA.moveX(G, b, vx * dt)) vx = 0;
+      if (wind) BA.moveX(G, b, wind * dt);
+      if (carry) BA.moveX(G, b, carry * dt);
+      const preVy = vy;
       const r = BA.moveY(G, b, vy * dt, true);
       if (r.up) { vy = 0; jumping = false; }
+      // çamaşır ipi: düşülen yükseklik kadar sektirir
+      top = Math.min(top, b.y);
+      if (r.down && r.plat && r.plat.rope && preVy > 0) {
+        vy = -Math.max(9, Math.min(19.5, Math.sqrt(2 * PH.gHold * (0.85 * (b.y - top) + (hold > 0 ? 1.6 : 0.6)))));
+        bounce = true; jumping = hold > 0; left = true; top = b.y; tmax = (tmax || 3) + 1.6; continue;
+      }
       // dikene ya da sıcak kabine değdi mi
       const tx0 = Math.floor(b.x + 0.1), tx1 = Math.floor(b.x + b.w - 0.1), ty0 = Math.floor(b.y), ty1 = Math.floor(b.y + b.h - 0.01);
       for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) if (spikeCol.has(tx * 100 + ty) && b.y + b.h > ty + 0.45) hitSpike = true;
@@ -184,14 +225,17 @@ function analyse(idx, revealHidden) {
       const r = sim(x, py, dir, speed, 0, 0, delay, 6);
       if (r && r !== s) edges[s.id].add(r.id);
     }
-    for (const x of xs) {
+    // bu parçada esebilen rüzgârlar (zamanlaması gözetilmez): rüzgârsız da denenir
+    const winds = [0];
+    for (const w of G.winds) if (w.x1 > s.x0 && w.x0 < s.x1 + 1 && !winds.includes(w.v)) winds.push(w.v);
+    for (const wind of winds) for (const x of xs) {
       for (const dir of [-1, 1]) {
         for (const speed of [PH.walk, PH.run]) {
           const startV = BA.runUpSpeed(len - 1, speed);
           for (const hold of [0, 0.12, 0.25, 1]) {
             for (const delay of [0, 0.3]) {
               if (hold === 0 && delay) continue;
-              const r = sim(x, py, dir, speed, hold, delay ? 0 : startV, delay);
+              const r = sim(x, py, dir, speed, hold, delay ? 0 : startV, delay, 3, wind ? { wind } : null);
               if (r && r !== s) edges[s.id].add(r.id);
             }
           }
@@ -201,6 +245,12 @@ function analyse(idx, revealHidden) {
     // aynı sıradaki komşu parçaya yürüyerek (tek karo engelsiz) — zaten bitişikse aynı parça
   }
   for (const [a, z] of rides) { edges[a.seg.id].add(z.seg.id); edges[z.seg.id].add(a.seg.id); }
+  // makaranın tamponu fırlatır: uçtan ileri ve yukarı
+  for (const L of launches) for (const dir of [0, 1]) for (const hold of [0, 1]) {
+    const r = sim(L.z.x + L.z.w / 2 - PW / 2, L.z.y - BIG_H, Math.sign(L.vx) || 1, dir ? PH.run : 0.001, 0, 0, 0, 3, { launch: L.vy, carry: L.vx });
+    void hold;
+    if (r && r !== L.z.seg) edges[L.z.seg.id].add(r.id);
+  }
   for (const [a, b] of touch) { edges[a.id].add(b.id); edges[b.id].add(a.id); }
   // metro: giriş → odaya düşüş, odanın çıkışı → yukarıdaki çıkış noktası
   let metro = null;

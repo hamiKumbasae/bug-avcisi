@@ -567,7 +567,7 @@
     if (!p.dead && big && St.power === 2 && p.shootCD > 0.08 && p.onGround) mode = 'shoot';
     if (p.cheer && !p.dead) mode = 'cheer';
     const star = p.star > 0 && !(p.star < 2 && Math.floor(app.t * 10) % 2);
-    return { big, face: p.face, mode, phase: (p.walkT / 2.2) % 1, skin: St.power === 2 ? 'hacker' : 'normal', star, t: app.t, sq: p.sq };
+    return { big, face: p.face, mode, phase: (p.walkT / 2.2) % 1, skin: St.power === 2 ? 'hacker' : 'normal', star, t: app.t, sq: p.sq, stone: p.stone > 0 };
   }
 
   const TILEK = { 2: 'solid', 8: 'solid', 3: 'oneway', 5: 'used', 6: 'crack', 7: 'spike', 10: 'crack' };
@@ -627,6 +627,7 @@
         else if (t === T.TURN) put(HD.turnstile(), px, py);
         else if (t === T.PANEL) put(HD.panel(theme), px, py);
         else if (t === T.FAN) put(HD.fanBase(theme), px, py);
+        else if (t === T.STONE) put(HD.stoneBug(), px, py);
         else if (isRack(t)) put(HD.rack(t === T.HOT, !isRack(up), rackF), px, py);
       }
     }
@@ -670,6 +671,11 @@
     for (const pl of G.plats) {
       if (pl.train) { if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS); }
       else if (pl.kind === 'chart') HD.drawChartBar(ctx, pl);                     // canlı borsa grafiğinin çubuğu
+      else if (pl.kind === 'sandal') HD.drawSandal(ctx, pl.boat, app.t);          // sarnıçta zıplayarak itilen sandal
+      else if (pl.kind === 'trolley') HD.drawTrolley(ctx, pl.tr, app.t);         // halat makarası
+      else if (pl.kind === 'cabin') HD.drawCabin3(ctx, pl);                       // teleferik kabini
+      else if (pl.kind === 'rope') HD.drawRope(ctx, pl.rope, app.t);              // çamaşır ipi
+      else if (pl.kind === 'swing') HD.drawSwing(ctx, pl.sw);                    // sallanan bakım sepeti
       else if (pl.rail) HD.drawRailCar(ctx, pl, !!G.power[pl.grp]);               // elektrikli raylı platform
       else if (pl.kind === 'v' && theme === 18) ART.drawCabin(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, pl.a * TS, pl.b * TS); // Ataşehir: cephe asansörü
       else if (theme === 18 || pl.gondola) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir ve Maslak: cam silme sepeti
@@ -719,6 +725,8 @@
     for (const s of G.bshots) drawBossShot(s);
     for (const f of G.fx) drawFx(f, theme);
     for (const d of G.tides) if (onScreen(G, d.x0, d.x1 - d.x0)) HD.drawTide(ctx, d, app.t, (G.camY + BA.VHT + 1) * TS);
+    for (const d of G.floods) if (onScreen(G, d.x0, d.x1 - d.x0)) HD.drawFlood(ctx, d, app.t, (G.camY + BA.VHT + 1) * TS);
+    for (const w of G.winds) if (onScreen(G, w.x0, w.x1 - w.x0)) HD.drawWind(ctx, w, app.t, G.cam);
     // alarm: ekranın kenarları kırmızı nabız gibi atar
     if (G.alarm > 0) {
       const a = (0.5 + 0.5 * Math.sin(app.t * 11)) * Math.min(1, G.alarm / 0.5), X0 = G.cam * TS, Y0 = G.camY * TS, Wd = BA.VW * TS, Ht = BA.VHT * TS;
@@ -770,11 +778,20 @@
     for (const l of G.lamps) if (onScreen(G, l.x - 1, 3)) (l.flash ? HD.drawCopier : HD.drawLamp)(ctx, l);
     for (const d of G.doors2) if (onScreen(G, d.x, d.w)) HD.drawRevolving(ctx, d);
     for (const sp of G.spawners) if (onScreen(G, sp.x, 3)) HD.drawCrate(ctx, sp);
+    // Yerebatan: sarnıç suyu, akıntılar, yuvalar, Medusa başları, pompalar (sütunlar dekorla birlikte)
+    for (const d of G.pools) if (onScreen(G, d.x0, d.x1 - d.x0)) HD.drawPool(ctx, d, app.t, G.H);
+    for (const c of G.currents) if (onScreen(G, c.x0, c.x1 - c.x0)) { const pd = G.pools.find((q) => q.x0 <= c.x0 + 1 && q.x1 >= c.x0 + 1); HD.drawCurrent(ctx, c, pd ? pd.y : 12, app.t); }
+    for (const n of G.nests) if (onScreen(G, n.x)) HD.drawNest(ctx, n, app.t);
+    for (const pm of G.pumps) if (onScreen(G, pm.x)) HD.drawPump(ctx, pm, G.t);
+    for (const tr of G.trolleys) if (onScreen(G, Math.min(tr.x0, tr.x1) - 1, Math.abs(tr.x1 - tr.x0) + 3)) HD.drawCable(ctx, tr);
+    for (const ln of G.lines) if (onScreen(G, Math.min(ln.x0, ln.x1) - 2, Math.abs(ln.x1 - ln.x0) + 4)) HD.drawLine(ctx, ln);
     for (const d of G.decor) {
       if (!onScreen(G, d.x - 1, d.x1 ? d.x1 - d.x + 3 : 3)) continue;
       if (d.k === 'bank') { ART.drawBench(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS); if (d.cup) HD.drawCup(ctx, (d.x + 1.15) * TS, (d.y + 1) * TS - 10); }
       else if (d.k === 'masa') HD.drawTable(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS);
       else if (d.k === 'kiris') HD.drawBeam(ctx, d.x * TS, d.x1 * TS + TS, d.y * TS);
+      else if (d.k === 'sutun') HD.drawColumn(ctx, d);
+      else if (d.k === 'direk') HD.drawPylon(ctx, d);
     }
     for (const f of G.fans) if (onScreen(G, f.x)) HD.drawAir(ctx, f.x * TS, f.y * TS, f.reach, app.t + f.x * 0.13, f.spin);
     // Ataşehir: borsa panoları, canlı grafiğin ekranı, raylar, şalterler, ızgaralar, menfezler
@@ -795,6 +812,8 @@
   function drawHandFront(G) {
     for (const s of G.shutters) if (onScreen(G, s.x)) HD.drawShutter(ctx, s);
     for (const gt of G.agates) if (onScreen(G, gt.x0 - 1, gt.x1 - gt.x0 + 3)) HD.drawGate(ctx, gt, app.t, G.alarm > 0);
+    for (const m of G.medusas) if (onScreen(G, m.x - (m.dir === 'l' ? m.len : 1), m.len + 3)) HD.drawMedusa(ctx, m, app.t);
+    for (const st of G.stones) ctx.drawImage(HD.stoneBug(), st.x * TS - 1, st.y * TS - 2, 16, 16);
     const quiet = G.alarm > 0 || G.alarmCD > 0;
     for (const l of G.lasers) if (onScreen(G, l.x0 - 1, l.x1 - l.x0 + 3)) HD.drawLaser(ctx, l, app.t, quiet);
     for (const n of G.npcs) if (onScreen(G, n.x - 1, 3)) HD.drawCayci(ctx, n, app.t, n.wait <= 0);
@@ -1083,6 +1102,22 @@
         const a = Math.max(0, 1 - f.t / 0.35);
         for (let k = 0; k < 7; k++) { const an = -Math.PI + k / 6 * Math.PI, d = 3 + f.t * 30; ART.circle(ctx, f.x * TS + Math.cos(an) * d, f.y * TS + Math.sin(an) * d * 0.6 + f.t * f.t * 60, 1.6, k % 3 ? `rgba(230,60,60,${a})` : `rgba(40,30,30,${a})`, null); }
         ART.ellipse(ctx, f.x * TS, f.y * TS + 5, 4 + f.t * 16, 1.4, `rgba(220,50,50,${a * 0.8})`, null);
+        break;
+      }
+      case 'clothes': {
+        // ipten havalanan çamaşır: döne döne düşer
+        ctx.save(); ctx.translate(f.x * TS, f.y * TS); ctx.rotate(f.t * 5 * (f.r % 2 ? 1 : -1)); ctx.globalAlpha = Math.max(0, 1 - f.t / 1.4);
+        ART.box(ctx, -3, -3, 6, 6, 0.6, ['#e8483a', '#3a8ad0', '#f4c531', '#5ab06a'][f.r % 4], ART.K, 0.5); ctx.restore();
+        break;
+      }
+      case 'ripple': {
+        const a = Math.max(0, 1 - f.t / 0.8);
+        for (let k = 0; k < 2; k++) ART.ellipse(ctx, f.x * TS, f.y * TS, 4 + f.t * 26 + k * 6, 1.4 + f.t * 3, null, `rgba(220,240,235,${a * (0.7 - k * 0.3)})`, 0.8);
+        break;
+      }
+      case 'stonepuff': {
+        const a = Math.max(0, 1 - f.t / 0.6);
+        for (let k = 0; k < 6; k++) { const an = k / 6 * Math.PI * 2, r = 4 + f.t * 18; ART.circle(ctx, f.x * TS + Math.cos(an) * r, f.y * TS + Math.sin(an) * r * 0.7, 2 + f.t * 3, `rgba(190,196,190,${a * 0.7})`, null); }
         break;
       }
       case 'zap': {

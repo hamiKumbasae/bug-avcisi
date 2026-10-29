@@ -104,6 +104,7 @@
       boats: [], spawners: [], tides: [],
       boards: [], lasers: [], agates: [], vents: [], alarm: 0, alarmCD: 0, levers: [], zaps: [], zapAt: new Map(), power: {},
       sandals: [], currents: [], pools: [], medusas: [], stones: [], nests: [], floods: [], pumps: [],
+      winds: [], trolleys: [], swings: [], ropes: [], lines: [],
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -433,7 +434,7 @@
     } else if (o.k === 'salter') {
       // şalter: üstüne basınca (ya da alttan vurunca) kolu iner, gruptaki elektrik kesilir/gelir
       const grp = o.grp || 'a';
-      G.levers.push({ x: o.x, y: o.y, grp, t: -9 }); G.grid[o.y * G.W + o.x] = T.LEVER;
+      G.levers.push({ x: o.x, y: o.y, grp, t: -9, pulse: o.pulse || 0, back: 0 }); G.grid[o.y * G.W + o.x] = T.LEVER;
       if (o.on !== undefined || !(grp in G.power)) G.power[grp] = o.on !== false;
     } else if (o.k === 'izgara') {
       // elektrikli ızgara: gruba elektrik varken üstüne basanı çarpar (bug'ları da)
@@ -450,9 +451,11 @@
     } else if (o.k === 'sandal') {
       // sandal: suda yüzer; içine her inişte (zıplayıp düşünce) oyuncunun baktığı yana itilir, su yavaşlatır.
       // sütun dibine ya da iskeleye çarpınca durur
-      const b = { x: o.x, y: o.y, w: o.w || 3, vx: 0, x0: o.x0, x1: o.x1, bump: 0 };
+      const b = { x: o.x, y: o.y, w: o.w || 3, vx: 0, x0: o.x0, x1: o.x1, bump: 0, sink: !!o.sink, sinkT: 0 };
       b.deck = { kind: 'sandal', x: b.x, y: b.y, w: b.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, boat: b, a: 0, b: 0 };
       G.plats.push(b.deck); G.sandals.push(b);
+    } else if (o.k === 'sutun') {
+      G.decor.push({ k: 'sutun', x: o.x, y0: o.y0 || 2, y1: o.y1, w: o.w || 2, cry: !!o.cry });   // sarnıç sütunu (arka plan)
     } else if (o.k === 'akinti') {
       G.currents.push({ x0: o.x0, x1: o.x1, v: o.v });   // su akıntısı: içindeki sandalları sürükler
     } else if (o.k === 'su') {
@@ -462,12 +465,43 @@
       // dir: bakış yönü (l, r, d); w: bakışın eni (karo)
       G.medusas.push({ x: o.x, y: o.y, dir: o.dir || 'l', len: o.len || 8, w: o.w || 2, per: o.per || 4, open: o.open || 2, ph: o.ph || 0, on: false, warn: false });
     } else if (o.k === 'yuva') {
-      G.nests.push({ x: o.x, y: o.y, every: o.every || 4, t: o.t0 || 0, kids: [], max: o.max || 2 });   // duvar çatlağı: arada bir bug çıkar
+      G.nests.push({ x: o.x, y: o.y, every: o.every || 4, t: o.t0 || 0, kids: [], max: o.max || 2, dir: o.dir || 0 });   // duvar çatlağı: arada bir bug çıkar
     } else if (o.k === 'taskin') {
       // taşkın: oyuncu yaklaşınca su yavaş yavaş yükselir (y azalır); pompaya basınca iner
       G.floods.push({ x0: o.x0, x1: o.x1, y: o.y, lo: o.y, hi: o.hi, rate: o.rate || 0.2, target: null, near: o.near || 4 });
     } else if (o.k === 'pompa') {
       G.pumps.push({ x: o.x, y: o.y, drop: o.drop || 4, t: -9, uses: o.uses || 1 }); G.grid[o.y * G.W + o.x] = T.PUMP;
+    } else if (o.k === 'ruzgar') {
+      // yan rüzgâr: bölgede belli aralıkla (per/on; per yoksa hep) esen rüzgâr; havadakini tam, yerdekini az iter.
+      // rüzgârın geldiği yanda yakın bir duvar varsa onun arkası korunaklıdır
+      G.winds.push({ x0: o.x0, x1: o.x1, y0: o.y0 === undefined ? 0 : o.y0, y1: o.y1 === undefined ? G.H : o.y1, v: o.v, per: o.per || 0, on: o.on || 0, ph: o.ph || 0, k: 0, warn: false });
+    } else if (o.k === 'makara') {
+      // halat makarası: üstüne binilince halat boyunca yokuş aşağı kayar, hızlanır; uçta durup üstündekini fırlatır.
+      // boş kalınca yavaşça başa döner
+      const L = Math.hypot(o.x1 - o.x0, o.y1 - o.y0), tr = { x0: o.x0, y0: o.y0, x1: o.x1, y1: o.y1, L, s: 0, v: 0, w: o.w || 2, empty: 0, fling: o.fling || 0 };
+      tr.plat = { kind: 'trolley', x: o.x0 - tr.w / 2, y: o.y0, w: tr.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, tr, vx: 0, carrier: true, a: 0, b: 0 };
+      G.plats.push(tr.plat); G.trolleys.push(tr);
+    } else if (o.k === 'sepet') {
+      // bakım sepeti: halatla asılı, sarkaç gibi sallanır. wind: yalnız rüzgâr eserken sallanır (yoksa hafifçe)
+      const sw = { px: o.x, py: o.y, len: o.len || 5, amp: o.amp === undefined ? 0.5 : o.amp, per: o.per || 3, ph: o.ph || 0, w: o.w || 3, windy: !!o.wind, a: 0, k: 0 };
+      sw.plat = { kind: 'swing', x: o.x - sw.w / 2, y: o.y + sw.len, w: sw.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, sw, a: 0, b: 0 };
+      G.plats.push(sw.plat); G.swings.push(sw);
+    } else if (o.k === 'ip') {
+      // çamaşır ipi: üstüne düşeni esneyip sektirir; ne kadar yüksekten düşülürse o kadar yükseğe (zıplama tuşu da ekler)
+      const rp = { x0: o.x0, x1: o.x1, y: o.y, sag: 0, hx: 0, seed: o.x0 };
+      rp.plat = { kind: 'rope', x: o.x0, y: o.y, w: o.x1 - o.x0, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, rope: rp, a: 0, b: 0 };
+      G.plats.push(rp.plat); G.ropes.push(rp);
+    } else if (o.k === 'direk') {
+      G.decor.push({ k: 'direk', x: o.x, y: o.y });   // teleferik direği (kolu haritada katı karo)
+    } else if (o.k === 'teleferik') {
+      // teleferik hattı: kabinler aralıklarla bir istasyondan öbürüne gider; varış istasyonunda kaybolup baştan çıkar
+      const L = Math.hypot(o.x1 - o.x0, o.y1 - o.y0), ln = { x0: o.x0, y0: o.y0, x1: o.x1, y1: o.y1, L, v: o.v || 2, n: o.n || 3, w: o.w || 3, cabins: [] };
+      for (let k = 0; k < ln.n; k++) {
+        const cb = { kind: 'cabin', s: (L * k) / ln.n + (o.s0 || 0), x: 0, y: 0, w: ln.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, line: ln, a: 0, b: 0 };
+        ln.cabins.push(cb); G.plats.push(cb);
+        placeCabin(cb);
+      }
+      G.lines.push(ln);
     } else if (o.k === 'kepenk') {
       // dükkân kepengi: belli aralıkla iner (katı), bir süre kapalı kalır, kalkar
       G.shutters.push({ x: o.x, y0: o.y0, y1: o.y1, ph: o.ph || 0, per: o.per || 4, open: o.open || 2, k: 1, solid: false });
@@ -776,10 +810,25 @@
     const lv = G.levers.find((l) => l.x === tx && l.y === ty);
     if (!lv || G.t - lv.t < 0.3) return;
     lv.t = G.t; G.power[lv.grp] = !G.power[lv.grp];
+    if (lv.pulse) lv.back = lv.pulse;   // yaylı şalter: bir süre sonra kendiliğinden geri döner
     ev(G, G.power[lv.grp] ? 'powerup' : 'powerdown');
+  }
+  function updateLevers(G, dt) {
+    for (const lv of G.levers) {
+      if (!lv.back) continue;
+      lv.back = Math.max(0, lv.back - dt);
+      if (!lv.back) { lv.t = G.t; G.power[lv.grp] = !G.power[lv.grp]; ev(G, G.power[lv.grp] ? 'powerup' : 'powerdown'); }
+    }
   }
   // ---------------- Yerebatan: sandal, Medusa, taşkın ----------------
   function updateSandal(G, b, dt) {
+    // çağlayana varan sandal batar; biraz sonra baştan yeniden çıkar
+    if (b.sinkT > 0) {
+      b.sinkT -= dt; b.deck.y = b.y + Math.min(3, (2.4 - b.sinkT) * 2);
+      if (b.sinkT <= 0) { b.x = b.x0; b.vx = 0; b.deck.y = b.y; b.sinkT = 0; }
+      return;
+    }
+    if (b.sink && b.x >= b.x1 - 0.01) { b.sinkT = 2.4; ev(G, 'splash'); if (G.player.plat === b.deck) G.player.plat = null; return; }
     let cur = 0;
     for (const c of G.currents) if (b.x + b.w / 2 > c.x0 && b.x + b.w / 2 < c.x1) cur += c.v;
     b.vx += (cur - b.vx) * (1 - Math.exp(-0.9 * dt));
@@ -853,7 +902,7 @@
       if (n.t < n.every || n.kids.length >= n.max) continue;
       n.t = 0;
       const e = makeEnemy(G, 'bug', n.x, n.y);
-      e.vx = G.player.x < n.x ? -2 : 2; G.ents.push(e); n.kids.push(e);
+      e.vx = n.dir ? n.dir * 2 : G.player.x < n.x ? -2 : 2; G.ents.push(e); n.kids.push(e);
       G.fx.push({ k: 'dust', x: n.x + 0.5, y: n.y + 1, vx: e.vx * 0.5, t: 0 });
     }
   }
@@ -880,6 +929,82 @@
     for (const d of G.floods) if (!best || Math.abs((d.x0 + d.x1) / 2 - tx) < Math.abs((best.x0 + best.x1) / 2 - tx)) best = d;
     if (best) best.target = Math.min(best.lo, best.y + pm.drop);
     ev(G, 'pump');
+  }
+  // ---------------- Köprü: yan rüzgâr, halat makarası, bakım sepeti ----------------
+  function windActive(G, w) { if (!w.per) return true; return (((G.t / w.per + w.ph) % 1) + 1) % 1 * w.per < w.on; }
+  function updateWinds(G, dt) {
+    for (const w of G.winds) {
+      const on = windActive(G, w);
+      w.k = approach(w.k, on ? 1 : 0, dt / 0.4);
+      w.warn = !on && w.per && ((((G.t / w.per + w.ph) % 1) + 1) % 1) * w.per > w.per - 0.8;
+    }
+  }
+  // bir kutuya esen rüzgâr (karo/sn); rüzgârın geldiği yanda 3 karo içinde duvar varsa korunaklı
+  function windAt(G, b) {
+    let v = 0;
+    const cx = b.x + b.w / 2;
+    for (const w of G.winds) {
+      if (!w.k || cx < w.x0 || cx > w.x1 || b.y + b.h < w.y0 || b.y > w.y1) continue;
+      // korunak: rüzgârın geldiği yanda, gövdenin ya da başın iki karo üstüne kadar bir duvar/kiriş
+      const up = w.v > 0 ? -1 : 1, y0 = Math.floor(b.y - 2), y1 = Math.floor(b.y + b.h - 0.05);
+      let lee = false;
+      for (let k = 1; k <= 3 && !lee; k++) {
+        const xx = up > 0 ? Math.floor(b.x + b.w - 0.001) + k : Math.floor(b.x + 0.001) - k;
+        if (xx < 0 || xx >= G.W) continue;
+        for (let ty = y0; ty <= y1; ty++) if (solid(G, xx, ty)) { lee = true; break; }
+      }
+      if (!lee) v += w.v * w.k;
+    }
+    return v;
+  }
+  function updateTrolley(G, tr, dt) {
+    const p = G.player, pl = tr.plat, on = !p.dead && p.plat === pl && p.onGround;
+    const dirDown = Math.sign(tr.y1 - tr.y0) || 1;   // s artınca iniyorsa +1
+    if (on) {
+      tr.empty = 0;
+      tr.v = Math.min(11, tr.v + 9 * Math.abs(tr.y1 - tr.y0) / tr.L * dirDown * dt + 1.2 * dt);
+    } else {
+      tr.empty += dt;
+      if (tr.empty > 1.5 && tr.s > 0) tr.v = -2; else if (tr.s <= 0) tr.v = 0; else tr.v *= Math.exp(-3 * dt);
+    }
+    const prevS = tr.s;
+    tr.s = Math.max(0, Math.min(tr.L, tr.s + tr.v * dt));
+    if (tr.s >= tr.L && prevS < tr.L) {
+      // uçtaki tampon: durur, üstündekini ileri ve yukarı fırlatır
+      if (on) { const vx = tr.v * (tr.x1 - tr.x0) / tr.L; p.onGround = false; p.plat = null; p.vy = -(tr.fling || 7); p.bounce = true; p.carry = vx * 0.9; p.carryT = null; ev(G, 'fling'); }
+      else ev(G, 'thunk');
+      tr.v = 0;
+    }
+    if (tr.s <= 0 && tr.v < 0) tr.v = 0;
+    const u = tr.s / tr.L;
+    pl.x = tr.x0 + (tr.x1 - tr.x0) * u - tr.w / 2; pl.y = tr.y0 + (tr.y1 - tr.y0) * u;
+    pl.vx = tr.v * (tr.x1 - tr.x0) / tr.L;
+  }
+  function updateSwing(G, sw, dt) {
+    let amp = sw.amp;
+    if (sw.windy) {
+      let k = 0;
+      for (const w of G.winds) if (sw.px > w.x0 && sw.px < w.x1) k = Math.max(k, w.k);
+      sw.k = approach(sw.k, k, dt / 1.2);
+      amp = 0.08 + (sw.amp - 0.08) * sw.k;
+    }
+    sw.a = amp * Math.sin(2 * Math.PI * (G.t / sw.per + sw.ph));
+    sw.plat.x = sw.px + Math.sin(sw.a) * sw.len - sw.w / 2;
+    sw.plat.y = sw.py + Math.cos(sw.a) * sw.len;
+  }
+  // ---------------- Eyüp: çamaşır ipleri, teleferik ----------------
+  function placeCabin(cb) {
+    const ln = cb.line, u = (((cb.s % ln.L) + ln.L) % ln.L) / ln.L;
+    cb.x = ln.x0 + (ln.x1 - ln.x0) * u - ln.w / 2; cb.y = ln.y0 + (ln.y1 - ln.y0) * u;
+  }
+  function updateCabin(G, cb, dt) {
+    const ln = cb.line, before = cb.s % ln.L;
+    cb.s += ln.v * dt;
+    if (cb.s % ln.L < before) {
+      // varış istasyonu: kabin girer, baştan çıkar; üstündeki istasyona iner
+      if (G.player.plat === cb) G.player.plat = null;
+    }
+    placeCabin(cb);
   }
   // çürük tahtalar: oyuncu basınca yarım saniye sonra çöker, beş saniye sonra yerine gelir
   function updateCrumbles(G, dt) {
@@ -1443,6 +1568,7 @@
     if (p.onGround) p.coyote = PH.coyote; else p.coyote = Math.max(0, p.coyote - dt);
     if (p.buf > 0 && p.coyote > 0) {
       p.vy = -jumpSpeed(p.vx);
+      if (p.plat && p.plat.carrier) { p.carry = p.plat.vx * 0.9; p.carryT = null; }   // kayan makaradan zıplayınca hızı sürer
       p.jumping = true; p.onGround = false; p.coyote = 0; p.buf = 0; p.plat = null;
       p.sq = -0.32; p.sqv = 0;
       ev(G, p.h > 1 ? 'jumpbig' : 'jump');
@@ -1476,6 +1602,8 @@
     // hareket (araçtan zıplayınca aracın hızı havada da sürer: p.carry). Havadayken aracın hızını izler,
     // böylece hızlanan ya da yavaşlayan araca geri inilir; bloğa yandan çarpmak bunu bozmaz (kolay bonus).
     if (p.carryT && !p.onGround) p.carry = p.carryT.v;
+    // yan rüzgâr: havadakini tam, yerdekini az iter
+    if (G.winds.length && !p.dead) { const wv = windAt(G, p); p.wind = wv; if (wv) moveX(G, p, wv * (p.onGround ? 0.4 : 1) * dt); }
     const hx = moveX(G, p, (p.vx + (p.carry || 0)) * dt);
     if (hx) p.vx = 0;
     // kamera sol sınırı ve bölüm sonu
@@ -1545,6 +1673,16 @@
         const i = ty * G.W + tx;
         if (tile(G, tx, ty) === T.CRUMBLE && !G.crumb.has(i)) { G.crumb.set(i, { x: tx, y: ty, t: 0, gone: false }); ev(G, 'creak'); }
       }
+      // çamaşır ipi: esner, sektirir; çamaşırlardan biri havalanır
+      if (!wasGround && r.plat && r.plat.kind === 'rope') {
+        const rp = r.plat.rope, hgt = Math.max(0, p.y - (p.airTop === undefined ? p.y : p.airTop));
+        const up = clamp(Math.sqrt(2 * PH.gHold * (0.85 * hgt + (inp.jump ? 1.6 : 0.6))), 9, 19.5);
+        p.vy = -up; p.onGround = false; p.plat = null; p.bounce = true; p.jumping = inp.jump;
+        rp.sag = 1; rp.hx = p.x + p.w / 2 - rp.x0; p.airTop = p.y;
+        p.sq = 0.4; p.sqv = -12;
+        G.fx.push({ k: 'clothes', x: p.x + p.w / 2, y: rp.y, vx: (G.rand() - 0.5) * 3, vy: -4 - up * 0.3, t: 0, r: Math.floor(G.rand() * 4) });
+        ev(G, 'boing');
+      }
       // sandala inmek: baktığın yana itilir
       if (!wasGround && r.plat && r.plat.kind === 'sandal') {
         const b = r.plat.boat; b.vx = clamp(b.vx + p.face * 2.6, -4.6, 4.6);
@@ -1559,6 +1697,7 @@
       if (r.plat && r.plat.kind === 'tray' && !r.plat.npc.served) { r.plat.npc.served = true; powerUp(G, 'cay', { x: p.x, y: p.y - 0.5, w: 1, h: 1 }); ev(G, 'serve'); }
     }
     if (p.onGround && p.plat === null) G.combo = 0;
+    p.airTop = p.onGround || p.airTop === undefined ? p.y : Math.min(p.airTop, p.y);   // havadayken en yüksek nokta (ip sekmesi için)
     if (onTrain && p.plat !== onTrain && !p.onGround) { p.carry = onTrain.v; p.carryT = onTrain; }
 
     // yürüme animasyonu
@@ -2099,6 +2238,7 @@
       if (f.k === 'steam') { f.y -= 1.2 * dt; return f.t < 0.9; }
       if (f.k === 'goldpop') return f.t < 0.8;
       if (f.k === 'ripple') return f.t < 0.8;
+      if (f.k === 'clothes') { f.vy += 14 * dt; f.x += f.vx * dt; f.y += f.vy * dt; return f.t < 1.4; }
       if (f.k === 'stonepuff') return f.t < 0.6;
       return f.t < 0.35;
     });
@@ -2167,6 +2307,12 @@
         let td = null;
         for (const d of G.tides) if (!td || Math.abs((d.x0 + d.x1) / 2 - pl.x) < Math.abs((td.x0 + td.x1) / 2 - pl.x)) td = d;
         if (td) pl.y = tideY(G.t, td) - pl.off;
+        else {
+          // taşkın suyuyla kalkan sal
+          let fd = null;
+          for (const d of G.floods) if (!fd || Math.abs((d.x0 + d.x1) / 2 - pl.x) < Math.abs((fd.x0 + fd.x1) / 2 - pl.x)) fd = d;
+          if (fd) pl.y = fd.y - pl.off;
+        }
       } else if (pl.kind === 'boat') {
         const b = pl.boat;
         if (!pl.upper) updateBoat(G, b, dt);
@@ -2175,6 +2321,14 @@
         pl.y = chartY(G, pl);
       } else if (pl.kind === 'sandal') {
         updateSandal(G, pl.boat, dt); pl.x = pl.boat.x;
+      } else if (pl.kind === 'cabin') {
+        updateCabin(G, pl, dt);
+      } else if (pl.kind === 'rope') {
+        pl.rope.sag = Math.max(0, pl.rope.sag - dt * 2.2);
+      } else if (pl.kind === 'trolley') {
+        updateTrolley(G, pl.tr, dt);
+      } else if (pl.kind === 'swing') {
+        updateSwing(G, pl.sw, dt);
       } else if (pl.rail && !G.power[pl.grp]) {
         // elektrik yok: raylı platform yerinde durur
       } else if (pl.kind === 'lift') {
@@ -2216,6 +2370,8 @@
     if (G.tides.length) updateTides(G);
     if (G.boards.length) updateBoards(G);
     if (G.lasers.length || G.agates.length) updateLasers(G, dt);
+    if (G.winds.length) updateWinds(G, dt);
+    if (G.levers.length) updateLevers(G, dt);
     if (G.medusas.length) updateMedusas(G, dt);
     if (G.stones.length) updateStones(G, dt);
     if (G.nests.length) updateNests(G, dt);
@@ -2401,6 +2557,6 @@
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
     levels, moveX, moveY, runUpSpeed, jumpSpeed,
     FAN, CART_V, fanAt, fanVy, cartUnder, updateFans, updateShutters, CAR, greenNow,
-    updateBoards, chartY, laserBox, zapUnder, gazeBox,
+    updateBoards, chartY, laserBox, zapUnder, gazeBox, windAt,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -165,9 +165,11 @@ def bolum_5_2():
 
 
 # ---------------------------------------------------------------- 5-3
-def salter(c, x, y, grp, on=None):
-    """şalter: kaidesi zeminde, kolu x,y'de (üstüne basılır)"""
+def salter(c, x, y, grp, on=None, pulse=None):
+    """şalter: kaidesi zeminde, kolu x,y'de (üstüne basılır). pulse: yaylı, o kadar saniye sonra geri döner"""
     kw = {} if on is None else {'on': on}
+    if pulse:
+        kw['pulse'] = pulse
     c.obj('salter', x=x, y=y, grp=grp, **kw)
     if y + 1 < 12:
         c.rect(x, y + 1, x, 11, '=')
@@ -200,10 +202,11 @@ def bolum_5_3():
     c.row(7, range(48, 62, 3), 'b')
     c.put(55, 4, 'g')                            # altın 1: platformun yolunun üstünde
 
-    # ---- TERS KÖŞE: bug sürüsü elektriksiz ızgarada; yukarıdaki şaltere bas, hepsi çarpılsın. sonra kapat, geç
+    # ---- TERS KÖŞE: bug sürüsü elektriksiz ızgarada; yukarıdaki yaylı şaltere bas, hepsi çarpılsın; şalter kendiliğinden
+    # geri döner, ızgaradan geç
     stairs(c, 86, 3, FL)
     c.rect(89, 9, 92, FL - 1, '=')
-    salter(c, 91, 8, 'c', on=False)
+    salter(c, 91, 8, 'c', on=False, pulse=2.5)
     c.obj('izgara', x0=95, x1=110, y=FL, grp='c')
     c.rect(93, 9, 94, FL - 1, '=')
     for x in (97, 100, 103, 106, 109):
