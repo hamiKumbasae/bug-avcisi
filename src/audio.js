@@ -173,24 +173,30 @@
       lead: 'G4 . C5 . E5 . G5 . | G5 - F5 E5 D5 . B4 . | C5 . E5 . A5 . G5 E5 | F5 - E5 D5 C5 . . . | G4 . C5 . E5 . G5 . | B5 - A5 G5 D5 . G5 . | A5 . G5 . F5 . E5 D5 | C5 - - . G4 . . .' },
     maslak: { bpm: 150, chords: 'C Am F G C Am Dm G', drums: 'k.h.s.h.k.k.s.h.',
       lead: 'E5 . G5 . C6 - B5 A5 | G5 - E5 . A4 C5 E5 . | F5 . A5 . C6 . A5 F5 | G5 - - . D5 - . . | E5 . G5 . C6 - B5 A5 | G5 - E5 . C5 . E5 . | D5 F5 A5 . G5 F5 E5 D5 | C5 - - . . . G4 .' },
-    kadikoy: { bpm: 138, chords: 'F C Dm Bb F C Bb C', drums: 'k.hhs.h.k.hhs.hh',
-      lead: 'A4 C5 F5 . E5 . C5 . | G5 . E5 C5 D5 E5 C5 . | D5 . F5 A5 G5 F5 E5 D5 | Bb4 - D5 F5 E5 . D5 . | A4 C5 F5 . E5 . C5 . | G5 . A5 Bb5 A5 G5 E5 C5 | D5 . Bb4 . D5 F5 E5 D5 | C5 - E5 . F5 - . .' },
-    vapur: { bpm: 128, chords: 'G Em C D G Em C D', drums: 'k..hs.h.k..hs.h.',
-      lead: 'D5 - B4 . G4 . B4 D5 | E5 - G5 . E5 . D5 B4 | C5 - E5 . G5 . E5 C5 | D5 - - . A4 B4 C5 . | D5 - B4 . G4 . B4 D5 | G5 - F#5 . E5 . D5 B4 | C5 . E5 . D5 . F#5 . | G5 - - . D5 . G4 .' },
-    carsi: { bpm: 126, chords: 'D Gm D Eb D Cm Eb D', drums: 'k.hks.h.k.hks.hh',
-      lead: 'D5 . Eb5 F#5 . G5 A5 . | G5 F#5 Eb5 . D5 - . . | A5 . Bb5 A5 G5 F#5 G5 . | F#5 Eb5 D5 . Eb5 - . . | D5 . Eb5 F#5 . G5 A5 . | C6 - Bb5 A5 Bb5 A5 G5 . | A5 G5 F#5 G5 F#5 Eb5 F#5 . | D5 - - . A4 . D5 .' },
-    sarnic: { bpm: 96, chords: 'A Dm A Bb A Gm Dm A', drums: 'k.......s.......',
-      lead: 'A4 - - . E5 - . . | F5 - E5 . C#5 - . . | D5 - . F5 E5 - D5 . | C#5 - Bb4 . A4 - - . | A4 - - . E5 - . . | G5 - F5 . E5 - . . | F5 E5 D5 . C#5 . D5 . | A4 - - - . . . .' },
-    galata: { bpm: 144, chords: 'Am F G E Am F Dm E', drums: 'k.h.s.hkk.h.s.hh',
-      lead: 'A4 . C5 . E5 . A5 G5 | F5 . E5 . C5 . A4 . | B4 . D5 . G5 . F5 E5 | G#4 - B4 . E5 - . . | A4 . C5 . E5 . A5 B5 | C6 . B5 . A5 . F5 . | D5 E5 F5 . A5 G5 F5 E5 | E5 - G#5 . A5 - . .' },
+    // Kapalıçarşı: öğle kalabalığı; diğer dünyalarla aynı dil (D doğal minör), "Doğu" işareti yok
+    carsi: { bpm: 132, chords: 'Dm C Bb C Dm F Gm A', drums: 'k.hks.h.k.hks.hh',
+      lead: 'D5 . F5 A5 . G5 F5 . | E5 . G5 C6 . Bb5 A5 G5 | F5 . D5 . Bb4 . D5 F5 | E5 - - . C5 . E5 . | D5 . F5 A5 . D6 C6 A5 | C6 . A5 . F5 . A5 C6 | Bb5 . A5 G5 . F5 E5 D5 | E5 - C#5 . A4 . . .' },
+    sarnic: { bpm: 92, chords: 'Am F C G Am Dm Em Am', drums: 'k.......s.......',
+      lead: 'A4 - - . E5 - . . | F5 - E5 . C5 - . . | E5 - . G5 E5 - D5 . | D5 - B4 . G4 - - . | A4 - - . E5 - . . | F5 - E5 . D5 - . . | E5 D5 B4 . G4 . B4 . | A4 - - - . . . .' },
     kopru: { bpm: 158, chords: 'Em C D B Em C Am B', drums: 'k.hks.hkk.hks.hh',
       lead: 'E5 . E5 G5 . B5 . G5 | E5 . C5 . E5 . G5 . | F#5 . D5 . A5 . F#5 . | D#5 - F#5 . B5 - . . | E5 . E5 G5 . B5 . E6 | D6 . C6 . B5 . G5 . | A5 . C6 . B5 . A5 G5 | F#5 - D#5 . E5 - . .' },
-    catilar: { bpm: 132, chords: 'Em F Em Dm Em F Am Em', drums: 'k..h..s.k..h..s.',
-      lead: 'E5 . . G5 . F5 E5 . | F5 . . A5 . G5 F5 . | E5 . G5 . B5 . A5 G5 | F5 . E5 . D5 . . . | E5 . . G5 . F5 E5 . | A5 . . C6 . B5 A5 . | G5 . F5 . E5 . D5 F5 | E5 - - . B4 . E5 .' },
     camlica: { bpm: 164, chords: 'Dm Bb C A Dm Bb Gm A', drums: 'k.hkk.hkk.hkk.hh',
       lead: 'D5 F5 A5 D6 A5 F5 D5 F5 | Bb4 D5 F5 Bb5 F5 D5 Bb4 D5 | C5 E5 G5 C6 G5 E5 C5 E5 | A4 C#5 E5 A5 E5 C#5 A4 C#5 | D6 - C6 . A5 - F5 . | Bb5 - A5 . F5 - D5 . | G5 . A5 . Bb5 . C6 . | C#6 - - . E5 . A5 .' },
-    halic: { bpm: 120, chords: 'Dm Gm A Dm Bb Gm A Dm', drums: 'k..hs.h.k..hs.h.',
-      lead: 'D5 . F5 . A5 - G5 F5 | G5 . Bb5 . A5 G5 F5 . | E5 . C#5 . E5 . A5 . | F5 - E5 D5 D5 - . . | D5 . F5 . Bb5 - A5 G5 | G5 . F5 . E5 . D5 . | C#5 . E5 . G5 F5 E5 C#5 | D5 - - . A4 . D5 .' },
+    // Şişli: öğleden sonra, kalabalık şehir
+    sisli: { bpm: 152, chords: 'A E F#m D A E D E', drums: 'k.h.s.hkk.h.s.hh',
+      lead: 'E5 . A5 . C#6 . B5 A5 | G#5 - E5 . B4 . E5 . | F#5 . A5 . C#6 . A5 F#5 | A5 - F#5 . D5 - . . | E5 . A5 . C#6 . E6 C#6 | B5 - G#5 . E5 . B5 . | A5 . F#5 . D5 . F#5 A5 | G#5 - - . E5 . B4 .' },
+    // Üsküdar: gün batımı, sıcak ve sakin
+    uskudar: { bpm: 124, chords: 'Eb Bb Cm Ab Eb Bb Ab Bb', drums: 'k..hs.h.k..hs.h.',
+      lead: 'G5 - Bb5 . Eb6 - D6 C6 | D6 - Bb5 . F5 - . . | Eb5 . G5 . C6 - Bb5 G5 | Ab5 - - . Eb5 . C5 . | G5 - Bb5 . Eb6 - F6 Eb6 | D6 - F6 . D6 . Bb5 . | C6 . Ab5 . Eb5 . F5 G5 | Ab5 - G5 F5 Eb5 - . . ' },
+    // Eyüp: gece yarısı; sade, davulsuz, uzun notalar (8-3'te müzik yok)
+    eyup: { bpm: 84, chords: 'Em C G D Em C Am B', drums: '................', mix: { lead: 0.05, bass: 0.13, arp: 0.006 },
+      lead: 'B4 - - - G5 - - . | E5 - - - . . . . | D5 - - . B4 - G4 . | A4 - - - . . . . | B4 - - - G5 - F#5 . | E5 - - - . . G4 . | A4 - C5 . E5 - D5 . | D#5 - - - . . . .' },
+    // Şile: gece yolu
+    sile: { bpm: 134, chords: 'Gm Eb Bb F Gm Eb Cm D', drums: 'k.h.k.h.k.h.s.h.',
+      lead: 'D5 . . Bb4 . G4 . Bb4 | Eb5 - D5 . Bb4 . G4 . | F5 . . D5 . Bb4 . D5 | C5 - - . A4 . C5 . | D5 . G5 . F5 . D5 Bb4 | Eb5 - G5 . Bb5 - G5 . | C5 . Eb5 . G5 . F5 Eb5 | D5 - F#5 . A5 - . .' },
+    // Sanayi: gece vardiyası, makine gibi davul
+    sanayi: { bpm: 146, chords: 'Cm Ab Bb G Cm Ab Fm G', drums: 'k.hsk.hsk.hskkhs',
+      lead: 'C5 . C5 Eb5 . G5 . Eb5 | C5 . Ab4 . C5 . Eb5 . | D5 . F5 . Bb5 . F5 D5 | D5 - B4 . G4 - . . | C6 . G5 . Eb5 . G5 C6 | Ab5 . Eb5 . C5 . Eb5 Ab5 | F5 . Ab5 . C6 . Ab5 F5 | G5 - D5 . B4 - . .' },
     atasehir: { bpm: 150, chords: 'Bm G D A Bm G Em F#', drums: 'k.hsk.hsk.hsk.hh',
       lead: 'B4 . D5 F#5 B5 . F#5 D5 | G5 . F#5 . D5 . B4 . | A4 . D5 F#5 A5 . F#5 D5 | C#5 - E5 . A5 - . . | B5 . A5 . F#5 . D5 F#5 | G5 - B5 . D6 - B5 . | E5 . G5 . B5 . A5 G5 | F#5 - A#5 . C#6 - . .' },
     umraniye: { bpm: 140, chords: 'G D Em C G D C D', drums: 'k.h.s.h.k.h.s.hh',
@@ -202,8 +208,8 @@
     son: { bpm: 112, chords: 'F C Dm Bb F C Bb C', drums: 'k...s...k...s.h.',
       lead: 'C5 - F5 . A5 - G5 F5 | E5 - G5 . C6 - . . | D5 - F5 . A5 - G5 F5 | F5 - D5 . Bb4 - . . | C5 - F5 . A5 - C6 . | Bb5 - A5 . G5 - E5 . | D5 . E5 . F5 . G5 . | F5 - - - . . . .' },
   };
-  // v2.0 dünya sırası: yeni dünyaların şarkıları gelene dek en yakın eski şarkı çalar
-  const WORLD_SONG = ['maslak', 'carsi', 'maslak', 'kadikoy', 'atasehir', 'sarnic', 'kopru', 'halic', 'vapur', 'umraniye', 'camlica', 'umraniye'];
+  // dünya sırasıyla şarkılar (v2.0)
+  const WORLD_SONG = ['maslak', 'carsi', 'sisli', 'uskudar', 'atasehir', 'sarnic', 'kopru', 'eyup', 'sile', 'sanayi', 'camlica', 'umraniye'];
   function chordNotes(ch) {
     const m = /^([A-G])(#|b)?(m?)/.exec(ch);
     const root = NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
@@ -228,7 +234,7 @@
       const arp = [1, 2, 0, 2, 1, 2, 0, 1][pos];
       steps.push({ lead: len ? parseNote(tok) : null, len, bass: b === null ? null : 36 + ch[b] + (pos === 7 ? 12 : 0), arp: 60 + ch[arp] + (ch[arp] < 5 ? 12 : 0), drum: S.drums[i % 16] });
     }
-    compiled[name] = { bpm: S.bpm, steps };
+    compiled[name] = { bpm: S.bpm, steps, mix: Object.assign({ lead: 0.075, bass: 0.22, arp: 0.018 }, S.mix || {}) };
     return compiled[name];
   }
   let cur = null, step = 0, nextT = 0, timer = null, rate = 1;
@@ -250,9 +256,10 @@
     while (nextT < ac.currentTime + 0.15) {
       const s = cur.song.steps[step % 64];
       if (!muted) {
-        if (s.lead !== null) osc('pulse', mid(s.lead), nextT, sp * s.len * 0.92, 0.075, musicBus);
-        if (s.bass !== null) osc('triangle', mid(s.bass), nextT, sp * 0.9, 0.22, musicBus);
-        osc('square', mid(s.arp), nextT, sp * 0.45, 0.018, musicBus);
+        const M = cur.song.mix;
+        if (s.lead !== null) osc('pulse', mid(s.lead), nextT, sp * s.len * 0.92, M.lead, musicBus);
+        if (s.bass !== null) osc('triangle', mid(s.bass), nextT, sp * 0.9, M.bass, musicBus);
+        if (M.arp > 0) osc('square', mid(s.arp), nextT, sp * 0.45, M.arp, musicBus);
         if (s.drum === 'k') { osc('triangle', 120, nextT, 0.09, 0.3, musicBus, 0.4); }
         else if (s.drum === 's') noise(nextT, 0.09, 0.12, 2400, musicBus);
         else if (s.drum === 'h') noise(nextT, 0.03, 0.05, 7000, musicBus, true);
@@ -312,7 +319,13 @@
       case 'keys': for (let i = 0; i < 6 + Math.floor(Math.random() * 8); i++) noise(t + i * (0.06 + Math.random() * 0.1), 0.02, 0.07, 3500, B, true); break;
       case 'carve': for (let i = 0; i < 3; i++) noise(t + i * 0.5, 0.35, 0.06, 2600, B, true); break;
       case 'car': { const s = loopNoise(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.linearRampToValueAtTime(900, t + 1.2); f.frequency.linearRampToValueAtTime(250, t + 2.6); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 1.2); g.gain.linearRampToValueAtTime(0.0001, t + 2.6); s.connect(f).connect(g).connect(B); s.start(t); s.stop(t + 2.7); break; }
-      case 'meow': osc('triangle', 700, t, 0.45, 0.04, B, 1.4, 0.08); break;
+      case 'shutter': for (let i = 0; i < 16; i++) noise(t + i * 0.05, 0.04, 0.08 * (1 - i / 18), 1800, B, true); break;            // kepenk
+      case 'glass': osc('sine', 3200, t, 0.12, 0.03, B); osc('sine', 4100, t + 0.09, 0.1, 0.02, B); for (let i = 0; i < 3; i++) osc('sine', 5200, t + 0.4 + i * 0.12, 0.04, 0.012, B); break; // çay bardağı ve kaşık
+      case 'tram': for (const d of [0, 0.3]) { osc('sine', 1568, t + d, 0.5, 0.022, B); osc('sine', 2093, t + d, 0.3, 0.008, B); } break; // uzaktan tramvay
+      case 'talk': for (let i = 0; i < 4 + Math.floor(Math.random() * 5); i++) osc('triangle', 170 + Math.random() * 110, t + i * (0.11 + Math.random() * 0.08), 0.1, 0.03, B, 0.85 + Math.random() * 0.4, 0.02); break; // konuşma, pazarlık
+      case 'bus': { ev('car'); noise(t + 2.2, 0.45, 0.07, 3000, B, true); break; }                                                // metrobüs: geçiş ve hava freni
+      case 'lathe': osc('sawtooth', 260, t, 1.8, 0.01, B, 1.7, 0.4); noise(t + 0.3, 1.2, 0.05, 3400, B, true); break;            // torna
+      case 'weld': for (let i = 0; i < 18; i++) noise(t + Math.random() * 1.2, 0.015, 0.12, 5000, B, true); break;               // kaynak
       case 'kapak': noise(t, 0.05, 0.12, 1400, B); osc('triangle', 170, t, 0.08, 0.06, B, 0.7); break;           // laptop kapanır
       case 'durak': osc('sine', 1175, t, 0.11, 0.06, B); osc('sine', 1175, t + 0.17, 0.16, 0.06, B); break;     // otobüste durak düğmesi
       case 'bell': for (const [f, v] of [[660, 0.05], [1320, 0.025], [1980, 0.012]]) osc('sine', f, t, 1.6, v, B, 1, 0.003); break;
@@ -328,20 +341,22 @@
     plaza: { beds: [['city', 0.12], ['wind', 0.05]], events: [['step', 4], ['ding', 7], ['car', 6]] },
     iskele: { beds: [['sea', 0.16], ['city', 0.04]], events: [['gull', 3.5], ['horn', 14], ['keys', 5]] },
     vapur: { beds: [['sea', 0.2], ['engine', 0.12], ['wind', 0.05]], events: [['gull', 4], ['horn', 16]] },
-    carsi: { beds: [['murmur', 0.07]], events: [['carve', 3], ['bell', 11], ['step', 7]] },
+    // Kapalıçarşı: kepenkler, esnaf konuşmaları, pazarlık, çaycının bardakları, uzaktan tramvay
+    carsi: { beds: [['murmur', 0.08]], events: [['talk', 3], ['glass', 5], ['shutter', 10], ['tram', 18], ['step', 6]] },
+    han: { beds: [['murmur', 0.04], ['fire', 0.05]], events: [['carve', 5], ['glass', 6], ['talk', 7], ['step', 6]] },
     sarnic: { beds: [['cave', 0.14]], events: [['drip', 1.6]] },
     galata: { beds: [['wind', 0.12], ['city', 0.05]], events: [['gull', 6], ['horn', 15], ['bird', 9]] },
     kopru: { beds: [['engine', 0.16], ['wind', 0.06]], events: [['car', 3]] },
-    catilar: { beds: [['wind', 0.1], ['city', 0.04]], events: [['keys', 3.5], ['meow', 12], ['car', 10]] },
+    catilar: { beds: [['wind', 0.1], ['city', 0.04]], events: [['keys', 3.5], ['car', 10]] },
     camlica: { beds: [['wind', 0.1]], events: [['bird', 5], ['car', 12]] },
     safak: { beds: [['wind', 0.06], ['sea', 0.05]], events: [['bird', 1.8], ['gull', 7], ['horn', 18]] },
     // bölüm mekânları
     ofis: { beds: [['city', 0.04], ['hum', 0.05]], events: [['keys', 3], ['ding', 9], ['step', 7]] },
     sunucu: { beds: [['hum', 0.16]], events: [['beep', 2.5], ['keys', 9]] },
-    pazar: { beds: [['murmur', 0.1], ['city', 0.04]], events: [['gull', 5], ['bell', 13], ['step', 4]] },
+    pazar: { beds: [['murmur', 0.1], ['city', 0.04]], events: [['gull', 5], ['glass', 6], ['talk', 6], ['step', 4]] },
     moda: { beds: [['sea', 0.1], ['wind', 0.07]], events: [['gull', 5], ['bird', 6], ['horn', 20]] },
     firtina: { beds: [['sea', 0.28], ['wind', 0.2], ['rain', 0.1]], events: [['thunder', 9], ['horn', 22]] },
-    bedesten: { beds: [['cave', 0.08], ['murmur', 0.03]], events: [['step', 6], ['bell', 15], ['carve', 9]] },
+    bedesten: { beds: [['cave', 0.08], ['murmur', 0.02]], events: [['step', 8], ['shutter', 16], ['talk', 20]] },
     karanlik: { beds: [['cave', 0.18]], events: [['drip', 3.5]] },
     kamondo: { beds: [['city', 0.08], ['wind', 0.04]], events: [['step', 3], ['bird', 6], ['gull', 9]] },
     cati: { beds: [['wind', 0.08], ['cave', 0.05]], events: [['creak', 4], ['bell', 18]] },
@@ -352,7 +367,23 @@
     yayin: { beds: [['hum', 0.12]], events: [['beep', 2], ['keys', 6]] },
     karakoy: { beds: [['sea', 0.14], ['city', 0.08]], events: [['gull', 3], ['horn', 12], ['step', 6]] },
     halic: { beds: [['sea', 0.08], ['wind', 0.06]], events: [['gull', 6], ['bird', 7], ['bell', 16]] },
-    balat: { beds: [['city', 0.05], ['wind', 0.05]], events: [['bird', 3], ['meow', 9], ['bell', 14], ['step', 6]] },
+    balat: { beds: [['city', 0.04], ['wind', 0.06]], events: [['step', 9], ['bell', 22], ['car', 14]] },
+    // Şişli: metrobüs, kalabalık, trafik; plaza lobisi; boşalan ofis
+    sisli: { beds: [['city', 0.14], ['murmur', 0.05], ['engine', 0.04]], events: [['car', 2.5], ['bus', 8], ['step', 5]] },
+    lobi: { beds: [['city', 0.03], ['hum', 0.04], ['murmur', 0.04]], events: [['ding', 6], ['beep', 4], ['step', 3]] },
+    mesai: { beds: [['hum', 0.04], ['city', 0.04]], events: [['keys', 10], ['step', 12], ['ding', 18]] },
+    // Üsküdar: vapur düdüğü, martılar, sahil kalabalığı, çay bardakları
+    uskudar: { beds: [['sea', 0.12], ['murmur', 0.05]], events: [['gull', 3.5], ['horn', 12], ['glass', 6]] },
+    // Eyüp: teleferiğin halatı; tepede yalnız rüzgâr ve uzak şehir
+    teleferik: { beds: [['wind', 0.1], ['city', 0.03]], events: [['creak', 6]] },
+    eyupTepe: { beds: [['wind', 0.12], ['city', 0.05]], events: [] },
+    // Şile: rüzgâr, dalga, uzaktan geçen tek tük araba (fenerde fırtına)
+    sile: { beds: [['wind', 0.12], ['sea', 0.05]], events: [['car', 14]] },
+    benzin: { beds: [['wind', 0.08], ['hum', 0.03]], events: [['car', 11]] },
+    // Sanayi: torna, kaynak, kepenk, uzak otoyol uğultusu
+    imes: { beds: [['city', 0.05], ['hum', 0.05]], events: [['lathe', 6], ['weld', 8], ['shutter', 15]] },
+    des: { beds: [['hum', 0.08], ['city', 0.03]], events: [['beep', 7], ['creak', 9]] },
+    kadosan: { beds: [['fire', 0.1], ['city', 0.04]], events: [['forge', 2.2], ['creak', 8]] },
     mahalle: { beds: [['city', 0.1], ['murmur', 0.05]], events: [['bird', 5], ['car', 6], ['step', 5], ['ding', 14]] },
     plazadis: { beds: [['city', 0.12], ['engine', 0.05], ['wind', 0.04]], events: [['car', 3], ['ding', 12]] },
     sanayi: { beds: [['fire', 0.08], ['hum', 0.06], ['city', 0.04]], events: [['forge', 2.6], ['carve', 5], ['creak', 7]] },
@@ -361,19 +392,19 @@
     veri: { beds: [['hum', 0.2], ['wind', 0.03]], events: [['beep', 1.8], ['keys', 11]] },
     kontrol: { beds: [['hum', 0.1], ['murmur', 0.03]], events: [['beep', 2.2], ['keys', 5], ['ding', 12]] },
   };
-  const WORLD_AMB = ['plaza', 'carsi', 'plazadis', 'iskele', 'finans', 'sarnic', 'kopru', 'balat', 'tepe', 'sanayi', 'camlica', 'mahalle'];
+  const WORLD_AMB = ['plaza', 'carsi', 'sisli', 'uskudar', 'finans', 'sarnic', 'kopru', 'balat', 'sile', 'imes', 'camlica', 'mahalle'];
   // bölümün çizimi ('yer') → şehir sesi; bölüm 'ses' ile değiştirebilir
   const AMB_OF = {
     maslak: 'plaza', toplanti: 'ofis', sunucu: 'sunucu', kadikoy: 'iskele', balikPazari: 'pazar', moda: 'moda', iskele: 'iskele',
-    vapur: 'vapur', kaptan: 'firtina', carsi: 'carsi', halicilar: 'carsi', bedesten: 'bedesten', sarnic: 'sarnic', medusa: 'sarnic',
+    vapur: 'vapur', kaptan: 'firtina', carsi: 'carsi', han: 'han', bedesten: 'bedesten', sarnic: 'sarnic', medusa: 'sarnic',
     karanlikSu: 'karanlik', kamondo: 'kamondo', galata: 'galata', catiArasi: 'cati', karakoy: 'karakoy', halicKiyisi: 'halic',
     eyupBalat: 'balat', kopru: 'kopru', halatlar: 'halat', kopruTepe: 'tepe', catilar: 'catilar', antenler: 'catilar',
     saatKulesi: 'saat', finans: 'finans', veri: 'veri', kontrol: 'kontrol', camlica: 'camlica', asansor: 'asansor', yayin: 'yayin',
     umraniyeCarsi: 'mahalle', yeniPlazalar: 'plazadis', sanayi: 'sanayi',
     // v2.0 mekânları
-    mecidiyekoy: 'plazadis', plazaLobi: 'ofis', mesaiSonu: 'ofis', iskeleAksam: 'iskele', carsiAksam: 'pazar', sahil: 'moda',
-    kopruGece: 'kopru', halatlarGece: 'halat', balatGece: 'balat', teleferik: 'balat', tepe: 'tepe', sileYol: 'tepe', benzin: 'tepe',
-    fener: 'firtina', imes: 'sanayi', des: 'sanayi', kadosan: 'sanayi', atolye: 'sanayi',
+    mecidiyekoy: 'sisli', plazaLobi: 'lobi', mesaiSonu: 'mesai', iskeleAksam: 'uskudar', carsiAksam: 'pazar', sahil: 'uskudar',
+    kopruGece: 'kopru', halatlarGece: 'halat', balatGece: 'balat', teleferik: 'teleferik', tepe: 'eyupTepe', sileYol: 'sile', benzin: 'benzin',
+    fener: 'firtina', imes: 'imes', des: 'des', kadosan: 'kadosan', atolye: 'sanayi',
   };
   const placeAmb = (L) => (L && (L.ses || AMB_OF[L.yer])) || 'plaza';
   function stopAmbient(fade) {

@@ -7,7 +7,7 @@
   const { lin, rng } = A;
   const { pen, mix, ferry, seagull, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram } = SC;
   const { B, C, E, P, rect, archWin, dome, minaret, hillMosque, bridge, camlicaTower, house, hillsY, hills, hillHouses,
-    cloud, glassTower, tree, pine, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, homeTower, lonelyWindow } = SC.kit;
+    cloud, glassTower, tree, pine, column, medusaHead, roofTiles, homeTower, lonelyWindow, person } = SC.kit;
   const TAU = Math.PI * 2, W = 512, H = 240;
   const DR = SC.DRAW;   // çizim anahtarı → { sky, far, near }; bölümler levels.js'teki 'yer' ile seçer
 
@@ -345,44 +345,60 @@
     },
   };
 
-  // ================= 4 KAPALIÇARŞI =================
-  // 4-2 Halıcılar: ahşap kirişli loş salon; duvarlarda asılı halılar, yığın yığın katlanmış halılar, çay tepsisi
-  const PATS = [['#a8201e', '#f2d48a', '#1e3a6a'], ['#1e3a6a', '#e8c070', '#a8201e'], ['#7a2a4a', '#f4e4c0', '#2a6a5a'], ['#c86a1e', '#2a1a3a', '#f2e0b0'], ['#2a5a4a', '#e8c070', '#7a1e2a']];
-  DR.halicilar = {
-    sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#1e0e06'], [0.5, '#3a1e0e'], [1, '#4e2a14']]); } },
+  // ================= 2 KAPALIÇARŞI =================
+  // 2-2 Han: eski bir hanın avlusu; iki katlı revaklar (taş ve tuğla sıraları), üst katta demir korkuluk.
+  // Kemerlerin altında gümüş ve altın atölyeleri, ocakta eriyen maden, çalışan ustalar; koliler, hamal, çay ocağı.
+  const almasik = (g, x, y, w, h) => { rect(g, x, y, w, h, '#b8a48a'); for (let yy = y + 6; yy < y + h; yy += 12) rect(g, x, yy, w, 4, '#a8583a'); };
+  DR.han = {
+    sky: { stops: [[0, '#6aaee6'], [1, '#cfe8f8']], noMoon: true },
     far(g) {
-      rect(g, 0, 46, W, 170, '#5a3018');
-      for (let i = 0; i < 11; i++) { const x = 4 + i * 47; carpet(g, x, 58, 38, 84 + (i % 3) * 8, PATS[i % PATS.length]); }
-      for (let i = 0; i < 16; i++) { const x = 6 + i * 32; carpet(g, x, 160, 26, 40, PATS[(i + 2) % PATS.length]); }
-      g.fillStyle = 'rgba(20,8,0,0.35)'; g.fillRect(0, 46, W, 170);
-      rect(g, 0, 0, W, 46, '#2e1808');
-      for (let x = 0; x < W; x += 32) { rect(g, x, 0, 6, 46, '#3e2210'); rect(g, x, 40, 32, 3, '#4a2a14'); }
-      for (let x = 48; x < W; x += 96) { lin(g, x, 43, x, 64, '#c8a060', 0.5); glow(g, x, 72, 30, 'rgb(255,190,110)', 0.4); mosaicLamp(g, x, 72, ['#e2483a', '#3aa0e0', '#f4c531', '#2ab07a'][(x / 96 | 0) % 4]); }
+      // arka cephe: alt ve üst kat revakları
+      almasik(g, 0, 36, W, 180);
+      for (let x = 0; x < W; x += 64) {
+        // üst kat: kemerli pencereler, demir korkuluk
+        g.fillStyle = '#3a2a24'; g.beginPath(); g.moveTo(x + 14, 112); g.lineTo(x + 14, 62); g.arc(x + 32, 62, 18, Math.PI, 0); g.lineTo(x + 50, 112); g.closePath(); g.fill();
+        g.strokeStyle = '#e8dcc4'; g.lineWidth = 2; g.beginPath(); g.arc(x + 32, 62, 19, Math.PI, 0); g.stroke();
+        if ((x / 64) % 3 === 1) { rect(g, x + 18, 74, 28, 38, 'rgba(255,200,120,0.35)'); glow(g, x + 32, 92, 18, 'rgb(255,190,110)', 0.35); }
+        // alt kat: geniş kemer (atölye kapıları önde)
+        g.fillStyle = '#2a1e1a'; g.beginPath(); g.moveTo(x + 6, 216); g.lineTo(x + 6, 150); g.arc(x + 32, 150, 26, Math.PI, 0); g.lineTo(x + 58, 216); g.closePath(); g.fill();
+        g.strokeStyle = '#e8dcc4'; g.lineWidth = 2.4; g.beginPath(); g.arc(x + 32, 150, 27, Math.PI, 0); g.stroke();
+      }
+      rect(g, 0, 112, W, 5, '#6a5a4a');
+      for (let x = 0; x < W; x += 6) rect(g, x, 100, 1, 12, '#3a3436');
+      rect(g, 0, 99, W, 1.6, '#3a3436');
+      rect(g, 0, 30, W, 8, '#7a6a58');
+      g.fillStyle = 'rgba(255,240,210,0.12)'; g.fillRect(0, 36, W, 180);
     },
     near(g) {
-      pen('rgba(30,12,4,0.6)', 0.5);
-      const pile = (x, n, seed) => {
-        const r = rng(seed);
-        for (let k = 0; k < n; k++) {
-          const w = 58 + r() * 14, ox = (r() - 0.5) * 6, y = 214 - (k + 1) * 7, c = PATS[Math.floor(r() * PATS.length)];
-          B(g, x + ox, y, w, 7, 2, c[0]); rect(g, x + ox + 2, y + 2.4, w - 4, 1, c[1]); rect(g, x + ox + 4, y + 4.2, w - 8, 0.8, c[2]);
-        }
+      pen('rgba(30,14,6,0.6)', 0.5);
+      // atölye: tezgâhta çalışan usta, potada eriyen maden, duvarda aletler
+      const atelier = (x, k) => {
+        B(g, x, 132, 96, 82, 1, '#4a3a30'); rect(g, x + 6, 140, 84, 74, '#2a1e1a');
+        const gl = g.createLinearGradient(0, 140, 0, 214); gl.addColorStop(0, 'rgba(255,170,90,0.08)'); gl.addColorStop(1, 'rgba(255,150,70,0.3)');
+        g.fillStyle = gl; g.fillRect(x + 6, 140, 84, 74);
+        // pota ocağı
+        B(g, x + 12, 180, 22, 34, 2, '#5a4a44'); glow(g, x + 23, 182, 22, 'rgb(255,150,50)', 0.85); E(g, x + 23, 182, 6, 2.6, '#ffd060');
+        // tezgâh ve usta (deri önlük)
+        B(g, x + 42, 186, 44, 4, 1, '#8a5a34'); lin(g, x + 46, 190, x + 46, 214, '#5a3a24', 1.6); lin(g, x + 82, 190, x + 82, 214, '#5a3a24', 1.6);
+        person(g, x + 62, 210, 30, k ? '#6a4a3a' : '#4a5a6a', { skin: '#c89a7a', hair: '#3a2a20' });
+        B(g, x + 57, 186, 10, 18, 2, '#7a5030');
+        C(g, x + 72, 184, 1.4, '#ffffff'); glow(g, x + 72, 184, 8, 'rgb(150,200,255)', 0.7);   // ince alev (lehim)
+        for (let t = 0; t < 4; t++) { lin(g, x + 50 + t * 9, 146, x + 50 + t * 9, 164, '#6a6a72', 0.8); C(g, x + 50 + t * 9, 166, 1.4, '#8a8a92'); }
       };
-      pile(20, 8, 301); pile(214, 11, 302); pile(420, 6, 303);
-      // dik duran rulo halılar
-      for (const [x, h, c] of [[110, 70, 0], [124, 82, 2], [138, 64, 4], [330, 76, 1], [344, 88, 3]]) {
-        B(g, x, 214 - h, 12, h, 5, PATS[c][0]); for (let y = 214 - h + 6; y < 212; y += 9) rect(g, x + 1, y, 10, 1.4, PATS[c][1]);
-        E(g, x + 6, 214 - h + 2, 5.4, 2, mix(PATS[c][0], '#000000', 0.3));
-      }
-      // alçak tabure ve çay tepsisi
-      B(g, 170, 200, 30, 4, 1, '#7a4a28'); rect(g, 173, 204, 3, 10, '#5a341a'); rect(g, 194, 204, 3, 10, '#5a341a');
-      E(g, 185, 199, 14, 2.4, '#d8b060');
-      for (const tx of [176, 185, 194]) { P(g, [tx - 2, 192, tx + 2, 192, tx + 1.2, 198, tx - 1.2, 198], 'rgba(200,40,20,0.85)'); }
-      for (const lx of [80, 290, 470]) { lin(g, lx, 0, lx, 118, '#c8a060', 0.5); glow(g, lx, 126, 20, 'rgb(255,200,120)', 0.5); B(g, lx - 5, 118, 10, 14, 3, '#c89040'); }
+      atelier(8, 0); atelier(264, 1);
+      // kargo kolileri ve hamal
+      for (const [x, y, w, h] of [[120, 196, 22, 18], [140, 200, 18, 14], [126, 180, 18, 16], [380, 194, 24, 20]]) { B(g, x, y, w, h, 1, '#c8a070'); rect(g, x, y + h / 2 - 0.6, w, 1.2, '#e8d0a0'); }
+      person(g, 176, 214, 32, '#5a5a4a', { skin: '#a87a5a', hair: '#2a2a2a', load: '#c8a070', step: 1 });
+      // çay ocağı: küçük tezgâh, ocakta çaydanlık, tepside ince belli bardaklar
+      B(g, 416, 176, 64, 38, 1, '#6a4a30'); rect(g, 416, 176, 64, 3, '#8a6a48');
+      B(g, 428, 166, 12, 10, 3, '#c8ccd4'); B(g, 431, 158, 7, 8, 2.4, '#d8dce4'); glow(g, 434, 176, 10, 'rgb(120,170,255)', 0.4);
+      E(g, 462, 175, 12, 1.6, '#c8ccd4');
+      for (const tx of [454, 462, 470]) P(g, [tx - 1.8, 167, tx + 1.8, 167, tx + 1, 173.6, tx - 1, 173.6], 'rgba(200,70,30,0.9)');
+      for (const lx of [100, 360]) { lin(g, lx, 0, lx, 112, '#3a2a20', 0.5); glow(g, lx, 120, 20, 'rgb(255,214,150)', 0.45); B(g, lx - 4, 112, 8, 10, 3, '#e8dcc4'); }
     },
   };
 
-  // 4-3 Bedesten: kubbeli taş salon; kubbelerden süzülen ışık, bakır kaplar, eski saatler, gramofon
+  // 2-3 Bedesten: kubbeli taş salon öğle sıcağında; kubbelerden süzülen ışık, yarı boş, kepenklerin çoğu inik, bir bekçi
   DR.bedesten = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#140e08'], [0.6, '#2c2016'], [1, '#3a2c1e']]); } },
     far(g) {
@@ -402,19 +418,26 @@
     },
     near(g) {
       pen('rgba(20,10,4,0.65)', 0.5);
-      for (const x of [16, 272]) {
-        // raf: bakır kaplar ve eski saat
-        B(g, x, 120, 120, 94, 1, '#4a2e18'); rect(g, x + 4, 150, 112, 3, '#6a4426'); rect(g, x + 4, 182, 112, 3, '#6a4426');
-        for (let k = 0; k < 5; k++) { const cx = x + 16 + k * 22; E(g, cx, 143, 8, 7, '#c8743a'); E(g, cx - 2, 140, 3, 4, 'rgba(255,220,170,0.4)'); lin(g, cx + 7, 138, cx + 11, 134, '#a85a28', 1); }
-        for (let k = 0; k < 4; k++) { const cx = x + 20 + k * 28; B(g, cx - 8, 162, 16, 20, 2, '#3a2a1a'); C(g, cx, 170, 6, '#f4ead0'); lin(g, cx, 170, cx, 166, '#2a2a2a', 0.6); lin(g, cx, 170, cx + 3, 171, '#2a2a2a', 0.6); }
-        for (let k = 0; k < 5; k++) { const cx = x + 14 + k * 23; E(g, cx, 206, 9, 6, '#b8a080'); E(g, cx, 202, 7, 2, '#d8c8a8'); }
-        for (let k = 0; k < 4; k++) { lin(g, x + 20 + k * 26, 110, x + 20 + k * 26, 100, '#2a1a10', 0.6); C(g, x + 20 + k * 26, 116, 6, '#c8743a'); rect(g, x + 19 + k * 26, 100, 2, 10, '#5a3a20'); }
+      // duvar boyu dükkânlar: çoğunun kepengi inik; açık olan ikisinde seyrek vitrin
+      const shut = (x, w, h) => {
+        B(g, x - 2, 120, w + 4, 94, 1, '#5a4a38');
+        rect(g, x, 130, w, 84, '#8a8478');
+        for (let y = 132; y < 130 + h; y += 3) rect(g, x, y, w, 0.8, 'rgba(40,36,30,0.35)');
+        if (h < 84) { rect(g, x, 130 + h, w, 84 - h, '#2a2018'); rect(g, x, 130 + h - 2, w, 2, 'rgba(20,16,10,0.6)'); }
+      };
+      for (const x of [8, 92, 260, 344]) shut(x, 76, 84);
+      for (const x of [176, 428]) {
+        shut(x, 76, 22);
+        B(g, x + 8, 170, 60, 44, 1, '#3a2a1e'); B(g, x + 10, 156, 56, 16, 1, 'rgba(220,235,240,0.35)');
+        for (let k = 0; k < 4; k++) { E(g, x + 18 + k * 13, 166, 3.6, 2.4, '#c8ccd4'); }
+        glow(g, x + 38, 150, 26, 'rgb(255,226,170)', 0.3);
       }
-      // gramofon ve büyük bakır kazan
-      B(g, 168, 190, 30, 24, 2, '#5a341a'); C(g, 183, 190, 10, '#2a2020');
-      g.fillStyle = '#d8a040'; g.beginPath(); g.moveTo(186, 186); g.quadraticCurveTo(196, 160, 222, 150); g.lineTo(226, 170); g.quadraticCurveTo(204, 172, 190, 190); g.closePath(); g.fill();
-      E(g, 236, 196, 22, 18, '#b8642a'); E(g, 236, 180, 22, 5, '#8a4a20'); E(g, 228, 192, 6, 10, 'rgba(255,210,150,0.3)');
-      for (const lx of [150, 410]) { lin(g, lx, 0, lx, 64, '#2a1a10', 0.6); glow(g, lx, 72, 26, 'rgb(255,190,110)', 0.45); B(g, lx - 6, 64, 12, 14, 3, '#a86a2a'); }
+      // bekçi: kasketli, taburede
+      const gx = 300;
+      B(g, gx - 7, 202, 14, 3, 1, '#6a4a30'); lin(g, gx - 5, 205, gx - 6, 214, '#4a3020', 1); lin(g, gx + 5, 205, gx + 6, 214, '#4a3020', 1);
+      person(g, gx, 206, 30, '#3a4a5a', { skin: '#b88a6a' });
+      B(g, gx - 4.6, 176.6, 9.2, 2.6, 1, '#2a3440'); rect(g, gx - 1, 178.6, 6, 1, '#2a3440');
+      for (const lx of [150, 410]) { lin(g, lx, 0, lx, 64, '#2a1a10', 0.6); glow(g, lx, 72, 26, 'rgb(255,190,110)', 0.35); B(g, lx - 6, 64, 12, 14, 3, '#a86a2a'); }
     },
   };
 

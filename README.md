@@ -272,7 +272,7 @@ sadece kesin kurallar uygulanır (kedi, minare, bayrak).
 
 ### Eyüp: oyunun sessiz dünyası
 
-- [ ] 8-1 ve 8-2 normal bölümler ama az düşmanlı (sadece bug); müzik sadeleşir.
+- [x] 8-1 ve 8-2 normal bölümler ama az düşmanlı (sadece bug); müzik sadeleşir.
 - [x] 8-3 Tepe kısa bir bölüm (~100 karo): düşman yok, patron ve kale yolu yok, süre sayacı durur (HUD'da süre
   görünmez), müzik yok; sadece rüzgâr ve uzak şehir sesi. Simit ve blok çok az.
 - [x] 8-3'ün sonunda DEPLOY anteni yok: tepedeki banka varınca bölüm biter ve doğrudan Eyüp sahnesi başlar.
@@ -393,13 +393,13 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
 
 ### Müzik ve ses
 
-- [ ] `audio.js`'te `WORLD_SONG` yeni sırayla:
+- [x] `audio.js`'te `WORLD_SONG` yeni sırayla:
   `['maslak', 'carsi', 'sisli', 'uskudar', 'atasehir', 'sarnic', 'kopru', 'eyup', 'sile', 'sanayi', 'camlica', 'umraniye']`.
   `WORLD_AMB` ve bölüm bazlı ses listesi de yeni dünyalara ve bölümlere göre düzenlenir.
-- [ ] Kapalıçarşı (`carsi`, akorları şu an D–E♭, yani Hicaz) ve Yerebatan (`sarnic`) şarkılarındaki Hicaz değişir.
+- [x] Kapalıçarşı (`carsi`, akorları şu an D–E♭, yani Hicaz) ve Yerebatan (`sarnic`) şarkılarındaki Hicaz değişir.
   Makamların kendisi sorun değil; "burası Doğu" işareti olarak kullanılmaları klişe. Bu dünyalar diğerleriyle
   aynı müzik dilinde kalır, farkı mekânın gerçek sesleri verir.
-- [ ] Şehir sesleri:
+- [x] Şehir sesleri:
   - Kapalıçarşı: kepenkler, esnaf konuşmaları, pazarlık, çaycının bardakları, uzaktan tramvay.
   - Şişli: metrobüs, kalabalık, trafik.
   - Üsküdar: vapur düdüğü, martılar, sahil kalabalığı, çay bardakları.
@@ -421,7 +421,7 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
 - [ ] `src/rides.js`: Marmaray (metro çizimi, yeni hat adı ve rengi), gece dolmuşu, T1 Sirkeci → Sultanahmet;
   tramvay arka planındaki camiler çıkar; füniküler kullanılmaz.
 - [ ] `src/story.js`: Hikâye sahneleri tablosundaki değişiklikler.
-- [ ] `src/audio.js`: Müzik ve ses bölümündeki maddeler.
+- [x] `src/audio.js`: Müzik ve ses bölümündeki maddeler.
 - [ ] `src/main.js`: `STORY_AFTER`; `ROUTE` (İstanbul haritasında yeni dünyaların yerleri; Şile haritanın doğu
   kenarının dışında kalıyor: harita doğuya genişletilir ya da Şile kenarda yön okuyla gösterilir);
   Eyüp 8-3'te HUD'da süre gizlenir.

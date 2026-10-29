@@ -41,7 +41,7 @@ WORLDS = [
      'saat': ['sabah', 'sabah', 'sabah'], 'yer': ['maslak', 'toplanti', 'sunucu'],
      'sections': ['Büyükdere Caddesi', 'Toplantı Katı', 'Sunucu Katı']},
     {'name': 'Kapalıçarşı', 'sub': 'Kubbeler', 'enemies': 'esv', 'boss': 'truva', 'boss_name': 'Truva Atı', 'seed': 3, 'dpos': 1,
-     'saat': ['ogle', 'ogle', 'ogle'], 'yer': ['carsi', 'halicilar', 'bedesten'],
+     'saat': ['ogle', 'ogle', 'ogle'], 'yer': ['carsi', 'han', 'bedesten'],
      'sections': ['Kuyumcular', 'Han', 'Bedesten']},
     {'name': 'Şişli', 'sub': 'Mecidiyeköy', 'enemies': 'es', 'boss': 'spam', 'boss_name': 'Spam Kraliçesi', 'seed': 12, 'dpos': 2,
      'saat': ['ogledenSonra', 'ogledenSonra', 'aksamustu'], 'yer': ['mecidiyekoy', 'plazaLobi', 'mesaiSonu'],

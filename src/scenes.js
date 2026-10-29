@@ -556,17 +556,19 @@
         seagull(g, 250, 70, 1.1, '#ffffff'); seagull(g, 276, 84, 0.8, '#ffffff'); seagull(g, 60, 110, 0.9, '#ffffff'); seagull(g, 470, 60, 1, '#ffffff');
       },
     },
-    // 4 Kapalıçarşı: çizgili kemerler, renkli mozaik lambalar, halılar, baharat, nazar boncuğu
+    // 4 Kapalıçarşı (2-1 Kuyumcular): çizgili kemerler; altında kuyumcu vitrinleri, floresan ışık,
+    // altın fiyatı panoları, güvenlik kameraları ve öğle kalabalığı
     {
       far(g) {
         pen(null);
         for (let i = 0; i < 8; i++) bazaarArch(g, i * 64, 0.62);
-        const gl = g.createRadialGradient(256, 150, 10, 256, 150, 220); gl.addColorStop(0, 'rgba(255,200,120,0.25)'); gl.addColorStop(1, 'rgba(255,200,120,0)');
+        const gl = g.createRadialGradient(256, 150, 10, 256, 150, 220); gl.addColorStop(0, 'rgba(255,236,200,0.18)'); gl.addColorStop(1, 'rgba(255,236,200,0)');
         g.fillStyle = gl; g.fillRect(0, 0, W, H);
       },
       near(g) {
         pen('rgba(40,20,10,0.6)', 0.5);
-        for (let i = 0; i < 4; i++) shop(g, i * 128, i);
+        for (let i = 0; i < 4; i++) jeweller(g, i * 128, i);
+        crowd(g, 214, 41, ['#3a4a6a', '#8a3a3a', '#2a2a30', '#5a6a4a', '#c8a070', '#4a3a5a']);
       },
     },
     // 5 Yerebatan: sıra sıra sütunlar, Medusa başı, turuncu ışık, karanlık su
@@ -741,68 +743,64 @@
     }
     rect(g, x + 2, cy, 5, H - cy, d('#d8c49a')); rect(g, x + 57, cy, 5, H - cy, d('#d8c49a'));
     g.fillStyle = d('#f2c66a'); g.globalAlpha = 0.55; g.beginPath(); g.arc(cx, cy, r - 7, Math.PI, 0); g.lineTo(cx + r - 7, H); g.lineTo(cx - r + 7, H); g.closePath(); g.fill(); g.globalAlpha = 1;
-    // uzak lamba
-    lin(g, cx, cy - 23, cx, cy - 4, d('#3a2416'), 0.5);
-    g.fillStyle = d(['#e2483a', '#3aa0e0', '#f4c531'][Math.floor(x / 64) % 3]); g.beginPath(); g.arc(cx, cy - 1, 3.4, 0, TAU); g.fill();
+    // uzak floresan
+    lin(g, cx - 8, cy - 23, cx - 8, cy - 6, d('#3a2416'), 0.4); lin(g, cx + 8, cy - 23, cx + 8, cy - 6, d('#3a2416'), 0.4);
+    g.fillStyle = d('#f4f8fa'); g.fillRect(cx - 11, cy - 6, 22, 2);
   }
-  function shop(g, x, i) {
-    // ahşap dükkân çerçevesi
-    B(g, x + 4, 66, 120, 150, 2, '#6a3a1e');
-    B(g, x + 10, 86, 108, 128, 1, '#3a2012');
-    const signs = ['BAHARAT', 'KUYUMCU', 'LAMBA', 'NAZAR'];
-    B(g, x + 22, 70, 84, 13, 3, '#f2d48a');
-    g.fillStyle = '#6a2a14'; g.font = '600 9px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(signs[i % 4], x + 64, 77);
-    const k = i % 4;
-    if (k === 0) {
-      // baharat tepecikleri
-      B(g, x + 12, 176, 104, 38, 1, '#8a5a32');
-      const cols = ['#d2302a', '#f4b81e', '#e07a24', '#7a9a3a', '#a8381e', '#e8c860'];
-      for (let j = 0; j < 6; j++) { const cx = x + 22 + j * 17; E(g, cx, 178, 8, 2.4, '#5a3418'); P(g, [cx - 7.4, 178, cx + 7.4, 178, cx, 162 - (j % 2) * 4], cols[j]); }
-      for (let j = 0; j < 5; j++) { lin(g, x + 24 + j * 20, 88, x + 24 + j * 20, 104, '#c8a060', 0.6); E(g, x + 24 + j * 20, 110, 4, 6, ['#a83a1e', '#5a7a2a', '#c8601e'][j % 3]); }
-    } else if (k === 1) {
-      // kuyumcu vitrini: kadife zeminde altın bilezikler, kolyeler, ışıltı
-      B(g, x + 14, 92, 100, 80, 2, '#f4f0e0'); B(g, x + 18, 96, 92, 72, 1, '#5a1a2a');
-      for (let r2 = 0; r2 < 3; r2++) for (let j = 0; j < 5; j++) { g.strokeStyle = '#f4c531'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(x + 30 + j * 17, 108 + r2 * 20, 5, 3.4, 0, 0, TAU); g.stroke(); }
-      for (let j = 0; j < 4; j++) { g.strokeStyle = '#ffe07a'; g.lineWidth = 0.8; g.beginPath(); g.arc(x + 34 + j * 20, 152, 6, 0.2, Math.PI - 0.2); g.stroke(); C(g, x + 34 + j * 20, 158, 1.6, '#e2483a'); }
-      g.fillStyle = 'rgba(255,255,255,0.35)'; P(g, [x + 22, 168, x + 32, 168, x + 56, 96, x + 46, 96], 'rgba(255,255,255,0.25)');
-      for (let j = 0; j < 6; j++) star(g, x + 26 + j * 15, 100 + (j % 3) * 22, 1.6, '#ffffff');
-      B(g, x + 14, 176, 100, 38, 1, '#7a4a28');
-    } else if (k === 2) {
-      for (let j = 0; j < 7; j++) {
-        const lx = x + 20 + j * 14.6, ly = 108 + (j % 3) * 18;
-        lin(g, lx, 86, lx, ly - 7, '#c8a060', 0.5);
-        const col = ['#e2483a', '#3aa0e0', '#f4c531', '#7a3ab0', '#2ab07a', '#ff7a3a', '#3a5ad8'][j];
-        const gl = g.createRadialGradient(lx, ly, 1, lx, ly, 16); gl.addColorStop(0, col + 'aa'); gl.addColorStop(1, col + '00');
-        g.fillStyle = gl; g.fillRect(lx - 16, ly - 16, 32, 32);
-        mosaicLamp(g, lx, ly, col);
-      }
-      B(g, x + 14, 188, 100, 26, 1, '#7a4a28');
-    } else {
-      for (let j = 0; j < 5; j++) {
-        const sx = x + 20 + j * 22;
-        lin(g, sx, 88, sx, 168, '#c8a060', 0.5);
-        for (let k2 = 0; k2 < 6; k2++) nazar(g, sx, 96 + k2 * 13, 4.4 - k2 * 0.25);
-      }
-      B(g, x + 14, 180, 100, 34, 1, '#7a4a28');
-      for (let j = 0; j < 4; j++) { const cx = x + 30 + j * 22; E(g, cx, 182, 7, 2, '#c8a060'); nazar(g, cx, 176, 5); }
+  // kuyumcu: pirinç kenarlı koyu çerçeve, yazısız tabela, floresan, beyaz ışıklı cam vitrin;
+  // kadife basamaklarda bilezikler, kolyeler, çeyrek altınlar; iki dükkânda bir altın fiyatı panosu, köşede kamera
+  function jeweller(g, x, i) {
+    B(g, x + 4, 66, 120, 150, 2, '#4a2e1c'); rect(g, x + 4, 66, 120, 2, '#d8b050');
+    B(g, x + 18, 70, 92, 12, 2, '#1e1a1e'); rect(g, x + 22, 75.4, 84, 0.8, '#d8b050');
+    // floresan
+    const gl = g.createLinearGradient(0, 86, 0, 130); gl.addColorStop(0, 'rgba(235,248,255,0.55)'); gl.addColorStop(1, 'rgba(235,248,255,0)');
+    g.fillStyle = gl; g.fillRect(x + 12, 86, 104, 44);
+    B(g, x + 20, 85, 88, 2.4, 1, '#f6fcff');
+    // vitrin
+    const vel = ['#5a1a2a', '#1e2a4a', '#2a1a2e', '#3a1a1a'][i % 4];
+    B(g, x + 12, 92, 104, 84, 1, '#e8ecf0'); B(g, x + 15, 95, 98, 78, 0.5, vel);
+    for (let r2 = 0; r2 < 3; r2++) rect(g, x + 15, 118 + r2 * 22, 98, 2, mix(vel, '#000000', 0.35));
+    const price = i % 2 === 1;
+    for (let r2 = 0; r2 < 3; r2++) for (let j = 0; j < 5; j++) {
+      const cx = x + 26 + j * 19, cy = 108 + r2 * 22;
+      if (price && r2 === 0 && j < 3) continue;
+      if ((r2 + j) % 3 === 0) { for (let k = 0; k < 4; k++) { g.strokeStyle = k % 2 ? '#ffe07a' : '#e8b830'; g.lineWidth = 1.1; g.beginPath(); g.ellipse(cx, cy + k * 1.6, 5.4, 2.2, 0, 0, TAU); g.stroke(); } }
+      else if ((r2 + j) % 3 === 1) { g.strokeStyle = '#f4c531'; g.lineWidth = 0.7; g.beginPath(); g.arc(cx, cy - 2, 6, 0.25, Math.PI - 0.25); g.stroke(); C(g, cx, cy + 4, 1.4, '#ffe07a'); }
+      else for (let k = 0; k < 3; k++) C(g, cx - 4 + k * 4, cy + 2, 1.7, '#f4c531');
+    }
+    if (price) {
+      // altın fiyatı panosu: siyah LED ekran, satır satır yanan rakamlar
+      B(g, x + 17, 97, 56, 18, 1, '#0a0a0e');
+      for (let r2 = 0; r2 < 2; r2++) { rect(g, x + 20, 100 + r2 * 7, 14, 4, '#f4c531'); for (let d = 0; d < 4; d++) rect(g, x + 40 + d * 7.4, 100 + r2 * 7, 5, 4, d < 2 ? '#ff4a3a' : '#5aff7a'); }
+    }
+    g.fillStyle = 'rgba(255,255,255,0.3)'; P(g, [x + 22, 172, x + 30, 172, x + 54, 96, x + 46, 96], 'rgba(255,255,255,0.22)');
+    for (let j = 0; j < 5; j++) star(g, x + 30 + j * 18, 104 + (j % 3) * 22, 1.3, '#ffffff');
+    // tezgâh
+    B(g, x + 12, 178, 104, 36, 1, '#3a2418'); rect(g, x + 12, 178, 104, 2, '#d8b050');
+    B(g, x + 50, 184, 28, 22, 1, '#e8ecf0'); B(g, x + 52, 186, 24, 18, 0.5, vel); for (let k = 0; k < 3; k++) C(g, x + 58 + k * 6, 196, 2, '#f4c531');
+    // güvenlik kamerası
+    const camX = x + (i % 2 ? 112 : 16);
+    rect(g, camX - 0.6, 88, 1.2, 4, '#2a2a30'); B(g, camX - 4, 91, 8, 4, 1.2, '#e8e8ec'); C(g, camX + (i % 2 ? -3.4 : 3.4), 93, 1.2, '#1a1a20'); C(g, camX, 90.6, 0.6, '#ff3a3a');
+  }
+  // sıradan kalabalık: yürüyen, vitrine bakan insanlar (yüzsüz silüetler)
+  function person(g, x, by, h, body, opt) {
+    opt = opt || {};
+    const leg = mix(body, '#1a1a24', 0.5), st = opt.step || 0;
+    lin(g, x - h * 0.06, by - h * 0.32, x - h * 0.06 - st * h * 0.08, by, leg, h * 0.09);
+    lin(g, x + h * 0.06, by - h * 0.32, x + h * 0.06 + st * h * 0.08, by, leg, h * 0.09);
+    B(g, x - h * 0.16, by - h * 0.78, h * 0.32, h * 0.5, h * 0.1, body);
+    C(g, x, by - h * 0.88, h * 0.115, opt.skin || '#c89a7a');
+    if (opt.hair) { g.fillStyle = opt.hair; g.beginPath(); g.arc(x, by - h * 0.9, h * 0.12, Math.PI, 0); g.fill(); }
+    if (opt.bag) B(g, x + h * 0.15, by - h * 0.5, h * 0.18, h * 0.2, h * 0.03, opt.bag);
+    if (opt.load) B(g, x - h * 0.32, by - h * 1.12, h * 0.5, h * 0.62, h * 0.04, opt.load);   // sırtında yük (hamal)
+  }
+  function crowd(g, by, seed, cols) {
+    const r = rng(seed), skins = ['#c89a7a', '#a87a5a', '#e0b896', '#8a6a4a'], hair = ['#2a1a14', '#5a3a24', '#1a1a1a', '#8a8a8a', null];
+    for (let x = 10 + r() * 30; x < W - 10; x += 34 + r() * 50) {
+      person(g, x, by, 24 + r() * 8, cols[Math.floor(r() * cols.length)], { step: r() < 0.5 ? 0 : 1, skin: skins[Math.floor(r() * 4)], hair: hair[Math.floor(r() * 5)], bag: r() < 0.25 ? '#e8e0d0' : null });
     }
   }
-  function carpet(g, x, y, w, h, c) {
-    B(g, x, y, w, h, 0.6, c[0]);
-    g.strokeStyle = c[1]; g.lineWidth = 1.4; g.strokeRect(x + 2.6, y + 2.6, w - 5.2, h - 5.2);
-    for (let k = 0; k < 3; k++) { const cy = y + h * (0.25 + k * 0.25); g.fillStyle = c[2]; g.beginPath(); g.moveTo(x + w / 2, cy - 7); g.lineTo(x + w / 2 + 7, cy); g.lineTo(x + w / 2, cy + 7); g.lineTo(x + w / 2 - 7, cy); g.closePath(); g.fill(); g.fillStyle = c[1]; g.beginPath(); g.arc(x + w / 2, cy, 2, 0, TAU); g.fill(); }
-    for (let k = 0; k < w; k += 2.4) lin(g, x + k + 1, y + h, x + k + 1, y + h + 3, c[1], 0.5);
-  }
-  function mosaicLamp(g, x, y, col) {
-    E(g, x, y, 6, 7, col);
-    g.save(); g.beginPath(); g.ellipse(x, y, 6, 7, 0, 0, TAU); g.clip();
-    for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) { g.fillStyle = (r + k) % 2 ? 'rgba(255,255,255,0.45)' : 'rgba(255,230,120,0.5)'; g.fillRect(x - 6 + k * 3.2, y - 7 + r * 3.6, 1.6, 1.6); }
-    g.restore();
-    B(g, x - 2.4, y - 9.6, 4.8, 2.6, 1, '#c8a060'); P(g, [x - 2, y + 6.6, x + 2, y + 6.6, x, y + 10], '#c8a060');
-  }
-  function nazar(g, x, y, r) {
-    C(g, x, y, r, '#1e5ad8'); C(g, x, y, r * 0.66, '#ffffff'); C(g, x, y, r * 0.42, '#7ac8ff'); C(g, x, y, r * 0.2, '#10122a');
-  }
+
   function column(g, x, by, s, col, light, medusa) {
     const w = 10 * s, h = 150 * s;
     rect(g, x - w / 2, by - h, w, h, col);
@@ -1052,7 +1050,7 @@
     W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, relit, tinted, at, skyOf, LIGHT, emit, h01, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
-      cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,
+      cloud, glassTower, tree, pine, tulip, column, medusaHead, roofTiles, drawSky, person, crowd, jeweller,
       homeTower, lonelyWindow, windowsRow, hex },
   };
 })(window);

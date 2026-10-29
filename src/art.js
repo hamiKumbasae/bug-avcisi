@@ -638,7 +638,7 @@
   // mekân çizimi ('yer') → karo teması ve su rengi (yoksa false); bölüm 'zemin' / 'su' ile değiştirebilir
   const TILE_OF = {
     maslak: 0, toplanti: 10, sunucu: 11, kadikoy: 1, balikPazari: 1, moda: 1, iskele: 12, vapur: 2, kaptan: 2,
-    carsi: 3, halicilar: 3, bedesten: 13, sarnic: 4, medusa: 4, karanlikSu: 4, kamondo: 5, galata: 5, catiArasi: 15,
+    carsi: 3, han: 3, bedesten: 13, sarnic: 4, medusa: 4, karanlikSu: 4, kamondo: 5, galata: 5, catiArasi: 15,
     karakoy: 1, halicKiyisi: 5, eyupBalat: 5, kopru: 6, halatlar: 14, kopruTepe: 14, catilar: 7, antenler: 7, saatKulesi: 15,
     finans: 18, veri: 19, kontrol: 20, camlica: 8, asansor: 8, yayin: 8, umraniyeCarsi: 16, yeniPlazalar: 0, sanayi: 17,
     // v2.0 mekânları (places2.js)
