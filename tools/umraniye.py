@@ -3,7 +3,7 @@
   12-1 Çarşı:          şafak ışığı soldan ilerler: değdiği kepenkler kalkar, bankta uyuyan bug'lar uyanır, simitçiler
                        tezgâhını açar (tezgâhın tentesi sektirir); ışığın peşinden tenteden tenteye
   12-2 Yeni Plazalar:  inşaattaki vinç kancaları: kiriş kalkar, taşınır, iner; havada kirişten kirişe
-  12-3 Atölye:         eve giden yol: önceki dünyalardan tanıdık düzenekler art arda; Teknik Borç
+  12-3 Çatı:           eve giden yol: önceki dünyalardan tanıdık düzenekler art arda; kendi apartmanının çatısında Teknik Borç
 """
 from elle import Canvas
 
@@ -196,7 +196,7 @@ def bolum_12_3():
     c.put(150, FL - 1, 'e')
     c.put(171, FL - 1, 'Q')
 
-    # ---- Teknik Borç arenası: atölyede
+    # ---- Teknik Borç arenası: apartmanın çatısında
     a = 178
     c.put(a, FL - 1, 'A')
     c.row(8, range(a + 6, a + 9), '-')
@@ -205,7 +205,7 @@ def bolum_12_3():
     c.put(a + 15, FL - 1, 'G')
     c.rect(a + 18, 0, a + 18, Hm - 1, '=')
     assert a + 18 == W - 1
-    return {'map': c.rows(), 'objs': c.objs, 'blok': 'ahsap'}
+    return {'map': c.rows(), 'objs': c.objs, 'blok': 'beton'}
 
 
 def build(sec, room=None):

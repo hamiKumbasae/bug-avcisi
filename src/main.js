@@ -1448,7 +1448,7 @@
     ctx.setLineDash([2.2, 2.4]); ctx.strokeStyle = 'rgba(90,60,40,0.7)'; ctx.lineWidth = 1.2;
     legs(P.length - 1); ctx.stroke(); ctx.setLineDash([]);
     if (cur > 0) { ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 3.2; legs(cur); ctx.stroke(); ctx.strokeStyle = '#f4c531'; ctx.lineWidth = 1.8; ctx.stroke(); }
-    // yol üstünde Çamlıca Kulesi, hedef: Ümraniye'deki ev ve atölye; Şile kenarda, doğuyu gösteren okla
+    // yol üstünde Çamlıca Kulesi, hedef: Ümraniye'deki ev; Şile kenarda, doğuyu gösteren okla
     const [gx, gy] = P[W_CAMLICA], [ux, uy] = P[W_HOME], [sx, sy] = P[W_SILE];
     ART.poly(ctx, [sx + 5, sy - 2.2, sx + 9, sy - 2.2, sx + 9, sy - 4.4, sx + 13, sy, sx + 9, sy + 4.4, sx + 9, sy + 2.2, sx + 5, sy + 2.2], '#5a3a24', null);
     ART.box(ctx, ux - 4, uy - 9, 8, 6, 0.6, '#e8d8b8', '#1a1430', 0.6); ART.poly(ctx, [ux - 5, uy - 9, ux + 5, uy - 9, ux, uy - 13], '#c8503a', '#1a1430', 0.6);
@@ -1509,7 +1509,7 @@
     else app.menuItems = [];
   }
   function drawEnd() {
-    // hikâyenin son karesi (atölye) sürer; üstte yalnız skor ve toplanan parçalar
+    // hikâyenin son karesi (kapının önünde, iki taburenin arasında) sürer; üstte yalnız skor ve toplanan parçalar
     const dur = ST.SCENES.son.dur;
     ST.draw(ctx, 'son', dur - 3 + (app.endT % 2), { pieces: app.pieces });
     panel(VW / 2 - 78, 6, 156, 34, 10, 'rgba(22,18,48,0.78)');

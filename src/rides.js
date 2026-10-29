@@ -442,20 +442,19 @@
         if (type === 'taxi') {
           // taş istinat duvarı ve çamlar
           for (let y = 178, r = 0; y < 196; y += 6, r++) for (let x = (r % 2) * 7 - 7; x < 128; x += 14) box(g, x + 0.4, y + 0.4, 13.2, 5.2, 1.4, R() < 0.5 ? '#a89a84' : '#988a74', 'rgba(60,50,40,0.5)', 0.4);
-          for (const px of [34, 76]) {
-            rect(g, px - 1.4, 140, 2.8, 40, '#6a4a32');
-            for (let k = 0; k < 3; k++) poly(g, [px - 15 + k * 3, 160 - k * 13, px + 15 - k * 3, 160 - k * 13, px, 134 - k * 13], k % 2 ? '#3f7a4a' : '#356a40', K, 0.6);
-          }
+          // Çamlıca yolunun fıstık çamları
+          SC.pen(K, 0.6);
+          for (const px of [34, 76]) SC.kit.fistikCami(g, px, 180, 1.45, { crown: '#356a40', crownL: '#43804c', bark: '#6a4a32' });
+          SC.pen(null);
           lin(g, 96, 196, 96, 108, K, 2.4); lin(g, 96, 196, 96, 108, '#5a6070', 1.2);
           g.strokeStyle = K; g.lineWidth = 1.8; g.beginPath(); g.moveTo(96, 110); g.quadraticCurveTo(97, 102, 106, 103); g.stroke();
           g.strokeStyle = '#5a6070'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(96, 110); g.quadraticCurveTo(97, 102, 106, 103); g.stroke();
           box(g, 103, 102, 8, 3, 1.2, '#fff4c8', K, 0.5);
         } else {
-          for (const px of [30]) {
-            rect(g, px - 2, 150, 4, 46, '#8a6a4e'); rect(g, px - 2, 150, 1.4, 46, 'rgba(255,255,255,0.18)');
-            for (const [dx, dy, r] of [[-12, 148, 13], [11, 146, 14], [0, 134, 16], [-6, 140, 12]]) circle(g, px + dx, dy, r, '#5aa04a', K, 0.6);
-            for (const [dx, dy, r] of [[-8, 134, 6], [6, 128, 5]]) circle(g, px + dx, dy, r, 'rgba(255,255,255,0.14)', null);
-          }
+          // kaldırımın çınarı
+          SC.pen(K, 0.6);
+          SC.kit.cinar(g, 30, 196, 1.3, { leaf: ['#4a8a3e', '#5aa04a', '#74b85a'] });
+          SC.pen(null);
           lin(g, 96, 196, 96, 108, K, 2.4); lin(g, 96, 196, 96, 108, '#5a6070', 1.2);
           g.strokeStyle = K; g.lineWidth = 1.8; g.beginPath(); g.moveTo(96, 110); g.quadraticCurveTo(97, 102, 106, 103); g.stroke();
           g.strokeStyle = '#5a6070'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(96, 110); g.quadraticCurveTo(97, 102, 106, 103); g.stroke();
@@ -650,7 +649,7 @@
       kit.house(g, x, by, w, h, col, '#8a4a3a', R, { door: true, win: '#4a5a6e' }); x += w + 2;
     }
     han(440, 72, 62, '#e8d2a6');
-    kit.tree(g, 92, by, 2.4); kit.tree(g, 248, by, 2.2); kit.tree(g, 506, by, 2.4);
+    kit.cinar(g, 92, by, 1.15); kit.cinar(g, 248, by, 1.05); kit.cinar(g, 506, by, 1.15); kit.cinar(g, 506 - 512, by, 1.15);
     rect(g, 0, by, 512, 40, '#d4ccba');
   }
 

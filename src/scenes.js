@@ -367,6 +367,9 @@
     camlica: { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
   };
   // mo: o sahnenin ayı (BA_MOON.forScene) ya da null; d.moon: [x, y, r] yalnız yatay yer ve boyut ipucu
+  // Güneş ve ay ipuçlarının x'i bazı çizimlerde katman genişliğinde (512) yazılmış; gökyüzü ekran genişliğinde (vw)
+  // çizildiği için vw'yi aşan x ölçeklenir, yoksa güneş ya da ay ekranın dışına düşer.
+  const skyX = (x, vw) => (x > vw ? x * vw / W : x);
   function drawSky(g, d, vw, vh, seed, mo) {
     if (d.draw) d.draw(g, vw, vh);
     else {
@@ -376,7 +379,7 @@
       if (d.stars) { const r = rng(seed * 31 + 7); for (let i = 0; i < d.stars; i++) { const x = r() * vw, y = r() * vh * 0.6, a = 0.3 + r() * 0.7; g.fillStyle = `rgba(255,255,240,${a})`; g.beginPath(); g.arc(x, y, 0.35 + r() * 0.5, 0, TAU); g.fill(); } }
       if (d.clouds) for (const [x, y, s, c] of d.clouds) cloud(g, x * vw / W, y, s, c);
       if (d.sun) {
-        const [x, y, r, c] = d.sun;
+        const [sx, y, r, c] = d.sun, x = skyX(sx, vw);
         const gl = g.createRadialGradient(x, y, r * 0.5, x, y, r * 4); gl.addColorStop(0, 'rgba(255,240,200,0.65)'); gl.addColorStop(1, 'rgba(255,240,200,0)');
         g.fillStyle = gl; g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
         g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
@@ -385,8 +388,9 @@
     if (d.after) d.after(g, vw, vh);
     if (mo && !d.noMoon) {
       const hint = d.moon, r = hint ? hint[2] : 8;
-      const x = hint ? hint[0] : d.sun ? (d.sun[0] < vw / 2 ? vw * 0.76 : vw * 0.24) : vw * 0.7;
-      const y = root.BA_MOON.skyY(mo.altitudeDeg, vh * 0.6, 14 + r);
+      const x = hint ? skyX(hint[0], vw) : d.sun ? (skyX(d.sun[0], vw) < vw / 2 ? vw * 0.76 : vw * 0.24) : vw * 0.7;
+      // tepesi üstteki göstergelerin (16 piksel) altında kalsın
+      const y = root.BA_MOON.skyY(mo.altitudeDeg, vh * 0.6, 22 + r);
       drawMoon(g, x, y, r, mo, true);
     }
   }
@@ -459,7 +463,8 @@
         for (const [x, w, h, k] of towers) glassTower(g, x, 214, w, h, k);
         lonelyWindow(g, 118, 96, 10, 7, '#2a5a88', '#f6e6b8');
         const r = rng(11);
-        for (let x = 4; x < W - 8; x += 22 + r() * 18) tree(g, x, 214, 0.8 + r() * 0.4);
+        // caddede genç çınarlar ve aralarında erguvanlar
+        for (let x = 4, k = 0; x < W - 8; x += 22 + r() * 18, k++) { const s = 0.8 + r() * 0.4; if (k % 3 === 1) erguvan(g, x, 214, 0.6 * s); else cinar(g, x, 214, 0.44 * s); }
         for (let x = 0; x < W; x += 5) { const c = ['#e2483a', '#f4c531', '#ff7aa8', '#ffffff'][Math.floor(x / 5) % 4]; tulip(g, x + 2, 214, c); }
       },
     },
@@ -538,7 +543,8 @@
         hills(g, base, '#141842');
         camlicaTower(g, 150, 214, 1.12, { wall: '#c8ccdc', wallD: '#9aa0b8', glass: '#3a6ab8', band: '#9ad8ff', lit: '#bff0ff' });
         const r = rng(96);
-        for (let x = 0; x < W; x += 12 + r() * 14) { if (Math.abs(x - 150) < 20) continue; pine(g, x, 216, 0.8 + r() * 0.5); }
+        // Çamlıca'nın fıstık çamları (gece silüeti)
+        for (let x = 0; x < W; x += 18 + r() * 16) { const s = 0.75 + r() * 0.45; if (Math.abs(x - 150) < 24) continue; fistikCami(g, x, 216, s, { crown: '#0a1030', crownL: '#121a44', bark: '#0a1030' }); }
       },
     },
   };
@@ -576,6 +582,90 @@
     C(g, x - 2 * s, by - 17 * s, 2.4 * s, 'rgba(255,255,255,0.18)');
   }
   function pine(g, x, by, s) { P(g, [x - 6 * s, by, x + 6 * s, by, x, by - 22 * s], '#0a1030'); }
+
+  // ---------- İstanbul ağaçları ----------
+  // Her ağaç kendi tohumuyla çizilir (önbellekteki katman her seferinde aynı çıksın). s = 1: çınar ~50, erguvan ~34,
+  // erik ~38, fıstık çamı ~36 piksel boyunda. o.* ile renkler değiştirilebilir (gün batımı, gece silüeti...).
+  function softly(fn) { const ol = OL, ow = OW; OL = null; fn(); OL = ol; OW = ow; }
+  // çınar: kalın, alacalı gövde (krem, zeytin, gri lekeler), üç ana dal, geniş ve topak topak tepe
+  function cinar(g, x, by, s, o) {
+    o = o || {};
+    const lf = o.leaf || ['#3d7534', '#548f3e', '#6ca84b'], bark = o.bark || '#a69a82';
+    const spots = o.spots || ['#e4dcc4', '#8e8e64', '#c2bea6', '#d6cfb4'];
+    const r = rng(o.seed || Math.round(x * 7 + by * 3 + 13));
+    const ty = by - 22 * s, lean = (r() - 0.5) * 3 * s;
+    lin(g, x + lean, ty + 4 * s, x - 11 * s, by - 34 * s, bark, 2.4 * s);
+    lin(g, x + lean, ty + 2 * s, x + 12 * s, by - 35 * s, bark, 2.2 * s);
+    lin(g, x + lean, ty, x + 1 * s, by - 41 * s, bark, 2 * s);
+    P(g, [x - 4.6 * s, by, x - 3 * s, by - 2 * s, x + 3.2 * s, by - 2 * s, x + 4.6 * s, by, x + 2.6 * s + lean, ty, x - 2.2 * s + lean, ty], bark);
+    softly(() => {
+      for (let k = 0; k < 8; k++) {
+        const f = 0.08 + r() * 0.86, yy = by - f * 22 * s, xx = x + lean * f + (r() - 0.5) * (4.6 - f * 2) * s;
+        E(g, xx, yy, (0.7 + r() * 1.1) * s, (1.1 + r() * 1.5) * s, spots[k % spots.length], (r() - 0.5) * 0.6);
+      }
+    });
+    const cy = by - 38 * s;
+    for (const [dx, dy, rr] of [[-17, 7, 9], [17, 8, 9], [-9, -4, 11], [9, -3, 11], [0, -12, 11]]) C(g, x + dx * s, cy + dy * s, rr * s, lf[0]);
+    for (const [dx, dy, rr] of [[-12, 4, 9], [12, 5, 9], [-3, -1, 11], [6, -14, 8], [-7, -14, 8]]) C(g, x + dx * s, cy + dy * s, rr * s, lf[1]);
+    softly(() => { for (const [dx, dy, rr] of [[-8, -7, 5.5], [4, -10, 5], [-15, 2, 4], [13, 0, 4]]) C(g, x + dx * s, cy + dy * s, rr * s, lf[2]); });
+    if (o.glow) softly(() => { for (const [dx, dy, rr] of [[-9, -9, 4], [9, -6, 3.4]]) C(g, x + dx * s, cy + dy * s, rr * s, o.glow); });
+  }
+  // erguvan: kısa, dipten açılan birkaç ince gövde; yuvarlak, yoğun pembe-mor çiçek bulutu. Çiçek dallarda ve gövdede de açar.
+  function erguvan(g, x, by, s, o) {
+    o = o || {};
+    const fl = o.flower || ['#a62f6c', '#c4478a', '#dc6ea6', '#f2a2c8'], bark = o.bark || '#4e3e40';
+    const r = rng(o.seed || Math.round(x * 11 + by * 5 + 5));
+    lin(g, x, by, x - 5 * s, by - 15 * s, bark, 1.8 * s);
+    lin(g, x + 0.5 * s, by, x + 4 * s, by - 17 * s, bark, 1.7 * s);
+    lin(g, x + 1 * s, by, x + 9 * s, by - 12 * s, bark, 1.3 * s);
+    const cy = by - 24 * s;
+    for (const [dx, dy, rr] of [[-11, 4, 8], [11, 5, 8], [0, -5, 10]]) C(g, x + dx * s, cy + dy * s, rr * s, fl[0]);
+    for (const [dx, dy, rr] of [[-6, -10, 7], [7, -11, 7], [-9, 1, 7], [9, 2, 7], [0, 2, 8]]) C(g, x + dx * s, cy + dy * s, rr * s, fl[1]);
+    softly(() => {
+      for (let i = 0; i < 28; i++) {
+        const a = r() * TAU, d = Math.sqrt(r()) * 13 * s;
+        C(g, x + Math.cos(a) * d * 1.15, cy - 2 * s + Math.sin(a) * d * 0.85, (0.7 + r() * 0.8) * s, r() < 0.6 ? fl[3] : fl[2]);
+      }
+      for (let i = 0; i < 7; i++) { const k = 0.2 + r() * 0.7; C(g, x + (r() < 0.5 ? -5 : 4) * s * k + (r() - 0.5) * 1.6 * s, by - 15 * s * k, 0.8 * s, fl[2]); }
+      for (let i = 0; i < 6; i++) { const a = r() * TAU, d = r() * 12 * s; C(g, x + Math.cos(a) * d, cy + Math.sin(a) * d * 0.8, 0.7 * s, o.leaf || '#7aa84e'); }
+    });
+  }
+  // erik: ince koyu gövde, yukarı açılan dallar; dal uçlarında beyaz, uçuk pembe çiçek kümeleri; dibinde dökülen yapraklar
+  function erik(g, x, by, s, o) {
+    o = o || {};
+    const fl = o.flower || ['#ffffff', '#fbeff3', '#f3d9e3'], bark = o.bark || '#3e302c';
+    const r = rng(o.seed || Math.round(x * 5 + by * 7 + 29));
+    const ty = by - 14 * s;
+    P(g, [x - 1.9 * s, by, x + 1.9 * s, by, x + 1.5 * s, ty, x - 0.7 * s, ty], bark);
+    const tips = [[-15, -25], [-8, -33], [1, -36], [9, -31], [15, -24], [-4, -22], [6, -21]];
+    for (const [dx, dy] of tips) {
+      const tx = x + dx * s, tyy = by + dy * s, mx = x + dx * 0.4 * s, my = ty + (tyy - ty) * 0.45;
+      g.strokeStyle = bark; g.lineWidth = 1.1 * s; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x + 0.4 * s, ty); g.quadraticCurveTo(mx + (r() - 0.5) * 3 * s, my, tx, tyy); g.stroke();
+    }
+    softly(() => {
+      for (const [dx, dy] of tips) {
+        const tx = x + dx * s, tyy = by + dy * s;
+        for (let i = 0; i < 9; i++) {
+          const k = r(), px = tx + (x - tx) * k * 0.45 + (r() - 0.5) * 6 * s, py = tyy + (ty - tyy) * k * 0.45 + (r() - 0.5) * 5 * s;
+          C(g, px, py, (1.3 + r() * 1.5) * s, fl[Math.floor(r() * fl.length)]);
+        }
+        C(g, tx, tyy, 0.6 * s, o.eye || '#e7a9bd');
+      }
+      for (let i = 0; i < 9; i++) C(g, x + (r() - 0.5) * 30 * s, by - 0.4, 0.5 * s, fl[1]);
+    });
+  }
+  // fıstık çamı: ince, hafif kıvrık uzun gövde; yayvan şemsiye tepe (İstanbul sırtlarının silüeti)
+  function fistikCami(g, x, by, s, o) {
+    o = o || {};
+    const cr = o.crown || '#2e5a34', crL = o.crownL || '#3f7040', bark = o.bark || '#6a4a34';
+    g.strokeStyle = bark; g.lineWidth = 1.8 * s; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x, by); g.quadraticCurveTo(x - 1.5 * s, by - 12 * s, x + 2 * s, by - 22 * s); g.stroke();
+    lin(g, x + 2 * s, by - 22 * s, x - 4 * s, by - 29 * s, bark, 1.2 * s); lin(g, x + 2 * s, by - 22 * s, x + 8 * s, by - 30 * s, bark, 1.2 * s);
+    E(g, x - 5 * s, by - 30 * s, 9 * s, 4 * s, cr); E(g, x + 10 * s, by - 31 * s, 9 * s, 4 * s, cr);
+    E(g, x + 2 * s, by - 32 * s, 16 * s, 5 * s, cr);
+    E(g, x + 2 * s, by - 34.5 * s, 10 * s, 3.4 * s, crL);
+  }
   function tulip(g, x, by, col) {
     lin(g, x, by, x, by - 5, '#3a8a3a', 0.6);
     g.fillStyle = col; g.beginPath(); g.moveTo(x - 1.4, by - 7.4); g.quadraticCurveTo(x - 1.4, by - 4.6, x, by - 4.6); g.quadraticCurveTo(x + 1.4, by - 4.6, x + 1.4, by - 7.4); g.lineTo(x + 0.7, by - 6.6); g.lineTo(x, by - 7.8); g.lineTo(x - 0.7, by - 6.6); g.closePath(); g.fill();
@@ -892,7 +982,7 @@
     W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, relit, tinted, at, skyOf, LIGHT, emit, h01, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, camlicaTower, house, hillsY, hills, hillHouses,
-      cloud, glassTower, tree, pine, tulip, column, medusaHead, drawSky, person, crowd, jeweller,
+      cloud, glassTower, tree, pine, cinar, erguvan, erik, fistikCami, tulip, column, medusaHead, drawSky, person, crowd, jeweller,
       homeTower, lonelyWindow, windowsRow, hex },
   };
 })(window);
