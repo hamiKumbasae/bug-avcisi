@@ -837,9 +837,228 @@
     },
   };
 
-  // ================= 10 ÇAMLICA =================
-  // 10-2 Asansör: kulenin cam asansör boşluğu; çelik kafes, aşağıda gece şehri ve ışıklı köprüler
+  // ================= 10 ATAŞEHİR =================
+  // 10-1 Finans Merkezi: gece; gökyüzüne uzanan cam kuleler, cephede yukarı aşağı giden cam asansörler,
+  // dev LED cephede yükselen grafik, ışık direkli meydan
+  PL[at(9, 0)] = {
+    sky: { draw(g, vw, vh) {
+      skyGrad(g, vw, vh, [[0, '#060a24'], [0.55, '#1a1e52'], [0.85, '#4a3a7a'], [1, '#8a5a8a']]);
+      stars(g, vw, vh, 26, 905, 0.45);
+    } },
+    far(g) {
+      const r = rng(901);
+      // uzak kuleler: ışıklı pencereler, tepede ikaz lambaları, bir iki vinç
+      for (let x = -8; x < W; x += 22 + r() * 24) {
+        const w = 16 + r() * 16, h = 60 + r() * 110, top = 200 - h;
+        const kind = r();
+        g.fillStyle = r() < 0.5 ? '#232a5a' : '#1c2350';
+        g.beginPath();
+        if (kind < 0.25) { g.moveTo(x, 214); g.lineTo(x, top + 10); g.lineTo(x + w / 2, top - 8); g.lineTo(x + w, top + 10); g.lineTo(x + w, 214); }
+        else if (kind < 0.45) { g.moveTo(x, 214); g.lineTo(x, top); g.lineTo(x + w, top + 14); g.lineTo(x + w, 214); }
+        else { g.rect(x, top, w, 214 - top); }
+        g.closePath(); g.fill();
+        for (let y = top + 6; y < 200; y += 4.4) for (let wx = x + 2; wx < x + w - 2; wx += 3.4) if (r() < 0.3) rect(g, wx, y, 1.8, 2, r() < 0.8 ? '#ffd98a' : '#9ad8ff');
+        C(g, x + w / 2, top - (kind < 0.25 ? 8 : 0) - 1, 1, '#ff4a4a');
+      }
+      for (const cx of [140, 420]) {
+        lin(g, cx, 214, cx, 60, '#3a3a5a', 1.6); lin(g, cx - 30, 62, cx + 50, 62, '#3a3a5a', 1.4);
+        for (let k = 0; k < 8; k++) lin(g, cx - 30 + k * 10, 62, cx - 25 + k * 10, 66, '#3a3a5a', 0.5);
+        lin(g, cx + 40, 62, cx + 40, 90, '#3a3a5a', 0.4); C(g, cx, 58, 1, '#ff4a4a');
+      }
+      glow(g, 256, 230, 260, 'rgb(255,170,120)', 0.18);
+    },
+    near(g) {
+      pen('rgba(6,8,24,0.65)', 0.5);
+      // kule tabanları: cam lobi ve dışarıdan görünen asansör boşluğu
+      const tower = (x, w, h, lifts) => {
+        const top = 214 - h;
+        const gr = g.createLinearGradient(x, 0, x + w, 0); gr.addColorStop(0, '#3a6aa8'); gr.addColorStop(0.5, '#24467a'); gr.addColorStop(1, '#16284a');
+        B(g, x, top, w, h, 0, gr);
+        g.fillStyle = 'rgba(255,255,255,0.12)'; for (let y = top + 4; y < 214; y += 7) g.fillRect(x, y, w, 0.6);
+        const r = rng(x * 7 + 3);
+        for (let y = top + 6; y < 176; y += 7) for (let wx = x + 3; wx < x + w - 4; wx += 6) if (r() < 0.45) rect(g, wx, y + 1, 4, 4, 'rgba(255,224,150,0.55)');
+        // lobi
+        B(g, x + 6, 178, w - 12, 36, 1, 'rgba(255,230,180,0.75)');
+        for (let lx = x + 12; lx < x + w - 8; lx += 10) rect(g, lx, 178, 1, 36, 'rgba(60,70,110,0.6)');
+        // cephe asansörleri: cam boşluk, ışıklı kabin
+        for (const [ax, ay] of lifts) {
+          B(g, ax, top + 8, 12, 214 - top - 8, 1, 'rgba(160,220,255,0.18)');
+          rect(g, ax + 5.4, top + 8, 1.2, 214 - top - 8, 'rgba(120,140,180,0.6)');
+          glow(g, ax + 6, ay + 6, 14, 'rgb(255,226,160)', 0.4);
+          B(g, ax + 1, ay, 10, 12, 1.4, '#ffe9a8'); rect(g, ax + 1, ay + 5.6, 10, 0.8, 'rgba(120,90,40,0.5)');
+        }
+      };
+      tower(0, 92, 200, [[78, 60]]);
+      tower(330, 110, 214, [[300, 110], [440, 30]]);
+      // dev LED cephe: yükselen yeşil grafik
+      B(g, 150, 60, 132, 84, 3, '#0c1224');
+      B(g, 154, 64, 124, 76, 2, '#0a2a2a');
+      g.strokeStyle = 'rgba(58,224,255,0.25)'; g.lineWidth = 0.5;
+      for (let y = 72; y < 140; y += 10) { g.beginPath(); g.moveTo(156, y); g.lineTo(276, y); g.stroke(); }
+      const pts = [[158, 128], [174, 122], [186, 126], [200, 112], [214, 116], [228, 100], [242, 104], [256, 86], [272, 74]];
+      g.fillStyle = 'rgba(124,255,106,0.18)'; g.beginPath(); g.moveTo(158, 138); for (const [x, y] of pts) g.lineTo(x, y); g.lineTo(272, 138); g.closePath(); g.fill();
+      g.strokeStyle = '#7cff6a'; g.lineWidth = 1.4; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+      C(g, 272, 74, 2, '#ffffff');
+      rect(g, 154, 132, 124, 8, '#04121a');
+      for (let x = 158; x < 274; x += 14) { rect(g, x, 134.6, 6, 2.4, (x / 14) % 3 ? '#7cff6a' : '#ff6a6a'); rect(g, x + 7, 135.2, 3, 1.4, 'rgba(255,255,255,0.5)'); }
+      rect(g, 210, 144, 12, 70, '#1a2038');
+      // meydan: ince LED direkler, saksılar, halka heykel
+      for (const lx of [118, 296, 470]) { lin(g, lx, 214, lx, 150, '#4a5272', 1.4); glow(g, lx, 150, 16, 'rgb(150,230,255)', 0.5); B(g, lx - 1.6, 148, 3.2, 8, 1.2, '#cfeeff'); }
+      for (const px of [128, 286, 488]) { B(g, px - 9, 204, 18, 10, 1, '#5a6070'); C(g, px - 3, 202, 5, '#3f8a4a'); C(g, px + 4, 201, 5.6, '#3a7a42'); }
+      g.strokeStyle = '#c8d2e0'; g.lineWidth = 3; g.beginPath(); g.ellipse(250, 186, 13, 17, 0.35, 0, TAU); g.stroke();
+      g.strokeStyle = '#7a8496'; g.lineWidth = 1; g.beginPath(); g.ellipse(250, 186, 13, 17, 0.35, 0.3, 1.6); g.stroke();
+      B(g, 240, 204, 20, 10, 1, '#4a5068');
+    },
+  };
+
+  // 10-2 Veri Merkezi: soğuk koridor; iki yanda sunucu kabinleri, tavanda sarı fiber tavaları,
+  // camla kapatılmış koridorun sonunda mavi ışık, soğutma üniteleri ve yangın söndürme tüpleri
   PL[at(9, 1)] = {
+    sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#060a14'], [0.6, '#0e1828'], [1, '#16243a']]); } },
+    far(g) {
+      // derinliğe uzanan koridor: kaçış noktasında mavi ışık
+      const vx = 256, vy = 120;
+      glow(g, vx, vy, 120, 'rgb(90,170,255)', 0.35);
+      B(g, vx - 26, vy - 34, 52, 72, 1, '#9ad0ff');
+      rect(g, vx - 1, vy - 34, 2, 72, 'rgba(40,60,90,0.6)');
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 7; k++) {
+          const t0 = k / 7, t1 = (k + 1) / 7;
+          const xa = vx + side * (30 + t0 * t0 * 230), xb = vx + side * (30 + t1 * t1 * 230);
+          const ha = 36 + t0 * t0 * 150, hb = 36 + t1 * t1 * 150;
+          g.fillStyle = k % 2 ? '#141c2c' : '#18223a';
+          g.beginPath(); g.moveTo(xa, vy - ha * 0.5); g.lineTo(xb, vy - hb * 0.5); g.lineTo(xb, vy + hb * 0.62); g.lineTo(xa, vy + ha * 0.62); g.closePath(); g.fill();
+          const r = rng(920 + k + side * 11);
+          for (let j = 0; j < 6 + k * 2; j++) {
+            const u = r(), x = xa + (xb - xa) * u, hh = ha + (hb - ha) * u, y = vy - hh * 0.4 + r() * hh * 0.9;
+            g.fillStyle = ['#3ae0ff', '#7cff6a', '#3a8aff'][j % 3]; g.globalAlpha = 0.5 + r() * 0.5; g.fillRect(x, y, 1.2, 1.2); g.globalAlpha = 1;
+          }
+        }
+      }
+      // tavanda fiber tavası ve lambalar (perspektif)
+      for (let k = 0; k < 6; k++) { const t = k / 6, y = vy - 34 - t * t * 90, w = 50 + t * t * 460; rect(g, vx - w / 2, y, w, 1.2 + t * 2, 'rgba(210,220,240,0.35)'); }
+      g.strokeStyle = '#e2b42a'; g.lineWidth = 2; g.beginPath(); g.moveTo(vx - 40, vy - 30); g.lineTo(-20, 18); g.moveTo(vx + 40, vy - 30); g.lineTo(W + 20, 18); g.stroke();
+      rect(g, 0, 214, W, 26, '#1a2232');
+    },
+    near(g) {
+      pen('rgba(0,0,0,0.7)', 0.6);
+      const r = rng(931);
+      // kabin sıraları: soğuk koridor (mavi) ve sıcak koridor (turuncu) dönüşümlü
+      for (const [x, hot] of [[0, false], [150, true], [330, false], [440, true]]) {
+        const w = hot ? 70 : 96;
+        B(g, x, 70, w, 144, 1, '#161c28'); rect(g, x, 70, w, 3, '#2e3a52');
+        for (let cx = x + 3; cx + 21 <= x + w; cx += 23) {
+          B(g, cx, 76, 21, 136, 1, '#1e2636');
+          for (let y = 80; y < 206; y += 6) {
+            rect(g, cx + 2, y, 17, 4.4, '#0c121c');
+            if (r() < 0.75) { const c = hot ? (r() < 0.5 ? '#ffb43a' : '#ff6a3a') : (r() < 0.6 ? '#3ae0ff' : '#7cff6a'); rect(g, cx + 15 + r() * 3, y + 1.6, 1.2, 1.2, c); }
+          }
+          rect(g, cx + 1, 76, 1, 136, 'rgba(255,255,255,0.1)');
+        }
+        glow(g, x + w / 2, 140, 80, hot ? 'rgb(255,140,60)' : 'rgb(70,160,255)', 0.12);
+      }
+      // soğutma ünitesi: büyük fanlar
+      B(g, 98, 120, 48, 94, 2, '#c8ced8'); rect(g, 98, 120, 48, 4, '#e8ecf2');
+      for (const fy of [140, 176]) { C(g, 122, fy, 14, '#4a5262'); C(g, 122, fy, 3, '#9aa0aa'); for (let k = 0; k < 5; k++) { const a = k * TAU / 5; g.fillStyle = '#7a828e'; g.beginPath(); g.ellipse(122 + Math.cos(a) * 7, fy + Math.sin(a) * 7, 5, 2.4, a, 0, TAU); g.fill(); } }
+      // durum ekranı: sıcaklık çizgisi
+      B(g, 270, 92, 50, 34, 2, '#0c1220'); B(g, 273, 95, 44, 28, 1, '#0a2032');
+      g.strokeStyle = '#3ae0ff'; g.lineWidth = 1; g.beginPath(); g.moveTo(276, 112); for (let k = 1; k < 9; k++) g.lineTo(276 + k * 5, 110 + Math.sin(k * 1.3) * 3); g.stroke();
+      rect(g, 276, 117, 26, 2.4, '#7cff6a');
+      rect(g, 293, 126, 4, 88, '#2a3040');
+      // yangın söndürme tüpleri
+      for (let k = 0; k < 3; k++) { B(g, 412 + k * 8, 180, 7, 34, 3, '#c8302a'); rect(g, 413.5 + k * 8, 176, 4, 5, '#8a8f9a'); }
+      // tavanda kablo tavaları
+      rect(g, 0, 50, W, 6, '#3a3420'); rect(g, 0, 50, W, 1.4, '#e2b42a');
+      for (let x = 0; x < W; x += 24) lin(g, x + 12, 44, x + 12, 50, '#5a5440', 1);
+      for (let k = 0; k < 4; k++) { g.strokeStyle = ['#3a6ad8', '#d84a3a', '#e2e2e2', '#3fae2c'][k]; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, 57 + k * 2); for (let x = 0; x <= W; x += 64) g.quadraticCurveTo(x + 32, 63 + k * 2, x + 64, 57 + k * 2); g.stroke(); }
+    },
+  };
+
+  // 10-3 Kontrol Odası: akıllı şehrin kontrol odası; kavisli ekran duvarında canlı trafik haritası,
+  // kamera görüntüleri ve grafikler (bazı ekranlar fidye yazılımının kilidiyle kızıl); önde basamaklı operatör masaları
+  PL[at(9, 2)] = {
+    sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#04060e'], [0.6, '#0a1020'], [1, '#121a30']]); } },
+    far(g) {
+      rect(g, 0, 30, W, 8, '#1a2238');
+      // ekran duvarı: 6 sütun × 3 satır, ortada büyük harita
+      const sx = 16, sy = 44, cw = 80, ch = 44;
+      for (let row = 0; row < 3; row++) for (let col = 0; col < 6; col++) {
+        const x = sx + col * cw, y = sy + row * ch;
+        B(g, x, y, cw - 3, ch - 3, 1, '#05080e');
+        const big = col >= 2 && col <= 3;
+        if (big) continue;
+        const k = (row * 6 + col) % 5, locked = (row === 1 && col === 0) || (row === 2 && col === 5) || (row === 0 && col === 4);
+        g.save(); g.beginPath(); g.rect(x + 2, y + 2, cw - 7, ch - 7); g.clip();
+        if (locked) {
+          g.fillStyle = '#3a0a10'; g.fillRect(x, y, cw, ch);
+          g.strokeStyle = '#ff4a4a'; g.lineWidth = 2.6; g.beginPath(); g.arc(x + cw / 2 - 1.5, y + 17, 6, Math.PI, 0); g.stroke();
+          B(g, x + cw / 2 - 10, y + 17, 17, 13, 2, '#e8443a'); C(g, x + cw / 2 - 1.5, y + 22.5, 1.8, '#3a0a10');
+        } else if (k === 0) {
+          // kamera: kavşak
+          g.fillStyle = '#1a2a3a'; g.fillRect(x, y, cw, ch);
+          g.fillStyle = '#2a3a4a'; g.fillRect(x, y + 22, cw, 10); g.fillRect(x + 34, y, 10, ch);
+          for (let c = 0; c < 4; c++) rect(g, x + 8 + c * 16, y + 25, 6, 3, ['#ffb43a', '#ffffff', '#3ae0ff', '#ff6a6a'][c]);
+          rect(g, x + 4, y + 4, 5, 2, '#ff3a3a');
+        } else if (k === 1) {
+          // çubuk grafik
+          g.fillStyle = '#081420'; g.fillRect(x, y, cw, ch);
+          for (let c = 0; c < 8; c++) { const h = 8 + ((c * 37 + row * 11) % 24); rect(g, x + 6 + c * 8.5, y + ch - 8 - h, 5, h, c % 3 ? '#3ae0ff' : '#7cff6a'); }
+        } else if (k === 2) {
+          // hava ve deniz: dalga çizgileri
+          g.fillStyle = '#0a1a2e'; g.fillRect(x, y, cw, ch);
+          g.strokeStyle = '#3a8aff'; g.lineWidth = 1; for (let w2 = 0; w2 < 3; w2++) { g.beginPath(); for (let xx = 0; xx <= cw; xx += 4) g.lineTo(x + xx, y + 14 + w2 * 8 + Math.sin(xx * 0.2 + w2) * 2); g.stroke(); }
+        } else if (k === 3) {
+          // vapur hatları
+          g.fillStyle = '#0a1420'; g.fillRect(x, y, cw, ch);
+          g.strokeStyle = '#ffb43a'; g.lineWidth = 0.8; g.setLineDash([2, 2]); g.beginPath(); g.moveTo(x + 6, y + 30); g.quadraticCurveTo(x + 40, y + 6, x + 72, y + 26); g.stroke(); g.setLineDash([]);
+          C(g, x + 40, y + 13, 2, '#ffffff');
+        } else {
+          // metro hatları
+          g.fillStyle = '#0c1220'; g.fillRect(x, y, cw, ch);
+          for (const [c, y2] of [['#2fa84f', 12], ['#e5427f', 22], ['#8a4fae', 30]]) { rect(g, x + 4, y + y2, cw - 12, 2, c); for (let d = 0; d < 5; d++) C(g, x + 8 + d * 14, y + y2 + 1, 1.6, '#ffffff'); }
+        }
+        g.restore();
+      }
+      // ortadaki büyük ekran: canlı trafik haritası (Boğaz, iki yaka, yollar)
+      const mx = sx + 2 * cw, my = sy, mw = 2 * cw - 3, mh = 3 * ch - 3;
+      B(g, mx, my, mw, mh, 2, '#06101c');
+      g.save(); g.beginPath(); g.rect(mx + 2, my + 2, mw - 4, mh - 4); g.clip();
+      g.fillStyle = '#0e1e30'; g.fillRect(mx, my, mw, mh);
+      g.fillStyle = '#0a3a5a';
+      g.beginPath(); g.moveTo(mx + 70, my); g.bezierCurveTo(mx + 90, my + 30, mx + 60, my + 60, mx + 80, my + 90); g.bezierCurveTo(mx + 96, my + 110, mx + 70, my + 125, mx + 60, my + mh);
+      g.lineTo(mx + 90, my + mh); g.bezierCurveTo(mx + 100, my + 120, mx + 110, my + 100, mx + 96, my + 80); g.bezierCurveTo(mx + 84, my + 56, mx + 108, my + 30, mx + 92, my); g.closePath(); g.fill();
+      for (const [col, pts] of [['#7cff6a', [[10, 30], [40, 40], [74, 52], [100, 48], [150, 40]]], ['#ffb43a', [[20, 100], [60, 92], [84, 96], [120, 104], [150, 110]]], ['#ff4a4a', [[110, 10], [116, 50], [124, 90], [130, 128]]], ['#7cff6a', [[30, 60], [34, 100], [40, 130]]]]) {
+        g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(mx + x, my + y) : g.moveTo(mx + x, my + y))); g.stroke();
+      }
+      for (const [x, y] of [[40, 40], [100, 48], [60, 92], [124, 90]]) { C(g, mx + x, my + y, 2.4, '#ffffff'); }
+      g.restore();
+      glow(g, 256, 110, 200, 'rgb(60,140,255)', 0.12);
+      rect(g, 0, 178, W, 36, '#0c1222');
+    },
+    near(g) {
+      pen('rgba(0,0,0,0.7)', 0.6);
+      // basamaklı operatör masaları: monitörler, klavyeler, sandalyeler
+      for (const [x0, x1, y] of [[10, 230, 176], [282, 502, 176]]) {
+        B(g, x0, y + 14, x1 - x0, 24, 2, '#1e2638'); rect(g, x0, y + 14, x1 - x0, 2, '#3a4a6a');
+        for (let mx = x0 + 10; mx < x1 - 30; mx += 44) {
+          B(g, mx, y - 8, 26, 18, 1.4, '#0a0e18'); B(g, mx + 2, y - 6, 22, 13, 1, ['#0a3a5a', '#0a2a1a', '#3a0a10'][(mx / 44 | 0) % 3]);
+          rect(g, mx + 4, y - 3, 14, 1.4, 'rgba(124,255,106,0.8)'); rect(g, mx + 4, y, 10, 1.4, 'rgba(58,224,255,0.7)');
+          rect(g, mx + 11, y + 10, 4, 4, '#2a3040'); B(g, mx + 2, y + 12, 22, 2.4, 0.6, '#3a4458');
+          // sandalye arkalığı
+          B(g, mx + 30, y + 4, 10, 16, 3, '#2a2e3e'); rect(g, mx + 34, y + 20, 2, 18, '#1a1e2a');
+        }
+      }
+      // ortada vardiya şefinin masası ve kırmızı alarm lambası
+      B(g, 236, 196, 40, 18, 2, '#2a3248'); rect(g, 236, 196, 40, 2, '#4a5a7a');
+      glow(g, 256, 186, 22, 'rgb(255,60,60)', 0.5); C(g, 256, 188, 3, '#ff4a4a'); rect(g, 254.6, 190, 2.8, 6, '#3a3e48');
+      // tavandaki ışık şeridi
+      rect(g, 0, 22, W, 3, '#2a3a5a'); for (let x = 16; x < W; x += 64) { glow(g, x, 24, 28, 'rgb(150,200,255)', 0.25); rect(g, x - 12, 23, 24, 1.4, '#cfe4ff'); }
+    },
+  };
+
+  // ================= 11 ÇAMLICA =================
+  // 10-2 Asansör: kulenin cam asansör boşluğu; çelik kafes, aşağıda gece şehri ve ışıklı köprüler
+  PL[at(10, 1)] = {
     sky: { stops: [[0, '#04061a'], [0.6, '#10164a'], [1, '#22205a']], stars: 70 },
     far(g) {
       g.fillStyle = '#0c1036'; g.fillRect(0, 150, W, 90);
@@ -868,7 +1087,7 @@
   };
 
   // 10-3 Yayın Odası: kulenin yayın odası; ekran duvarı (biri mavi ekran), kumanda masaları, YAYINDA lambası
-  PL[at(9, 2)] = {
+  PL[at(10, 2)] = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#03060f'], [0.6, '#081428'], [1, '#0e1c36']]); } },
     far(g) {
       rect(g, 0, 0, W, 216, '#0c1426');
@@ -903,7 +1122,7 @@
     },
   };
 
-  // ================= 11 ÜMRANİYE =================
+  // ================= 12 ÜMRANİYE =================
   // 11-1 Çarşı: mahalle sokağı; balkonlu apartmanlar, bakkal, fırın, çay ocağı; uzakta Çamlıca Kulesi
   function apartment(g, x, by, w, floors, col, r, opt) {
     const fh = 16, h = floors * fh + 18;
@@ -921,7 +1140,7 @@
     if (r() < 0.7) { const dx = x + 6 + r() * (w - 16); g.fillStyle = '#d8dce4'; g.beginPath(); g.ellipse(dx, by - h - 4, 4, 4.6, -0.5, 0, TAU); g.fill(); }
     return by - h;
   }
-  PL[at(10, 0)] = {
+  PL[at(11, 0)] = {
     sky: { stops: [[0, '#6ab4ea'], [0.7, '#cfe6f6'], [1, '#f6ead4']] },
     far(g) {
       cloud(g, 60, 50, 1, 'rgba(255,255,255,0.9)'); cloud(g, 360, 36, 0.9, 'rgba(255,255,255,0.85)');
@@ -955,7 +1174,7 @@
   };
 
   // 11-2 Yeni Plazalar: akşamüstü yeni iş kuleleri, ışıklı otoyol; önde plaza girişi, büyük ekran, genç ağaçlar
-  PL[at(10, 1)] = {
+  PL[at(11, 1)] = {
     sky: { stops: [[0, '#24306a'], [0.5, '#5a6aa8'], [0.85, '#e8a080'], [1, '#f6c090']], stars: 12 },
     far(g) {
       const r = rng(1011);
@@ -988,7 +1207,7 @@
   };
 
   // 11-3 Sanayi: Dudullu sanayisi, akşam; testere dişi çatılar, bacalar; önde kepenkli atölyeler: torna, kaynak, dövme (ocak ve örs)
-  PL[at(10, 2)] = {
+  PL[at(11, 2)] = {
     sky: { stops: [[0, '#1a1220'], [0.6, '#3a2430'], [1, '#8a4024']], stars: 20 },
     far(g) {
       const r = rng(1021);

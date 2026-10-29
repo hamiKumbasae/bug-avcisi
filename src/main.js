@@ -176,16 +176,24 @@
   }
 
   // ---------- uygulama durumu ----------
-  // 11 dünya: eski (9 dünyalı) kayıtları yeni sıraya taşı — Haliç 7. dünya olarak araya girdi
+  // eski kayıtları yeni dünya sırasına taşı: önce Haliç (7.), sonra Ataşehir (10.) araya girdi
   const NW = WORLDS.length, NL = LEVELS.length;
   // Galata'dan sonra her dünya için gösterilecek ara sahne; son dünyadan sonra 'son'
-  const STORY_AFTER = ['ara1', 'ara2', 'ara3', 'ara4', 'ara5', 'ara6', 'halic', 'ara7', 'ara8', 'eve'];
+  const STORY_AFTER = ['ara1', 'ara2', 'ara3', 'ara4', 'ara5', 'ara6', 'halic', 'ara7', 'ara8', 'atasehir', 'eve'];
   if (store.get('ba-kayit-surum', 1) < 2) {
     const old = store.get('ba-parcalar', null);
     if (Array.isArray(old) && old.length > 0 && old.length <= 9) store.set('ba-parcalar', [...old.slice(0, 6), false, ...old.slice(6, 9), false]);
     const pr = store.get('ba-ilerleme', 1);
     if (pr >= 7) store.set('ba-ilerleme', pr + 1);
     store.set('ba-kayit-surum', 2);
+  }
+  // 12 dünya: Ataşehir 10. dünya olarak Çatılar ile Çamlıca'nın arasına girdi
+  if (store.get('ba-kayit-surum', 1) < 3) {
+    const old = store.get('ba-parcalar', null);
+    if (Array.isArray(old) && old.length === 11) store.set('ba-parcalar', [...old.slice(0, 9), false, ...old.slice(9)]);
+    const pr = store.get('ba-ilerleme', 1);
+    if (pr >= 10) store.set('ba-ilerleme', pr + 1);
+    store.set('ba-kayit-surum', 3);
   }
   const app = {
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
@@ -618,8 +626,10 @@
     }
     // hareketli platformlar (metro treni dahil) ve dönen kıvılcımlar
     for (const pl of G.plats) {
-      if (!pl.train) ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
-      else if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS);
+      if (pl.train) { if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS); }
+      else if (pl.kind === 'v' && theme === 18) ART.drawCabin(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, pl.a * TS, pl.b * TS); // Ataşehir: cephe asansörü
+      else if (theme === 18) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir: cam silme sepeti
+      else ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
     }
     for (const b of G.bars) {
       img(ART.tile(theme, 'anchor'), (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
@@ -748,6 +758,14 @@
       }
     }
   }
+  function lockIcon(cx, cy, k) {
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k);
+    ctx.strokeStyle = ART.K; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(0, -2, 2.6, Math.PI, 0); ctx.stroke();
+    ctx.strokeStyle = '#c9ced8'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, -2, 2.6, Math.PI, 0); ctx.stroke();
+    ART.box(ctx, -4, -2, 8, 6, 1.2, '#e8443a', ART.K, 0.6);
+    ART.circle(ctx, 0, 0.4, 0.9, '#2a0a0a', null);
+    ctx.restore();
+  }
   function drawBossShot(s) {
     const x = s.x * TS, y = s.y * TS, w = s.w * TS, h = s.h * TS, cx = x + w / 2, cy = y + h / 2;
     switch (s.kind) {
@@ -782,6 +800,35 @@
         ART.ellipse(ctx, cx, 12 * TS - 1, w * 0.55, 1.6, `rgba(20,10,0,${a})`, null);
         ART.box(ctx, x, y, w, h, 1.2, '#b8743a', ART.K, 0.7);
         ctx.strokeStyle = '#7a3a14'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 1.5, y + 1.5); ctx.lineTo(x + w - 1.5, y + h - 1.5); ctx.stroke();
+        break;
+      }
+      case 'lock': {
+        // zemine kurulan kilit: önce yanıp sönen uyarı halkası, sonra kırmızı yanan kilitli alan
+        const armed = !(s.arm && s.t < s.arm), fy = y + h;
+        if (!armed) {
+          if (Math.floor(s.t * 10) % 2 === 0) {
+            ctx.strokeStyle = 'rgba(255,74,74,0.9)'; ctx.lineWidth = 0.9; ctx.setLineDash([2, 1.6]);
+            ART.rr(ctx, x, fy - 3, w, 3, 1.4); ctx.stroke(); ctx.setLineDash([]);
+          }
+          const k = s.t / s.arm;
+          ctx.globalAlpha = 0.4 + k * 0.6;
+          lockIcon(cx, fy - 6 - (1 - k) * 8, 0.8);
+          ctx.globalAlpha = 1;
+        } else {
+          const gl = ctx.createLinearGradient(0, fy - 10, 0, fy);
+          gl.addColorStop(0, 'rgba(255,60,60,0)'); gl.addColorStop(1, `rgba(255,60,60,${0.55 + 0.2 * Math.sin(app.t * 20)})`);
+          ctx.fillStyle = gl; ctx.fillRect(x, fy - 10, w, 10);
+          ART.box(ctx, x, fy - 2.4, w, 2.4, 1, '#c42a24', ART.K, 0.6);
+          for (let k = 0; k < 3; k++) { const lx = x + 2 + k * (w - 4) / 2; ctx.strokeStyle = '#a8b0bc'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(lx, fy - 2.4, 1.6, Math.PI, 0); ctx.stroke(); }
+          lockIcon(cx, fy - 6.2, 1);
+        }
+        break;
+      }
+      case 'file': {
+        // şifreli dosya: kilitli zarf, yerde kayar
+        ART.box(ctx, x, y + 1, w, h - 1, 0.8, '#f4f2ea', ART.K, 0.6);
+        ART.lin(ctx, x, y + 1, cx, cy + 1, '#8a8f9a', 0.5); ART.lin(ctx, x + w, y + 1, cx, cy + 1, '#8a8f9a', 0.5);
+        lockIcon(cx, cy + 1.6, 0.55);
         break;
       }
       case 'bolt': {
@@ -969,7 +1016,7 @@
     if (Math.floor(app.t * 2) % 2) text('DEVAM İÇİN Z', VW / 2, 228, '#f4c531', 6.6, 'center');
   }
   // Bölüm seç: 11 dünya × 3 bölüm
-  const SEL = { y0: 27, row: 14.6, x0: 144, col: 36 };
+  const SEL = { y0: 27, row: 13.4, x0: 144, col: 36 };
   function selectTap(x, y) {
     if (y < 22 && x < 70) { menuKey('back'); return; }
     const w = Math.floor((y - SEL.y0 + 3) / SEL.row), c = Math.floor((x - SEL.x0 + 2) / SEL.col);
@@ -995,7 +1042,7 @@
       ctx.globalAlpha = 1;
       for (let k = 0; k < 3; k++) {
         const x = SEL.x0 + k * SEL.col, sel = on && k === app.selS;
-        ART.rr(ctx, x, y - 2.4, 32, 12, 6);
+        ART.rr(ctx, x, y - 2.2, 32, 11.2, 5.6);
         ctx.fillStyle = sel ? '#f4c531' : k === 2 ? '#7a2e3a' : '#2e3460'; ctx.fill();
         if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.9; ctx.stroke(); }
         text(`${i + 1}-${k + 1}`, x + 16, y + 0.4, sel ? '#2a1a10' : '#fff8ec', 6, 'center', null);
@@ -1009,7 +1056,7 @@
   }
   // ---------- İstanbul yol haritası: Maslak'tan Ümraniye'ye ----------
   // Dünyaların harita üzerindeki yerleri (kutuya göre 0..1)
-  const ROUTE = [[0.46, 0.22], [0.70, 0.84], [0.60, 0.86], [0.40, 0.75], [0.50, 0.77], [0.50, 0.625], [0.39, 0.665], [0.635, 0.46], [0.545, 0.555], [0.80, 0.62], [0.93, 0.55]];
+  const ROUTE = [[0.46, 0.22], [0.70, 0.84], [0.60, 0.86], [0.40, 0.75], [0.50, 0.77], [0.50, 0.625], [0.39, 0.665], [0.635, 0.46], [0.545, 0.555], [0.88, 0.74], [0.80, 0.62], [0.93, 0.55]];
   const STRAIT = [[0.67, -0.02], [0.69, 0.12], [0.63, 0.28], [0.645, 0.4], [0.625, 0.5], [0.605, 0.62], [0.585, 0.72], [0.575, 0.84]];
   const mapCache = ART.cache();
   function mapBase(w, h) {
@@ -1096,7 +1143,7 @@
     routeMap(20, 50, VW - 40, 132, wi);
     // hatıra parçaları: toplananlar parlak, kalanlar soluk
     for (let i = 0; i < NW; i++) {
-      const px = 28 + i * 20, py = 196;
+      const px = 28 + i * (VW - 56) / (NW - 1), py = 196;
       ART.circle(ctx, px, py, 7.6, i === wi ? 'rgba(244,197,49,0.25)' : 'rgba(255,255,255,0.06)', null);
       ctx.globalAlpha = app.pieces[i] ? 1 : 0.2; ART.drawPiece(ctx, i, px, py, 0.46, app.t); ctx.globalAlpha = 1;
     }
@@ -1130,7 +1177,7 @@
     text(String(app.S.score).padStart(6, '0'), VW / 2, 9.5, '#ffe08a', 8, 'center', null);
     for (let i = 0; i < NW; i++) {
       ctx.globalAlpha = app.pieces[i] ? 1 : 0.22;
-      ART.drawPiece(ctx, i, VW / 2 - 65 + i * 13, 30, 0.6, app.t);
+      ART.drawPiece(ctx, i, VW / 2 - (NW - 1) * 6.5 + i * 13, 30, 0.6, app.t);
     }
     ctx.globalAlpha = 1;
     app.menuItems = [];

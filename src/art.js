@@ -554,6 +554,39 @@
         box(g, -16, -2, 8, 3, 1, '#4a3a2a'); box(g, 8, -2, 8, 3, 1, '#4a3a2a');
         break;
       }
+      case 'fidye': {
+        // fidye yazılımı: dev kırmızı asma kilit; ekranında öfkeli gözler ve geri sayım, altında anahtar deliği
+        const bob = Math.sin(t * 3) * 1;
+        g.translate(0, bob);
+        // kilit halkası
+        g.strokeStyle = K; g.lineWidth = 6.4; g.beginPath(); g.moveTo(-11, -22); g.lineTo(-11, -28); g.arc(0, -28, 11, Math.PI, 0); g.lineTo(11, -22); g.stroke();
+        g.strokeStyle = '#a8b0bc'; g.lineWidth = 4.6; g.beginPath(); g.moveTo(-11, -22); g.lineTo(-11, -28); g.arc(0, -28, 11, Math.PI, 0); g.lineTo(11, -22); g.stroke();
+        g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 1.2; g.beginPath(); g.arc(0, -28, 11, Math.PI * 1.1, Math.PI * 1.6); g.stroke();
+        // gövde
+        box(g, -17, -25, 34, 25, 4, grad(g, 0, -25, 0, 0, [[0, '#e8443a'], [0.6, '#c42a24'], [1, '#8a1a18']]), K, 0.9);
+        g.fillStyle = 'rgba(255,255,255,0.3)'; g.fillRect(-14, -23.4, 28, 1);
+        box(g, -17, -6, 34, 2.4, 0, '#d8a840', null); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(-17, -3.6, 34, 0.8);
+        // ekran: öfkeli gözler ve geri sayım
+        box(g, -12, -22, 24, 11, 1.6, '#1a0a0e', K, 0.6);
+        const sec = 59 - Math.floor(t * 2) % 60;
+        g.fillStyle = '#ff4a4a'; g.font = '600 4.4px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('00:' + String(sec).padStart(2, '0'), 0, -13.6);
+        g.fillStyle = '#ff4a4a';
+        for (const d of [-1, 1]) { g.beginPath(); g.moveTo(d * 8.4, -20.2); g.lineTo(d * 2.4, -18.2); g.lineTo(d * 2.4, -16.6); g.lineTo(d * 8.4, -17.6); g.closePath(); g.fill(); }
+        g.fillStyle = '#ffd0d0'; g.fillRect(-6.2 + (o.face > 0 ? 1 : 0), -18.6, 1.4, 1.4); g.fillRect(4.6 + (o.face > 0 ? 1 : 0), -18.6, 1.4, 1.4);
+        // anahtar deliği
+        circle(g, 0, -8.6, 2, '#2a0a0a', null); poly(g, [-1.2, -8, 1.2, -8, 1.8, -4.8, -1.8, -4.8], '#2a0a0a', null);
+        // etrafta dönen şifreli dosyalar (kilitli zarflar)
+        for (let k = 0; k < 2; k++) {
+          const a = t * 2.4 + k * Math.PI;
+          const fx = Math.cos(a) * 22, fy = -14 + Math.sin(a) * 6;
+          if (Math.sin(a) < 0) continue;
+          box(g, fx - 3.4, fy - 2.4, 6.8, 4.8, 0.6, '#f4f2ea', K, 0.5);
+          lin(g, fx - 3.4, fy - 2.4, fx, fy, '#8a8f9a', 0.4); lin(g, fx + 3.4, fy - 2.4, fx, fy, '#8a8f9a', 0.4);
+          circle(g, fx, fy + 0.6, 1.1, '#c42a24', null);
+        }
+        break;
+      }
       case 'maviekran': {
         const step = Math.sin(t * 8) * 1.5;
         limb(g, -8, -9, -9, -1 + step * 0.3, 3, '#6a707c'); limb(g, 8, -9, 9, -1 - step * 0.3, 3, '#6a707c');
@@ -597,13 +630,16 @@
     { key: 'ahsap', sky: ['#1a1428', '#3a2a3a'], water: false },
     { key: 'kaldirim', sky: ['#9ac8ec', '#f0e4c8'], water: false },
     { key: 'sanayi', sky: ['#2a2018', '#5a3a24'], water: false },
+    { key: 'finans', sky: ['#0a1430', '#24305a'], water: false },   // 18: Ataşehir meydanı: cilalı granit, ışık şeridi
+    { key: 'veri', sky: ['#0c1424', '#1a2a40'], water: false },     // 19: veri merkezi: delikli beyaz yükseltilmiş taban
+    { key: 'kontrol', sky: ['#081020', '#142040'], water: false },  // 20: kontrol odası: koyu halı karo, camgöbeği kenar
   ];
   const METRO = 9;
   // mekân (dünya*3 + bölüm) → karo teması ve su rengi (yoksa false)
-  const PLACE_TILES = [0, 10, 11, 1, 1, 1, 12, 2, 2, 3, 3, 13, 4, 4, 4, 5, 5, 15, 1, 5, 5, 6, 14, 14, 7, 7, 15, 8, 8, 8, 16, 0, 17];
+  const PLACE_TILES = [0, 10, 11, 1, 1, 1, 12, 2, 2, 3, 3, 13, 4, 4, 4, 5, 5, 15, 1, 5, 5, 6, 14, 14, 7, 7, 15, 18, 19, 20, 8, 8, 8, 16, 0, 17];
   const PLACE_WATER = [false, false, false, '#2f7fa8', false, '#3a7ab0', '#2a8ac0', '#2a86c8', '#2a4a6a', false, false, false,
     '#0f4a50', '#0e5a58', '#081c22', false, false, false, '#2a7ab0', '#3a7290', false, '#24387a', false, false,
-    false, false, false, false, false, false, false, false, false];
+    false, false, false, false, false, false, false, false, false, false, false, false];
   const placeTiles = (p) => PLACE_TILES[p] ?? 0;
   const placeWater = (p) => PLACE_WATER[p] || false;
   const GROUND = [
@@ -625,6 +661,9 @@
     { top: '#a87244', topD: '#6a4424', fill: '#4a3020', fillD: '#5a3c28', line: '#2a1a10' },   // ahşap döşeme
     { top: '#c8c4bc', topD: '#8a8680', fill: '#9a948c', fillD: '#8a847c', line: '#6a645c' },   // mahalle kaldırımı + alt taş
     { top: '#7a7670', topD: '#f4c531', fill: '#5a5650', fillD: '#4a4640', line: '#2e2a26' },   // sanayi betonu, sarı şerit
+    { top: '#3a4256', topD: '#3ae0ff', fill: '#262c3c', fillD: '#30384c', line: '#141824' },   // finans meydanı granit + camgöbeği ışık
+    { top: '#e8edf2', topD: '#9aa4b2', fill: '#3a4250', fillD: '#4a5466', line: '#1c222c' },   // veri merkezi delikli taban + kaide
+    { top: '#2a3a5a', topD: '#3ae0ff', fill: '#18203a', fillD: '#222c4a', line: '#0c1020' },   // kontrol odası halı karo
   ];
   const tileCache = cache();
   function tile(w, kind, extra) {
@@ -642,7 +681,8 @@
       case 'crack': solidTile(g, w, true); break;
       case 'oneway': {
         const cols = [['#9aa6b8', '#6a7488'], ['#b98a52', '#7a5428'], ['#f4f2ea', '#8a96a8'], ['#d8b884', '#8a6a3a'], ['#7a6a5a', '#4a3e34'], ['#a07a52', '#6a4a2a'], ['#d0603a', '#7a2e18'], ['#8a6a4a', '#4e3a26'], ['#5a6270', '#3ae0ff'], ['#c9ced8', '#6a7080'],
-          ['#eef1f5', '#8a909c'], ['#6e7686', '#3a4250'], ['#b8783e', '#5a3818'], ['#a89a86', '#6a5e50'], ['#b8c0cc', '#5a6474'], ['#a87244', '#5a3818'], ['#c8c4bc', '#6a6660'], ['#8a8a90', '#f4c531']][w];
+          ['#eef1f5', '#8a909c'], ['#6e7686', '#3a4250'], ['#b8783e', '#5a3818'], ['#a89a86', '#6a5e50'], ['#b8c0cc', '#5a6474'], ['#a87244', '#5a3818'], ['#c8c4bc', '#6a6660'], ['#8a8a90', '#f4c531'],
+          ['#4a5468', '#3ae0ff'], ['#eef1f5', '#6a7484'], ['#3a4a6a', '#3ae0ff']][w];
         box(g, 0.2, 0.3, 15.6, 4.4, 1.6, cols[0], K, 0.8);
         g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(1.4, 1, 13, 0.8);
         g.fillStyle = cols[1]; g.fillRect(2.6, 4.7, 2, 3.4); g.fillRect(11.4, 4.7, 2, 3.4);
@@ -724,6 +764,20 @@
       g.fillStyle = C.fillD; g.fillRect(0, 0, 16, 1); g.fillRect(0, 8, 16, 0.8);
       g.fillStyle = 'rgba(30,20,10,0.35)'; g.beginPath(); g.ellipse(10, 11, 4, 1.6, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(2, 4, 5, 0.6);
+    } else if (key === 'finans') {
+      // büyük granit plakalar, parıltı
+      g.fillStyle = C.fillD; g.fillRect(0, 0, 8, 16);
+      g.strokeStyle = C.line; g.lineWidth = 0.5; g.strokeRect(0.25, 0.25, 7.5, 15.5); g.strokeRect(8.25, 0.25, 7.5, 15.5);
+      g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(1, 2, 0.6, 9); g.fillRect(10, 6, 0.6, 7);
+    } else if (key === 'veri') {
+      // yükseltilmiş tabanın altı: ayaklar ve kablo demetleri
+      g.fillStyle = '#1c222c'; g.fillRect(0, 0, 16, 16);
+      for (const x of [2, 10]) { g.fillStyle = '#6a7484'; g.fillRect(x, 0, 2.4, 16); g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(x, 0, 0.6, 16); }
+      g.strokeStyle = '#3a6ad8'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 9); g.quadraticCurveTo(8, 12, 16, 9); g.stroke();
+      g.strokeStyle = '#d8a828'; g.beginPath(); g.moveTo(0, 12.5); g.quadraticCurveTo(8, 10, 16, 12.5); g.stroke();
+    } else if (key === 'kontrol') {
+      g.fillStyle = C.fillD; g.fillRect(0, 0, 8, 8); g.fillRect(8, 8, 8, 8);
+      g.fillStyle = 'rgba(58,224,255,0.08)'; g.fillRect(0, 7.6, 16, 0.8); g.fillRect(7.6, 0, 0.8, 16);
     } else if (key === 'carsi') {
       g.fillStyle = C.fillD; g.fillRect(0, 0, 8, 8); g.fillRect(8, 8, 8, 8);
       g.strokeStyle = C.line; g.lineWidth = 0.4; g.strokeRect(0, 0, 16, 16); g.strokeRect(0, 0, 8, 8); g.strokeRect(8, 8, 8, 8);
@@ -810,6 +864,25 @@
         g.fillStyle = C.topD; for (let x = 0; x < 16; x += 8) g.fillRect(x + 1, 1.2, 5, 1.2);
         g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(0, 0, 16, 0.5);
         g.fillStyle = '#2e2a26'; g.fillRect(0, 3.6, 16, 0.8);
+        break;
+      case 'finans':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 3.4);
+        g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(0, 0, 16, 0.6);
+        g.shadowColor = '#3ae0ff'; g.shadowBlur = 2 * S; g.fillStyle = C.topD; g.fillRect(0, 3.4, 16, 0.9); g.shadowBlur = 0;
+        g.fillStyle = C.line; g.fillRect(0, 4.3, 16, 0.6);
+        break;
+      case 'veri':
+        // delikli beyaz taban karosu (soğuk koridor)
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 4.6);
+        g.fillStyle = C.topD; for (let x = 1.6; x < 16; x += 2.2) for (const y of [1.3, 2.9]) g.fillRect(x, y, 0.8, 0.8);
+        g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(0, 0, 16, 0.6);
+        g.fillStyle = '#8a94a2'; g.fillRect(15.4, 0, 0.6, 4.6); g.fillStyle = '#4a5466'; g.fillRect(0, 4.6, 16, 0.9);
+        break;
+      case 'kontrol':
+        g.fillStyle = C.top; g.fillRect(0, 0, 16, 3.6);
+        g.fillStyle = 'rgba(255,255,255,0.08)'; for (let x = 0.5; x < 16; x += 2) g.fillRect(x, 1.2, 0.8, 0.8);
+        g.shadowColor = '#3ae0ff'; g.shadowBlur = 2 * S; g.fillStyle = C.topD; g.fillRect(0, 0, 16, 0.8); g.shadowBlur = 0;
+        g.fillStyle = C.line; g.fillRect(0, 3.6, 16, 0.8);
         break;
       case 'metro':
         g.fillStyle = C.top; g.fillRect(0, 0, 16, 4.6);
@@ -943,6 +1016,28 @@
         g.fillStyle = 'rgba(255,255,255,0.28)'; g.fillRect(1.6, 1.4, 12.8, 1);
         g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(1.6, 13.4, 12.8, 1);
         for (const [x, y] of [[3, 3.6], [13, 3.6], [3, 12.4], [13, 12.4]]) circle(g, x, y, 0.75, '#aab4c8', null);
+        break;
+      }
+      case 'finans': {
+        // cam cephe paneli: koyu mavi, camgöbeği kenar
+        box(g, 0.4, 0.4, 15.2, 15.2, 1.2, grad(g, 0, 0, 16, 16, [[0, '#4a7aa8'], [0.5, '#24466e'], [1, '#162c4a']]), '#0c1a2e', 0.8);
+        g.strokeStyle = 'rgba(58,224,255,0.55)'; g.lineWidth = 0.6; g.strokeRect(1.6, 1.6, 12.8, 12.8);
+        poly(g, [2.4, 2.4, 6.4, 2.4, 2.4, 6.4], 'rgba(255,255,255,0.35)', null);
+        break;
+      }
+      case 'veri': {
+        // sunucu kabini kapağı: delikli ön panel, durum ışıkları
+        box(g, 0.4, 0.4, 15.2, 15.2, 1, '#2a303c', '#0c0e14', 0.8);
+        g.fillStyle = '#3a4250'; for (let y = 2; y < 14; y += 2) for (let x = 2; x < 12; x += 2) g.fillRect(x, y, 1, 1);
+        circle(g, 13.4, 3, 0.8, '#7cff6a', null); circle(g, 13.4, 5.4, 0.8, '#3ae0ff', null); circle(g, 13.4, 7.8, 0.8, '#ffb43a', null);
+        break;
+      }
+      case 'kontrol': {
+        // ekran duvarının bir parçası: ince çerçeveli koyu panel, harita çizgileri
+        box(g, 0.4, 0.4, 15.2, 15.2, 1, '#14203a', '#060a14', 0.8);
+        g.strokeStyle = 'rgba(58,224,255,0.45)'; g.lineWidth = 0.6;
+        g.beginPath(); g.moveTo(1.5, 11); g.lineTo(6, 8); g.lineTo(9, 10); g.lineTo(14.5, 4); g.stroke();
+        g.fillStyle = 'rgba(124,255,106,0.6)'; g.fillRect(3, 3, 3, 1); g.fillRect(3, 5, 5, 1);
         break;
       }
       case 'camlica': {
@@ -1158,6 +1253,37 @@
       }
     }
   }
+  // cephe asansörü (Ataşehir): tavanı üstünde durulan cam kabin, yol boyunca iki kılavuz ray. ya, yb: yolun üstü ve altı (px)
+  function drawCabin(g, x, y, w, t, ya, yb) {
+    for (const rx of [x + 3, x + w - 3]) { lin(g, rx, ya - 20, rx, yb + 40, 'rgba(20,30,60,0.8)', 1.6); lin(g, rx, ya - 20, rx, yb + 40, 'rgba(160,190,230,0.55)', 0.6); }
+    const H = 24;
+    const gl = g.createRadialGradient(x + w / 2, y + 12, 2, x + w / 2, y + 12, 26);
+    gl.addColorStop(0, 'rgba(255,226,160,0.45)'); gl.addColorStop(1, 'rgba(255,226,160,0)');
+    g.fillStyle = gl; g.fillRect(x - 12, y - 12, w + 24, H + 26);
+    box(g, x + 1, y + 2, w - 2, H, 2, grad(g, 0, y, 0, y + H, [[0, 'rgba(255,236,190,0.85)'], [1, 'rgba(200,170,120,0.85)']]), K, 0.8);
+    g.strokeStyle = 'rgba(80,90,120,0.8)'; g.lineWidth = 0.7;
+    for (const fx of [x + w / 3, x + 2 * w / 3]) { g.beginPath(); g.moveTo(fx, y + 3); g.lineTo(fx, y + H + 1); g.stroke(); }
+    lin(g, x + 2, y + H - 6, x + w - 2, y + H - 6, 'rgba(80,90,120,0.8)', 0.7);
+    poly(g, [x + 4, y + H, x + 9, y + 4, x + 12, y + 4, x + 7, y + H], 'rgba(255,255,255,0.35)', null);
+    box(g, x, y, w, 4, 1.4, '#c8d2e0', K, 0.8);
+    g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(x + 1.4, y + 0.8, w - 2.8, 0.8);
+    box(g, x + 2, y + H + 1, w - 4, 3, 1, '#5a6478', K, 0.6);
+    void t;
+  }
+  // cam silme sepeti (Ataşehir): halatlarla tepeden sarkan platform, arkada korkuluk
+  function drawGondola(g, x, y, w) {
+    for (const cx of [x + 3, x + w - 3]) { lin(g, cx, y - 260, cx, y - 9, 'rgba(30,36,60,0.9)', 1.1); lin(g, cx, y - 260, cx, y - 9, 'rgba(190,200,220,0.6)', 0.4); }
+    lin(g, x + 3, y - 9, x + w / 2, y - 14, 'rgba(30,36,60,0.9)', 0.8); lin(g, x + w - 3, y - 9, x + w / 2, y - 14, 'rgba(30,36,60,0.9)', 0.8);
+    g.strokeStyle = K; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x + 1.5, y); g.lineTo(x + 1.5, y - 9); g.lineTo(x + w - 1.5, y - 9); g.lineTo(x + w - 1.5, y); g.stroke();
+    g.strokeStyle = '#f4c531'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(x + 1.5, y); g.lineTo(x + 1.5, y - 9); g.lineTo(x + w - 1.5, y - 9); g.lineTo(x + w - 1.5, y); g.stroke();
+    lin(g, x + 1.5, y - 4.5, x + w - 1.5, y - 4.5, 'rgba(244,197,49,0.7)', 0.6);
+    box(g, x, y, w, 5.4, 1.4, '#c8d2e0');
+    g.save(); rr(g, x, y, w, 5.4, 1.4); g.clip();
+    for (let k = 0; k < w; k += 4) poly(g, [x + k, y + 5.4, x + k + 2, y + 3.6, x + k + 4, y + 3.6, x + k + 2, y + 5.4], '#f4c531', null);
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(x, y + 0.6, w, 0.8);
+    g.restore();
+    rr(g, x, y, w, 5.4, 1.4); fs(g, null, K, 0.8);
+  }
   function drawLift(g, x, y, w) {
     box(g, x, y, w, 5.4, 1.4, '#9aa6b8');
     g.save(); rr(g, x, y, w, 5.4, 1.4); g.clip();
@@ -1169,7 +1295,7 @@
 
   // ---------------- hatıra parçaları (her dünyadan bir tane) ----------------
   // 0 Maslak camı, 1 Kadıköy'den martı tüyü, 2 vapur çanı, 3 çarşı nazarı, 4 sarnıç damlası, 5 Galata Kulesi, 6 köprü, 7 kedi, 8 lale
-  const PIECES = ['cam', 'tuy', 'can', 'nazar', 'damla', 'kule', 'sepet', 'kopru', 'kedi', 'lale', 'cekic'];
+  const PIECES = ['cam', 'tuy', 'can', 'nazar', 'damla', 'kule', 'sepet', 'kopru', 'kedi', 'anahtar', 'lale', 'cekic'];
   function drawPiece(g, i, cx, cy, s, t) {
     s = s || 1; t = t || 0;
     g.save(); g.translate(cx, cy); g.scale(s, s);
@@ -1239,6 +1365,16 @@
         g.restore();
         circle(g, 5, -6, 1.2, '#ffb43a', null); circle(g, 6.8, -3.6, 0.7, '#ff7a2a', null);
         break;
+      case 'anahtar':
+        // Ataşehir'de fidye yazılımından geri alınan anahtar: pirinç, halkasında küçük bir devre izi
+        g.save(); g.rotate(-0.5);
+        circle(g, 0, -4.6, 4, grad(g, -4, -8, 4, -1, [[0, '#ffe08a'], [1, '#b8862e']]), K, 0.8);
+        circle(g, 0, -4.6, 1.7, '#1a1430', K, 0.5);
+        box(g, -1.2, -1, 2.4, 10.4, 0.8, grad(g, -1, 0, 1, 0, [[0, '#f4cc5a'], [1, '#9a6a1e']]), K, 0.7);
+        box(g, 1, 5.4, 3.2, 1.8, 0.4, '#d8a840', K, 0.6); box(g, 1, 7.8, 2.4, 1.6, 0.4, '#d8a840', K, 0.6);
+        lin(g, -2, -5.8, 2, -5.8, 'rgba(58,224,255,0.9)', 0.5);
+        g.restore();
+        break;
       case 'lale':
         lin(g, 0, 7.6, 0, -1, '#2a8a3a', 1.2);
         ellipse(g, -2.6, 4, 1.4, 3.6, '#3aa04a', K, 0.5, -0.6); ellipse(g, 2.6, 4.4, 1.4, 3.6, '#3aa04a', K, 0.5, 0.6);
@@ -1253,6 +1389,6 @@
     PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
-    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
+    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawCabin, drawGondola, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
   };
 })(window);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bug Avcısı: İstanbul — 11 dünya × 3 bölüm haritalarını üretir ve src/levels.js'e yazar.
+"""Bug Avcısı: İstanbul — 12 dünya × 3 bölüm haritalarını üretir ve src/levels.js'e yazar.
 
     python3 tools/bolumler.py
 
@@ -51,11 +51,23 @@ WORLDS = [
      'sections': ['Ayak', 'Halatlar', 'Tepe']},
     {'name': 'Çatılar', 'sub': 'Gece', 'enemies': 'evom', 'boss': 'glitch', 'boss_name': 'Glitch',
      'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
+    # Ataşehir sonradan araya girdi: eski bölümler değişmesin diye her dünyanın tohumu (seed) ve zorluk sırası (dpos) sabit
+    {'name': 'Ataşehir', 'sub': 'Finans Merkezi', 'enemies': 'esvo', 'boss': 'fidye', 'boss_name': 'Fidye Yazılımı',
+     'sections': ['Finans Merkezi', 'Veri Merkezi', 'Kontrol Odası'], 'seed': 11, 'dpos': 8.5},
     {'name': 'Çamlıca', 'sub': 'Kule', 'enemies': 'esvmo', 'boss': 'maviekran', 'boss_name': 'Mavi Ekran',
-     'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası']},
+     'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası'], 'seed': 9, 'dpos': 9},
     {'name': 'Ümraniye', 'sub': 'Ev', 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç',
-     'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi']},
+     'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi'], 'seed': 10, 'dpos': 10},
 ]
+DSPAN = 32   # zorluk ölçeği: ilk 11 dünyanın 33 bölümü (0 → 1)
+
+
+def wseed(w):
+    return WORLDS[w].get('seed', w)
+
+
+def wdpos(w):
+    return WORLDS[w].get('dpos', w)
 
 # Bonus binişleri: bölümün semtine göre araç. tür → (genişlik karo, hız karo/sn, tavan satırı)
 RIDE_KIND = {'metro': (10, 4.5, 9), 'metrobus': (11, 5.0, 9), 'tram': (10, 3.9, 9), 'minibus': (6, 4.4, 10),
@@ -119,6 +131,11 @@ PLACES = [
         {'parts': ['pillars', 'pillars', 'gap', 'bridge', 'spikes', 'loop', 'step', 'vertical', 'blocks', 'group', 'blockgap'], 'vert': ['descent', 'climb']},
         {'parts': ['pillars', 'pillars', 'vertical', 'loop', 'gap', 'step', 'blockgap', 'blocks'], 'vert': ['climb', 'descent']},
         {'parts': ['loop', 'loop', 'moving', 'vertical', 'spikes', 'pillars', 'blocks', 'flat'], 'ceil': 2},
+    ],
+    [  # Ataşehir: finans merkezinin cam kuleleri (cephe asansörleri), veri merkezi, akıllı şehir kontrol odası
+        {'parts': ['flat', 'blocks', 'moving', 'pillars', 'vertical', 'gap', 'blocks', 'group', 'stairs', 'blockgap'], 'vert': ['climb', 'climb']},
+        {'parts': ['flat', 'tunnel', 'pillars', 'spikes', 'blocks', 'loop', 'group', 'blockgap', 'stairs'], 'ceil': 2, 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'spikes', 'loop', 'moving', 'pillars', 'blocks', 'gap', 'group'], 'ceil': 2},
     ],
     [  # Çamlıca
         {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'ride': ride('taxi', '', '#f2c21b', 'ÇAMLICA', 'KISIKLI', night=True), 'vert': ['climb', 'climb']},
@@ -729,7 +746,7 @@ class Lv:
 
 
 def make(world, sec, r):
-    d = (world * 3 + sec) / (len(WORLDS) * 3 - 1)
+    d = min(1.0, (wdpos(world) * 3 + sec) / DSPAN)
     W = WORLDS[world]
     PL = PLACES[world][sec]
     lv = Lv(r, d, world)
@@ -817,11 +834,11 @@ def main():
     for w in range(len(WORLDS)):
         W = WORLDS[w]
         for s in range(3):
-            r = random.Random(w * 1000 + s * 37 + 11)
+            r = random.Random(wseed(w) * 1000 + s * 37 + 11)
             rows, room, vcam, rd = make(w, s, r)
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
-                  'time': (300 if s < 2 else 330) + 50 * round(2 * (w * 3 + s) / (len(WORLDS) * 3 - 1)), 'map': rows}
+                  'time': (300 if s < 2 else 330) + 50 * round(2 * min(1.0, (wdpos(w) * 3 + s) / DSPAN)), 'map': rows}
             if room is not None:
                 lv['room'] = room
                 lv['roomW'] = ROOM_W

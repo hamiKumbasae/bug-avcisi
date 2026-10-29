@@ -794,6 +794,112 @@
     },
   };
 
+  // Ataşehir'den sonra — gece, finans merkezinin meydanı: fidye yazılımı kuleleri karartmış, dev LED cephede kırmızı kilit.
+  // Kahraman alçak duvarda laptopuyla son satırları yazar; kilit açılır, kuleler kat kat yeniden yanar. Cephede bir an
+  // kendi atölyesinin işareti (örs ve çekiç) parlar, sonra şehrin ekranı geri gelir. Gece bekçisi iki ince belli çayla gelir,
+  // birini ona uzatır, yan yana otururlar. Uzakta tepede Çamlıca Kulesi'nin ışığı yanıp söner: sıradaki yer.
+  SCENES.atasehir = {
+    dur: 13.5, amb: 'finans', cues: [[0.6, 'keys'], [1.7, 'keys'], [2.9, 'ding'], [5.8, 'ding'], [9.6, 'kapak']],
+    draw(g, t) {
+      const TW = [[6, 60, 34], [86, 166, 16], [174, 214, 64]];   // kuleler: sol, orta (LED cepheli), sağ
+      const base = layer('atasehir', VW, VH, (b) => {
+        b.fillStyle = grad(b, 0, 0, 0, 200, [[0, '#04081e'], [0.7, '#141a48'], [1, '#3a2a5a']]); b.fillRect(0, 0, VW, 200);
+        const r = A.rng(14); for (let i = 0; i < 40; i++) A.circle(b, r() * VW, r() * 70, 0.3 + r() * 0.5, `rgba(255,255,240,${0.3 + r() * 0.6})`, null);
+        // uzakta tepede Çamlıca Kulesi
+        b.fillStyle = '#0e1238'; b.beginPath(); b.moveTo(190, 200); b.quadraticCurveTo(236, 158, 262, 170); b.lineTo(262, 200); b.closePath(); b.fill();
+        K.camlicaTower(b, 238, 170, 0.36, { wall: '#5a6088', wallD: '#4a5078', glass: '#2a3a78', band: '#6a8ac8', lit: '#9ad8ff' });
+        // kuleler: karanlık cam
+        for (const [x0, x1, top] of TW) {
+          b.fillStyle = grad(b, x0, 0, x1, 0, [[0, '#1c2a4a'], [0.5, '#141e38'], [1, '#0c1428']]); b.fillRect(x0, top, x1 - x0, 200 - top);
+          b.fillStyle = 'rgba(255,255,255,0.05)'; for (let y = top + 4; y < 200; y += 7) b.fillRect(x0, y, x1 - x0, 0.6);
+          A.box(b, (x0 + x1) / 2 - 3, top - 5, 6, 5, 0.8, '#1c2a4a', null);
+        }
+        // LED cephenin çerçevesi
+        A.box(b, 96, 38, 60, 46, 2, '#06080e', '#2a3448', 0.8);
+        // meydan ve alçak duvar
+        b.fillStyle = grad(b, 0, 196, 0, 240, [[0, '#2a3048'], [1, '#141828']]); b.fillRect(0, 196, VW, 44);
+        for (let x = 0; x < VW; x += 22) A.lin(b, x, 196, x - 30, 240, 'rgba(255,255,255,0.05)', 0.6);
+        A.box(b, 20, 206, 120, 12, 2, '#5a6278', '#2a3048', 0.8); A.lin(b, 22, 207, 138, 207, 'rgba(255,255,255,0.3)', 0.8);
+      });
+      img(g, base, 0, 0);
+      // kuleler kat kat yeniden yanar (aşağıdan yukarı, kule kule)
+      for (let k = 0; k < TW.length; k++) {
+        const [x0, x1, top] = TW[k], r = A.rng(70 + k);
+        for (let y = 196 - 7, f = 0; y > top + 2; y -= 7, f++) {
+          const on = t > 3.1 + k * 0.45 + f * 0.07;
+          for (let x = x0 + 3; x < x1 - 4; x += 6) {
+            const lit = r() < 0.62;
+            if (on && lit) g.fillStyle = r() < 0.85 ? '#ffd98a' : '#9ad8ff'; else { r(); g.fillStyle = 'rgba(40,52,90,0.6)'; }
+            if (k === 1 && y > 36 && y < 86 && x > 94 && x < 158) continue;
+            g.fillRect(x, y + 1, 3.4, 3.6);
+          }
+        }
+        // ikaz lambası hep yanar
+        A.circle(g, (x0 + x1) / 2, top - 6, 1.1, Math.floor(t * 1.6 + k) % 2 ? '#ff4a4a' : '#7a1a1a', null);
+      }
+      // LED cephe: kırmızı kilit → açılır → atölyenin işareti → şehrin ekranı
+      g.save(); g.beginPath(); g.rect(98, 40, 56, 42); g.clip();
+      const cx = 126, cy = 64;
+      if (t < 4.6) {
+        g.fillStyle = '#2a060a'; g.fillRect(98, 40, 56, 42);
+        const open = seg(t, 2.6, 3.4), fade = 1 - seg(t, 3.8, 4.6);
+        g.globalAlpha = fade;
+        g.strokeStyle = open > 0.5 ? '#7cff6a' : '#ff4a4a'; g.lineWidth = 3.4;
+        g.beginPath(); g.arc(cx + open * 6, cy - 6 - open * 6, 8, Math.PI, 0); g.stroke();
+        A.box(g, cx - 12, cy - 6, 24, 18, 3, open > 0.5 ? '#3fae2c' : '#e8443a', null);
+        A.circle(g, cx, cy + 1, 2.4, '#1a0a0a', null);
+        g.globalAlpha = 1;
+      } else if (t < 8.4) {
+        // kendi işareti: örs ve çekiç, kıvılcımlar
+        const a = seg(t, 4.6, 5.2) * (1 - seg(t, 7.8, 8.4));
+        g.fillStyle = '#0a1420'; g.fillRect(98, 40, 56, 42);
+        g.globalAlpha = a;
+        glow(g, cx, cy, 30, 'rgba(255,170,80,A)', 0.5);
+        A.poly(g, [cx - 16, cy + 1, cx + 14, cy + 1, cx + 18, cy - 3, cx + 18, cy + 5, cx + 8, cy + 7, cx + 6, cy + 13, cx - 6, cy + 13, cx - 8, cy + 7, cx - 16, cy + 5], '#c8ccd4', null);
+        A.lin(g, cx - 4, cy - 6, cx + 10, cy - 18, '#a87a4a', 2.4);
+        A.box(g, cx + 5, cy - 22, 12, 6, 1.2, '#c8ccd4', null);
+        sparks(g, cx + 4, cy - 2, t, 1.1, 8, 3);
+        g.globalAlpha = 1;
+      } else {
+        // şehrin ekranı: dalgalanan ışık şeritleri
+        const a = seg(t, 8.4, 9.2);
+        g.fillStyle = '#081a2a'; g.fillRect(98, 40, 56, 42);
+        g.globalAlpha = a;
+        for (let k = 0; k < 4; k++) { g.strokeStyle = ['#3ae0ff', '#7cff6a', '#ffd98a', '#c88aec'][k]; g.lineWidth = 1.6; g.beginPath(); for (let x = 98; x <= 154; x += 3) g.lineTo(x, 50 + k * 8 + Math.sin(x * 0.12 + t * 2 + k) * 3); g.stroke(); }
+        g.globalAlpha = 1;
+      }
+      g.restore();
+      // Çamlıca'nın ışığı: sonda yanıp söner
+      const cl = 0.4 + 0.6 * seg(t, 10.6, 11.4) * (0.6 + 0.4 * Math.sin(t * 5));
+      glow(g, 238, 117, 12, 'rgba(160,230,255,A)', cl * 0.8);
+      A.circle(g, 238, 117, 1.4, '#e8f8ff', null);
+      // kahraman: duvarda laptopla; çay gelince kapağı kapatır
+      const tea = t > 10.2;
+      hero(g, 64, 214, 44, { pose: 'sit', dir: 1, typing: t < 9.4, phase: t });
+      if (t < 9.6) {
+        A.box(g, 72, 196, 12, 2, 0.6, '#c9ccd4', A.K, 0.5); A.poly(g, [74, 196, 84, 196, 86, 187, 76, 187], '#2a2e38', A.K, 0.5);
+        glow(g, 78, 192, 14, 'rgba(160,220,255,A)', 0.5);
+      } else A.box(g, 72, 195, 12, 3, 0.8, '#c9ccd4', A.K, 0.5);
+      // gece bekçisi: lacivert üniforma, kasket; tepside iki çay
+      const wk = seg(t, 7.4, 10.0), gx = lerp(290, 108, wk), sit = t > 10.2;
+      const guard = { shirt: '#3a5088', shirtD: '#2a3c6a', pants: '#262e4a', hair: '#a8a8ae', skin: '#d8a888' };
+      if (!sit) figure(g, gx, 214, 46, { ...guard, pose: wk > 0 && wk < 1 ? 'walk' : 'stand', dir: -1, phase: t * 1.5 });
+      else figure(g, 108, 214, 46, { ...guard, pose: 'sit', dir: -1, phase: t });
+      const hx = sit ? 108 - 2.8 : gx - 0.9, hy = sit ? 214 - 32.2 : 214 - 41.4;   // başın merkezi (figure: u = 0.46)
+      A.box(g, hx - 4.2, hy - 5.6, 8.4, 3, 1, '#24305a', A.K, 0.4);   // kasket ve arması
+      A.box(g, hx - 6.6, hy - 3.4, 4.4, 1.2, 0.5, '#1a2244', null); A.circle(g, hx, hy - 4.2, 0.7, '#f4c531', null);
+      // çay bardakları
+      const glass = (x, y) => {
+        A.poly(g, [x - 1.8, y - 5, x + 1.8, y - 5, x + 1, y - 2.6, x + 1.8, y, x - 1.8, y, x - 1, y - 2.6], 'rgba(200,90,40,0.85)', A.K, 0.4);
+        A.box(g, x - 2.6, y, 5.2, 1, 0.4, '#e8e4dc', null);
+        for (let k = 0; k < 2; k++) { const ph = (t * 0.7 + k * 0.5) % 1; g.strokeStyle = `rgba(255,255,255,${0.4 * (1 - ph)})`; g.lineWidth = 0.5; g.beginPath(); g.moveTo(x, y - 6 - ph * 6); g.quadraticCurveTo(x + 1.6, y - 8 - ph * 6, x, y - 10 - ph * 6); g.stroke(); }
+      };
+      if (!tea) { if (wk > 0) { A.box(g, gx - 16, 214 - 29, 12, 1.4, 0.6, '#c8ccd4', null); glass(gx - 13, 214 - 29); glass(gx - 7, 214 - 29); } }
+      else { glass(84, 206); glass(95, 206); }   // duvarın üstünde, ikisinin arasında
+      birds(g, t, 50, 2, '#1a1a3a', 8);
+    },
+  };
+
   // Haliç'ten sonra — Balat'ta akşam: kahraman dik yokuşu çıkar; üst kattaki pencereden yaşlı bir teyze
   // ipe bağlı sepeti sarkıtır, içinde simit ve çay. Kahraman alır, yukarı bakar, iki el birbirine sallanır.
   SCENES.halic = {
@@ -920,7 +1026,7 @@
       // raf ve parçalar
       rect(g, 30, 84, 132, 3, '#8a5a34');
       for (let i = 0; i < A.PIECES.length; i++) {
-        const x = 37 + i * 11.8, y = 77;
+        const x = 36 + i * (122 / (A.PIECES.length - 1)), y = 77;
         if (pieces[i]) { glow(g, x, y, 8, 'rgba(255,240,190,A)', 0.4); A.drawPiece(g, i, x, y, 0.66, t); }
         else { g.strokeStyle = 'rgba(255,240,220,0.4)'; g.setLineDash([1.4, 1.4]); g.lineWidth = 0.6; g.strokeRect(x - 4.5, y - 5.4, 9, 10); g.setLineDash([]); }
       }

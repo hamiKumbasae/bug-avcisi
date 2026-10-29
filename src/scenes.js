@@ -357,6 +357,7 @@
     null, // 7 Haliç: üç bölümü de places.js'te
     { stops: [[0, '#26245e'], [0.45, '#6a4a9a'], [0.8, '#e2807a'], [1, '#f6a07a']], stars: 30 },
     { stops: [[0, '#070b26'], [0.6, '#18205a'], [1, '#2c3474']], moon: [196, 46, 14], stars: 90 },
+    null, // 10 Ataşehir: üç bölümü de places.js'te
     { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
     null, // 11 Ümraniye: üç bölümü de places.js'te
   ];
@@ -572,6 +573,7 @@
         }
       },
     },
+    null, // Ataşehir
     // 9 Çamlıca: gece ışıkları, LED'li köprü, Kız Kulesi; önde Çamlıca Kulesi ve Camii
     {
       far(g) {
@@ -738,7 +740,7 @@
 
   // ---------- mekânlar: her dünyanın 3 bölümü ayrı bir yer (yer = dünya*3 + bölüm) ----------
   // Dünyanın ilk çizimi hangi bölümde kullanılıyor; diğer iki bölüm PLACES'ta
-  const BASE_AT = [0, 0, 1, 0, 0, 1, -1, 0, 0, 0, -1];
+  const BASE_AT = [0, 0, 1, 0, 0, 1, -1, 0, 0, -1, 0, -1];
   const PLACES = {};
   function placeDef(p) {
     const w = Math.floor(p / 3), s = p % 3;

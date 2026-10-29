@@ -46,6 +46,7 @@
     maviekran: { hp: 6, w: 2.75, h: 2.5 },
     spagetti: { hp: 5, w: 2.25, h: 1.75 },
     teknikborc: { hp: 7, w: 2.5, h: 2.5 },
+    fidye:     { hp: 5, w: 2.25, h: 2.25 },
   };
 
   function rng(seed) {
@@ -711,7 +712,8 @@
       if (s.g) s.vy = Math.min(PH.maxFall, s.vy + s.g * dt);
       s.x += s.vx * dt; s.y += s.vy * dt;
       if (s.kind === 'drop' && s.y + s.h >= 12) { s.y = 12 - s.h; s.vy = 0; s.g = 0; }
-      if (!G.player.dead && overlap(G.player, shrink(s, 0.1))) hurt(G);
+      // kurulan kilit önce yalnız uyarıdır (arm saniye), sonra yakar
+      if (!G.player.dead && !(s.arm && s.t < s.arm) && overlap(G.player, shrink(s, 0.1))) hurt(G);
       if (s.solidKill && solid(G, Math.floor(s.x + s.w / 2), Math.floor(s.y + s.h / 2))) return false;
       return s.t < (s.life || 5) && s.y < G.H + 1 && s.x > G.cam - 2 && s.x < G.cam + VW + 2;
     });
@@ -727,7 +729,7 @@
       hurtT: 0, flash: 0, state: 'intro', st: 0, t: 0, face: -1, onGround: true, dead: false,
       L: a.ax + 3, R: a.ax + 18, cyc: 0, phase: 0,
     };
-    if (kind === 'spam' || kind === 'ddos') b.y = 3;
+    if (kind === 'spam' || kind === 'ddos' || kind === 'fidye') b.y = 3;
     if (kind === 'marti') { b.y = 3; b.x = b.R - b.w - 1; }
     if (kind === 'dongu') { b.y = 5.5; b.cx = (b.L + b.R) / 2 - b.w / 2; b.orb = 0; b.wv = 0.55; }
     if (kind === 'glitch') { b.state = 'intro'; }
@@ -985,6 +987,38 @@
         }
         break;
       }
+      case 'fidye': {
+        // fidye yazılımı: dev asma kilit. Havada oyuncunun üstüne süzülür, zemine kilit atar (önce yanıp söner,
+        // sonra basana can yakar). Üç kilitten sonra fidyeyi saymak için yere iner: işte o an ezilir.
+        // Öfkelenince yere inince iki yana şifreli dosya fırlatır.
+        if (b.state === 'go') {
+          b.x = approach(b.x, clamp(pcx - b.w / 2, b.L, b.R - b.w), (2.2 + anger * 1.6) * dt);
+          b.y = approach(b.y, 3, 5 * dt);
+          b.cyc += dt;
+          if (b.cyc > 1.3 - anger * 0.35) {
+            b.cyc = 0; b.locks = (b.locks || 0) + 1;
+            const xs = [clamp(pcx - 0.9, b.L, b.R - 1.8)];
+            if (anger > 0.3) { let x = b.L + G.rand() * (b.R - b.L - 1.8); if (Math.abs(x - xs[0]) < 2.2) x = clamp(xs[0] + (xs[0] < (b.L + b.R) / 2 ? 4 : -4), b.L, b.R - 1.8); xs.push(x); }
+            for (const x of xs) bshot(G, { kind: 'lock', x, y: 12 - 0.7, w: 1.8, h: 0.7, arm: 0.9, life: 2.5 });
+            ev(G, 'lockon');
+          }
+          if (b.locks >= (anger >= 0.6 ? 2 : 3) && b.cyc > 0.8) { b.locks = 0; set('down'); }
+        } else if (b.state === 'down') {
+          b.y = approach(b.y, 12 - b.h, 8 * dt);
+          if (b.y >= 12 - b.h - 0.01 && !b.fired) {
+            b.fired = true; G.shake = 0.2; ev(G, 'thud');
+            if (anger > 0.4) {
+              bshot(G, { kind: 'file', x: b.x - 0.7, y: 11.4, vx: -5.5, w: 0.7, h: 0.6, life: 3 });
+              bshot(G, { kind: 'file', x: b.x + b.w, y: 11.4, vx: 5.5, w: 0.7, h: 0.6, life: 3 });
+            }
+          }
+          if (b.st > 2.6 - anger * 0.6) { set('up'); b.fired = false; }
+        } else if (b.state === 'up') {
+          b.y = approach(b.y, 3, 6 * dt);
+          if (b.y <= 3.01) set('go');
+        }
+        break;
+      }
       case 'maviekran': {
         if (b.hp > 3) {
           if (b.state === 'go' && b.onGround) {
@@ -1025,6 +1059,7 @@
         if (stomp) { p.vy = -13; p.jumping = true; p.y = Math.min(p.y, b.y - p.h); }
         if (b.kind === 'glitch' && !b.dead) set('vanish');
         if (b.kind === 'spam' && !b.dead && b.state === 'low') set('rise');
+        if (b.kind === 'fidye' && !b.dead && b.state === 'down') { set('up'); b.fired = false; }
       } else hurt(G);
     }
   }

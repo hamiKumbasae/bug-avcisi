@@ -161,6 +161,7 @@
       }
       case 'fall': stopTrain(); osc('triangle', 900, t, 0.55, 0.1, B, 0.22); break;
       case 'leap': osc('square', 210, t, 0.17, 0.05, B, 2.8); noise(t, 0.08, 0.08, 4200, B, true); break;
+      case 'lockon': osc('square', 1400, t, 0.04, 0.05, B); osc('square', 900, t + 0.07, 0.06, 0.05, B); noise(t + 0.07, 0.05, 0.12, 3800, B, true); break;
       case 'win': [72, 72, 76, 79, 84, 79, 84, 88, 91].forEach((n, i) => { osc('pulse', mid(n), t + i * 0.14, 0.16, 0.1, B); osc('triangle', mid(n - 12), t + i * 0.14, 0.16, 0.22, B); }); break;
     }
   }
@@ -190,6 +191,8 @@
       lead: 'D5 F5 A5 D6 A5 F5 D5 F5 | Bb4 D5 F5 Bb5 F5 D5 Bb4 D5 | C5 E5 G5 C6 G5 E5 C5 E5 | A4 C#5 E5 A5 E5 C#5 A4 C#5 | D6 - C6 . A5 - F5 . | Bb5 - A5 . F5 - D5 . | G5 . A5 . Bb5 . C6 . | C#6 - - . E5 . A5 .' },
     halic: { bpm: 120, chords: 'Dm Gm A Dm Bb Gm A Dm', drums: 'k..hs.h.k..hs.h.',
       lead: 'D5 . F5 . A5 - G5 F5 | G5 . Bb5 . A5 G5 F5 . | E5 . C#5 . E5 . A5 . | F5 - E5 D5 D5 - . . | D5 . F5 . Bb5 - A5 G5 | G5 . F5 . E5 . D5 . | C#5 . E5 . G5 F5 E5 C#5 | D5 - - . A4 . D5 .' },
+    atasehir: { bpm: 150, chords: 'Bm G D A Bm G Em F#', drums: 'k.hsk.hsk.hsk.hh',
+      lead: 'B4 . D5 F#5 B5 . F#5 D5 | G5 . F#5 . D5 . B4 . | A4 . D5 F#5 A5 . F#5 D5 | C#5 - E5 . A5 - . . | B5 . A5 . F#5 . D5 F#5 | G5 - B5 . D6 - B5 . | E5 . G5 . B5 . A5 G5 | F#5 - A#5 . C#6 - . .' },
     umraniye: { bpm: 140, chords: 'G D Em C G D C D', drums: 'k.h.s.h.k.h.s.hh',
       lead: 'G4 . B4 . D5 . G5 . | F#5 - E5 D5 A4 . D5 . | E5 . G5 . B5 . A5 G5 | E5 - D5 C5 G4 - . . | B4 . D5 . G5 . B5 . | A5 - F#5 . D5 . A5 . | G5 . E5 . C5 . E5 G5 | F#5 - A5 . D6 - . .' },
     boss: { bpm: 172, chords: 'Dm Dm Bb A Dm Dm Bb A', drums: 'kkhskkhskkhskkss',
@@ -199,7 +202,7 @@
     son: { bpm: 112, chords: 'F C Dm Bb F C Bb C', drums: 'k...s...k...s.h.',
       lead: 'C5 - F5 . A5 - G5 F5 | E5 - G5 . C6 - . . | D5 - F5 . A5 - G5 F5 | F5 - D5 . Bb4 - . . | C5 - F5 . A5 - C6 . | Bb5 - A5 . G5 - E5 . | D5 . E5 . F5 . G5 . | F5 - - - . . . .' },
   };
-  const WORLD_SONG = ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'camlica', 'umraniye'];
+  const WORLD_SONG = ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'atasehir', 'camlica', 'umraniye'];
   function chordNotes(ch) {
     const m = /^([A-G])(#|b)?(m?)/.exec(ch);
     const root = NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
@@ -352,12 +355,17 @@
     mahalle: { beds: [['city', 0.1], ['murmur', 0.05]], events: [['bird', 5], ['car', 6], ['step', 5], ['ding', 14]] },
     plazadis: { beds: [['city', 0.12], ['engine', 0.05], ['wind', 0.04]], events: [['car', 3], ['ding', 12]] },
     sanayi: { beds: [['fire', 0.08], ['hum', 0.06], ['city', 0.04]], events: [['forge', 2.6], ['carve', 5], ['creak', 7]] },
+    // Ataşehir: gece finans meydanı, veri merkezinin soğutma uğultusu, kontrol odasının bip'leri
+    finans: { beds: [['city', 0.09], ['wind', 0.05], ['hum', 0.03]], events: [['car', 5], ['ding', 11], ['step', 7]] },
+    veri: { beds: [['hum', 0.2], ['wind', 0.03]], events: [['beep', 1.8], ['keys', 11]] },
+    kontrol: { beds: [['hum', 0.1], ['murmur', 0.03]], events: [['beep', 2.2], ['keys', 5], ['ding', 12]] },
   };
-  const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'camlica', 'mahalle'];
+  const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'finans', 'camlica', 'mahalle'];
   // her bölümün mekânı (dünya*3 + bölüm)
   const PLACE_AMB = ['plaza', 'ofis', 'sunucu', 'iskele', 'pazar', 'moda', 'iskele', 'vapur', 'firtina',
     'carsi', 'carsi', 'bedesten', 'sarnic', 'sarnic', 'karanlik', 'kamondo', 'galata', 'cati',
-    'karakoy', 'halic', 'balat', 'kopru', 'halat', 'tepe', 'catilar', 'catilar', 'saat', 'camlica', 'asansor', 'yayin',
+    'karakoy', 'halic', 'balat', 'kopru', 'halat', 'tepe', 'catilar', 'catilar', 'saat', 'finans', 'veri', 'kontrol',
+    'camlica', 'asansor', 'yayin',
     'mahalle', 'plazadis', 'sanayi'];
   function stopAmbient(fade) {
     if (!amb || !ac) { amb = null; return; }

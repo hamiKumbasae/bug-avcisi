@@ -438,6 +438,19 @@ const flat = (w, extraRows) => {
   }
 }
 
+// ---------- Fidye Yazılımı: zemine kurulan kilit önce uyarır, sonra yakar ----------
+{
+  const idx = LV.findIndex((L) => L.boss === 'fidye');
+  const G = BA.loadStage(BA.newRun(), idx), p = G.player;
+  run(G, NONE, 0.3);
+  p.inv = 0; G.S.power = 0;
+  G.bshots.push({ kind: 'lock', x: p.x - 0.5, y: p.y + p.h - 0.7, w: 1.8, h: 0.7, vx: 0, vy: 0, g: 0, t: 0, arm: 0.9, life: 2.5 });
+  run(G, NONE, 0.5);
+  ok(!p.dead && G.phase === 'play', 'kurulmakta olan kilit can yakmaz');
+  run(G, NONE, 0.6);
+  ok(p.dead || G.phase === 'dying', 'kurulan kilidin üstünde duran yanar');
+}
+
 // ---------- bitiş merdiveni ve DEPLOY anteni ----------
 {
   // merdivenin tepesinden kenara gelen oyuncu verilen hızla zıplar; anten bonusunu döndürür

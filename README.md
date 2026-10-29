@@ -1,7 +1,7 @@
 # Bug Avcısı: İstanbul
 
 Bilgisayar mühendisi bir kahramanla İstanbul'da geçen, tarayıcıda çalışan özgün bir platform oyunu.
-İstanbul'un bütün sistemlerine bug'lar sızmış; Maslak'taki plazalardan Haliç'e, Çamlıca'ya ve Ümraniye'ye
+İstanbul'un bütün sistemlerine bug'lar sızmış; Maslak'taki plazalardan Haliç'e, Ataşehir'in finans merkezine, Çamlıca'ya ve Ümraniye'ye
 kadar her bölümün sonundaki **DEPLOY** terminaline ulaş, her dünyanın sonunda patronu yen.
 
 **Oyna:** https://hamikumbasae.github.io/bug-avcisi/
@@ -18,6 +18,7 @@ Ayasofya, Sultanahmet Camii, Kız Kulesi, Galata Kulesi, Boğaz Köprüsü, Orta
 Oyun yazısız bir hikâye anlatır: Ümraniye'de, kendi atölyesinde demir döven ve gece kod yazan bir mühendis
 büyük şehirde kendine bir yer arar. Kapılar hemen açılmaz. Yolun sonuna doğru plazanın kapısı da açılır,
 ama o artık kendi yerinin neresi olduğunu bilir: gece otobüsünde laptopunu kapatır ve kendi durağında iner.
+Ataşehir'de fidye yazılımının kilitlediği kuleleri yeniden yakar; gece bekçisi iki ince belli çayla gelip yanına oturur.
 
 - **Sahneler:** oyunun başında, her dünyanın sonunda ve en sonda kısa, sessiz sahneler var. Tek kelime yok;
   hikâyeyi ışık, kompozisyon, hareket ve şehir sesleri anlatır. Işık dili Edward Hopper'ın resimlerinden
@@ -26,21 +27,21 @@ ama o artık kendi yerinin neresi olduğunu bilir: gece otobüsünde laptopunu k
 - **Ufuktaki ev:** Çamlıca Kulesi dünyaların ufkunda görünür; ilerledikçe yaklaşır.
 - **Hatıra parçaları:** her dünyanın 2. bölümünde, yoldan ayrılan yüksek bir köşede bir parça var
   (Maslak camı, martı tüyü, vapur çanı, nazar, sarnıç damlası, Galata Kulesi, Balat'ın sepeti, köprü, kedi,
-  lale, demirci çekici).
+  Ataşehir'de fidye yazılımından geri alınan anahtar, lale, demirci çekici).
   Topladıkların kalıcı olarak kaydedilir; son sahnede atölyenin rafında durur, Bölüm seç ekranında da görünür.
 - **Ses:** her dünyanın kendi şehir sesi var (martılar, vapur düdüğü, çarşı uğultusu, damlayan su, gece rüzgârı).
 
 ## Dünyalar
 
-11 dünya, her biri 3 bölüm (toplam 33). Her bölüm ayrı bir mekânda geçer: kendi arka planı, zemini,
+12 dünya, her biri 3 bölüm (toplam 36). Her bölüm ayrı bir mekânda geçer: kendi arka planı, zemini,
 şehir sesi ve bölüm tipi vardır (dış mekânda koşu ve bloklar; iç mekânda tavanlı dar koridorlar;
 patron bölümlerinde kale gibi tuzaklar). Her dünyanın 3. bölümünün sonunda bir patron var.
 
 Bölümler Super Mario Bros. ölçüsünde: 1. dünyada ~210 blok ve 14 düşman (Mario 1-1: ~200 blok, 17 düşman),
-ilerledikçe uzayıp kalabalıklaşır; 11. dünyada ~330 blok ve 20 düşman. Patron bölümlerinde arenadan önce
+ilerledikçe uzayıp kalabalıklaşır; son dünyada ~330 blok ve 20 düşman. Patron bölümlerinde arenadan önce
 150-230 blokluk bir kale yolu var. Süre 300'den 400 saniyeye çıkar.
 
-**Amaç:** Maslak'tan başlayıp şehri geçerek Ümraniye'ye, eve varmak; yol boyunca 11 hatıra parçasını toplamak.
+**Amaç:** Maslak'tan başlayıp şehri geçerek Ümraniye'ye, eve varmak; yol boyunca 12 hatıra parçasını toplamak.
 Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve topladığın parçaları gösterir.
 
 | Dünya | Yer | Bölümler | Patron |
@@ -54,10 +55,11 @@ Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve top
 | 7 | Haliç | Karaköy (Galata Köprüsü'nde balıkçılar) · Haliç Kıyısı (metro köprüsü, eski tersane) · Eyüp-Balat (renkli evler, Fener Rum Lisesi, teleferik) | Spagetti Kod |
 | 8 | Boğaz Köprüsü | Ayak · Halatlar (bulut hizasında) · Tepe (gece) | DDoS Bulutu |
 | 9 | Gece çatıları | Bacalar · Antenler · Saat Kulesi (dev çarklar) | Glitch |
-| 10 | Çamlıca | Tepe Yolu · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
-| 11 | Ümraniye | Çarşı (bakkal, fırın, çay ocağı) · Yeni Plazalar (M5) · Sanayi (torna, kaynak, dövme atölyesi) | Teknik Borç |
+| 10 | Ataşehir | Finans Merkezi (gece, cam kuleler, cephe asansörleri, dev LED cephe) · Veri Merkezi (sunucu koridorları, kablo tavaları, soğutma) · Kontrol Odası (akıllı şehrin ekran duvarı, canlı trafik haritası) | Fidye Yazılımı |
+| 11 | Çamlıca | Tepe Yolu · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
+| 12 | Ümraniye | Çarşı (bakkal, fırın, çay ocağı) · Yeni Plazalar (M5) · Sanayi (torna, kaynak, dövme atölyesi) | Teknik Borç |
 
-Ana menüdeki **Bölüm seç** ile 33 bölümden istediğine doğrudan başlayabilirsin.
+Ana menüdeki **Bölüm seç** ile 36 bölümden istediğine doğrudan başlayabilirsin.
 
 Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam edersin. Oyun bitince
 "Devam et" ile o dünyanın başından yeniden başlarsın; ulaştığın en ileri dünya menüde kayıtlı kalır.
@@ -117,9 +119,9 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
   | 6-1 Kamondo Merdivenleri | 1875'ten beri çalışan Tünel füniküleri (F2), eğik tünelde yokuş yukarı | Karaköy → Beyoğlu |
   | 6-2 Kuledibi | metro (M2) | Şişhane → Taksim |
   | 7-2 Haliç Kıyısı | metro (M2), Haliç Metro Köprüsü | Haliç → Vezneciler |
-  | 10-1 Tepe Yolu | sarı taksi, gece | Çamlıca → Kısıklı |
-  | 11-1 Çarşı | turkuaz minibüs | Ümraniye → Kadıköy |
-  | 11-2 Yeni Plazalar | metro (M5) | Ümraniye → Çarşı |
+  | 11-1 Tepe Yolu | sarı taksi, gece | Çamlıca → Kısıklı |
+  | 12-1 Çarşı | turkuaz minibüs | Ümraniye → Kadıköy |
+  | 12-2 Yeni Plazalar | metro (M5) | Ümraniye → Çarşı |
 
   Her aracın kendi sesi var: metronun kapı "ding-dong"u, metrobüsün hava fren tıslaması, minibüsün kornası,
   taksinin iki kısa kornası, tramvayın ve Tünel'in zili.
@@ -130,14 +132,14 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 
 ```
 python3 -m http.server      # sonra http://localhost:8000
-node tests/core.test.js     # fizik, bloklar, düşmanlar, eşyalar, akış, 11 patron
-node tests/levels.test.js   # 33 bölümün hepsi gerçek zıplama fiziğiyle baştan sona geçilebiliyor mu
+node tests/core.test.js     # fizik, bloklar, düşmanlar, eşyalar, binişler, akış, 12 patron
+node tests/levels.test.js   # 36 bölümün hepsi gerçek zıplama fiziğiyle baştan sona geçilebiliyor mu
 python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 ```
 
 - `src/core.js`: oyun kuralları; çizimden bağımsızdır, testler Node'da çalıştırır.
-- `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 33 bölüm (tohumlu, her seferinde aynı çıkar).
-- `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 11 patron, her dünyanın karoları.
+- `src/levels.js`: `tools/bolumler.py` ile parçalardan üretilen 36 bölüm (tohumlu, her seferinde aynı çıkar).
+- `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 12 patron, her dünyanın karoları.
 - `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı) ve başlık ekranının İstanbul silueti.
 - `src/places.js`: bölüm mekânları (gökdelenin içi, sunucu odası, balık pazarı, fırtına, saat kulesi...).
 - `src/rides.js`: bonus binişleri: metrobüs, tramvay, minibüs, taksi ve füniküler çizimleri, duraklar, sokak ve Tünel arka planları.
