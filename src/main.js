@@ -228,6 +228,9 @@
   }
   function beginStage() {
     app.G = BA.loadStage(app.S, app.S.stage);
+    // gökyüzündeki ay: bugünün tarihinde, bölümün sahne saatinde İstanbul'dan görünen ay (iç mekânda yok)
+    const L = app.G.L;
+    app.G.moon = L.ic || !window.BA_MOON ? null : window.BA_MOON.forScene(L.saat || 'gece', new Date(), L.gun);
     app.screen = 'play';
     AU.setRate(1);
     AU.playMusic(AU.WORLD_SONG[app.G.world]);
@@ -468,7 +471,8 @@
   // up: kamera başlangıç bandının kaç karo üstünde (tırmanınca arka plan aşağı kayar, gökyüzü açılır);
   // pitY / waterY: çukur kararması ve su çizgisinin ekrandaki yeri (karo satırı, ekranın üstünden)
   function backdrop(pl, cam, t, up, pitY, waterY) {
-    const sky = SC.sky(pl, VW, VH), L = SC.layers(pl);
+    const G = app.G, mo = G && (app.screen === 'play' || app.screen === 'pause') && G.place === pl ? G.moon : null;
+    const sky = SC.sky(pl, VW, VH, mo), L = SC.layers(pl);
     if (app.mapShift !== undefined) {
       // harita çıkarma kipi: arka plan dünyaya yapışık, üst bantlarda gökyüzü kesintisiz sürer
       const m = Math.round(app.mapShift * S);

@@ -213,7 +213,7 @@ Git ile bu sürüme dönmek için: `git checkout 2a82261`.
   Oyunda olmayacaklar: mozaik lamba yığınları, nazar boncuğu dizileri, halı ve baharat yığınları, nargile, fes, sarık,
   derviş, uçan halı, "gizemli Doğu" havası veren sis ya da sepya tonları, kartpostal kareler. Kapalıçarşı'nın
   ayrıntısı Bölümler tablosunda, müzik Müzik ve ses bölümünde.
-- [ ] **Ay, o gün İstanbul'dan nasıl görünüyorsa öyle çizilir** (Ay bölümünde).
+- [x] **Ay, o gün İstanbul'dan nasıl görünüyorsa öyle çizilir** (Ay bölümünde).
 
 ### Yeni dünya sırası (12 dünya × 3 bölüm = 36, yapı aynı kalır)
 
@@ -349,10 +349,10 @@ bu sadece son sahnede, rafta yan yana durunca hissedilir, hiçbir yerde açıkla
 Şu an ay `scenes.js`'te (`drawSky`, `d.moon`) bir dairenin içinden kaydırılmış bir daire çıkarılarak çiziliyor ve
 bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, y, r]`). Bu yöntem tamamen bırakılır.
 
-- [ ] SunCalc (MIT, ~9 KB, `suncalc@1.9.0`) `src/vendor/suncalc.js` olarak eklenir; lisansı Lisans bölümüne yazılır.
-- [ ] Hesap çizimden ayrı bir modülde (`src/moon.js`) durur ve Node'da test edilir. İstanbul: 41.01° K, 28.98° D.
-- [ ] **Tarih:** oyuncunun cihazındaki bugünün tarihi, İstanbul saatiyle (Türkiye 2016'dan beri bütün yıl UTC+3).
-- [ ] **Sahne saati** her bölüm için tanımlanır (`tools/bolumler.py`'de bölüme bir saat alanı) ve o günün güneş
+- [x] SunCalc (BSD 2 maddeli lisans, ~9 KB, `suncalc@1.9.0`) `src/vendor/suncalc.js` olarak eklenir; lisansı Lisans bölümüne yazılır.
+- [x] Hesap çizimden ayrı bir modülde (`src/moon.js`) durur ve Node'da test edilir. İstanbul: 41.01° K, 28.98° D.
+- [x] **Tarih:** oyuncunun cihazındaki bugünün tarihi, İstanbul saatiyle (Türkiye 2016'dan beri bütün yıl UTC+3).
+- [x] **Sahne saati** her bölüm için tanımlanır (`tools/bolumler.py`'de bölüme bir saat alanı) ve o günün güneş
   saatlerinden hesaplanır (`SunCalc.getTimes(tarih, 41.01, 28.98)`):
 
   | Saat | Hesap |
@@ -368,16 +368,16 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
   | şafak öncesi | `nauticalDawn` |
   | şafak | `sunrise` |
 
-- [ ] **Evre:** `getMoonIllumination(an)` → `fraction`. Yeni ay günlerinde (`fraction` < 0,02) ay çizilmez.
-- [ ] **Eğiklik:** `angle − parallacticAngle` (`parallacticAngle` `getMoonPosition(an, 41.01, 28.98)`'den gelir).
+- [x] **Evre:** `getMoonIllumination(an)` → `fraction`. Yeni ay günlerinde (`fraction` < 0,02) ay çizilmez.
+- [x] **Eğiklik:** `angle − parallacticAngle` (`parallacticAngle` `getMoonPosition(an, 41.01, 28.98)`'den gelir).
   Aydınlık kenarın tepeden saat yönünün tersine açısıdır; çizim bu açıyla döndürülür. Akşamları ufka yakın
   yatık hilal böylece kendiliğinden oluşur.
-- [ ] **Görünürlük ve yükseklik:** `altitude` < 0 ise ay çizilmez. Yükseklik gökyüzündeki dikey yerini belirler
+- [x] **Görünürlük ve yükseklik:** `altitude` < 0 ise ay çizilmez. Yükseklik gökyüzündeki dikey yerini belirler
   (ufka yakınsa alçakta). Gündüz ve gün batımı gökyüzünde soluk çizilir. İç mekân ve yer altı bölümlerinde
   gökyüzü görünmüyorsa çizilmez.
-- [ ] **Çizim:** aydınlık kısım yarım daire ve elipsle (terminatör) çizilir; karanlık kısım arka plandan çok hafif
+- [x] **Çizim:** aydınlık kısım yarım daire ve elipsle (terminatör) çizilir; karanlık kısım arka plandan çok hafif
   seçilir (ince hilalde dünya ışığı), kesilip atılmış gibi durmaz. Ayın çevresinde (yarıçapının ~4 katı) yıldız olmaz.
-- [ ] **Test:** `tests/moon.test.js` yazılır ve `.github/workflows/pages.yml`'deki test adımına eklenir.
+- [x] **Test:** `tests/moon.test.js` yazılır ve `.github/workflows/pages.yml`'deki test adımına eklenir.
   Kontrol değerleri (aydınlık oran ±0,5 puan, açılar ±1°):
 
   | An (İstanbul saati) | Beklenen |
@@ -454,4 +454,5 @@ sonra `node tests/moon.test.js` de) geçer; oyun tarayıcıda açılıp bakılı
 ## Lisans
 
 Kod MIT lisanslıdır (`LICENSE`). Fredoka yazı tipi SIL Open Font License ile gelir
-(`src/fonts/OFL-fredoka.txt`). PeerJS ve qrcode-generator MIT lisanslıdır.
+(`src/fonts/OFL-fredoka.txt`). PeerJS ve qrcode-generator MIT lisanslıdır. Ay hesabını yapan SunCalc 1.9.0
+(Vladimir Agafonkin) BSD 2 maddeli lisansla gelir (`src/vendor/LICENSE-suncalc.txt`).

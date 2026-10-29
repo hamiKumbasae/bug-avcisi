@@ -34,30 +34,30 @@ from pathlib import Path
 H = 14
 WORLDS = [
     {'name': 'Maslak', 'sub': 'Plazalar', 'enemies': 'e', 'boss': 'kralbug', 'boss_name': 'Kral Bug',
-     'sections': ['Büyükdere Caddesi', 'Toplantı Katı', 'Sunucu Katı']},
+     'saat': ['sabah', 'sabah', 'sabah'], 'sections': ['Büyükdere Caddesi', 'Toplantı Katı', 'Sunucu Katı']},
     {'name': 'Kadıköy', 'sub': 'Çarşı', 'enemies': 'es', 'boss': 'spam', 'boss_name': 'Spam Kraliçesi',
-     'sections': ['Rıhtım Caddesi', 'Balık Pazarı', 'Moda Yokuşu']},
+     'saat': ['ogle', 'ogle', 'gunbatimi'], 'sections': ['Rıhtım Caddesi', 'Balık Pazarı', 'Moda Yokuşu']},
     {'name': 'Vapur', 'sub': 'Boğaz', 'enemies': 'ems', 'boss': 'marti', 'boss_name': 'Dev Martı',
-     'sections': ['İskele', 'Güverte', 'Kaptan Köşkü']},
+     'saat': ['sabah', 'ogle', 'gece'], 'sections': ['İskele', 'Güverte', 'Kaptan Köşkü']},
     {'name': 'Kapalıçarşı', 'sub': 'Kubbeler', 'enemies': 'esv', 'boss': 'truva', 'boss_name': 'Truva Atı',
-     'sections': ['Kuyumcular', 'Halıcılar', 'Bedesten']},
+     'saat': ['ogle', 'ogle', 'ogle'], 'sections': ['Kuyumcular', 'Halıcılar', 'Bedesten']},
     {'name': 'Yerebatan', 'sub': 'Sarnıç', 'enemies': 'evo', 'boss': 'sizinti', 'boss_name': 'Bellek Sızıntısı',
-     'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
+     'saat': ['ogle', 'ogle', 'ogle'], 'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
     {'name': 'Galata', 'sub': 'Yokuşlar', 'enemies': 'emv', 'boss': 'dongu', 'boss_name': 'Sonsuz Döngü',
-     'sections': ['Kamondo Merdivenleri', 'Kuledibi', 'Çatı Arası']},
+     'saat': ['gunbatimi', 'gunbatimi', 'gece'], 'sections': ['Kamondo Merdivenleri', 'Kuledibi', 'Çatı Arası']},
     {'name': 'Haliç', 'sub': 'Karaköy\'den Balat\'a', 'enemies': 'esm', 'boss': 'spagetti', 'boss_name': 'Spagetti Kod',
-     'sections': ['Karaköy', 'Haliç Kıyısı', 'Eyüp-Balat']},
+     'saat': ['ogledenSonra', 'aksamustu', 'gunbatimi'], 'sections': ['Karaköy', 'Haliç Kıyısı', 'Eyüp-Balat']},
     {'name': 'Köprü', 'sub': 'Boğaz Köprüsü', 'enemies': 'msv', 'boss': 'ddos', 'boss_name': 'DDoS Bulutu',
-     'sections': ['Ayak', 'Halatlar', 'Tepe']},
+     'saat': ['gunbatimi', 'gunbatimi', 'gece'], 'sections': ['Ayak', 'Halatlar', 'Tepe']},
     {'name': 'Çatılar', 'sub': 'Gece', 'enemies': 'evom', 'boss': 'glitch', 'boss_name': 'Glitch',
-     'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
+     'saat': ['gece', 'geceyarisi', 'geceyarisi'], 'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
     # Ataşehir sonradan araya girdi: eski bölümler değişmesin diye her dünyanın tohumu (seed) ve zorluk sırası (dpos) sabit
     {'name': 'Ataşehir', 'sub': 'Finans Merkezi', 'enemies': 'esvo', 'boss': 'fidye', 'boss_name': 'Fidye Yazılımı',
-     'sections': ['Finans Merkezi', 'Veri Merkezi', 'Kontrol Odası'], 'seed': 11, 'dpos': 8.5},
+     'saat': ['gece', 'gece', 'gece'], 'sections': ['Finans Merkezi', 'Veri Merkezi', 'Kontrol Odası'], 'seed': 11, 'dpos': 8.5},
     {'name': 'Çamlıca', 'sub': 'Kule', 'enemies': 'esvmo', 'boss': 'maviekran', 'boss_name': 'Mavi Ekran',
-     'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası'], 'seed': 9, 'dpos': 9},
-    {'name': 'Ümraniye', 'sub': 'Ev', 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç',
-     'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi'], 'seed': 10, 'dpos': 10},
+     'saat': ['geceyarisindanSonra', 'geceyarisindanSonra', 'safakOncesi'], 'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası'], 'seed': 9, 'dpos': 9},
+    {'name': 'Ümraniye', 'sub': 'Ev', 'gun': 1, 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç',
+     'saat': ['safak', 'sabah', 'sabah'], 'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi'], 'seed': 10, 'dpos': 10},
 ]
 DSPAN = 32   # zorluk ölçeği: ilk 11 dünyanın 33 bölümü (0 → 1)
 
@@ -839,6 +839,12 @@ def main():
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
                   'time': (300 if s < 2 else 330) + 50 * round(2 * min(1.0, (wdpos(w) * 3 + s) / DSPAN)), 'map': rows}
+            # sahne saati (ay ve gökyüzü için): gece yarısından sonraki saatler ve son dünyanın sabahları ertesi güne düşer
+            lv['saat'] = W['saat'][s]
+            if W.get('gun') or lv['saat'] in ('geceyarisi', 'geceyarisindanSonra', 'safakOncesi', 'safak'):
+                lv['gun'] = 1
+            if PLACES[w][s].get('ceil'):
+                lv['ic'] = True      # iç mekân ya da yer altı: gökyüzü görünmez
             if room is not None:
                 lv['room'] = room
                 lv['roomW'] = ROOM_W

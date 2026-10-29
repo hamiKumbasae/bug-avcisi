@@ -338,24 +338,72 @@
     { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
     null, // 11 Ümraniye: üç bölümü de places.js'te
   ];
-  function drawSky(g, d, vw, vh, seed) {
-    if (d.draw) { d.draw(g, vw, vh); return; }
-    const gr = g.createLinearGradient(0, 0, 0, vh);
-    d.stops.forEach(([o, c]) => gr.addColorStop(o, c));
-    g.fillStyle = gr; g.fillRect(0, 0, vw, vh);
-    if (d.stars) { const r = rng(seed * 31 + 7); for (let i = 0; i < d.stars; i++) { const x = r() * vw, y = r() * vh * 0.6, a = 0.3 + r() * 0.7; g.fillStyle = `rgba(255,255,240,${a})`; g.beginPath(); g.arc(x, y, 0.35 + r() * 0.5, 0, TAU); g.fill(); } }
-    if (d.sun) {
-      const [x, y, r, c] = d.sun;
-      const gl = g.createRadialGradient(x, y, r * 0.5, x, y, r * 4); gl.addColorStop(0, 'rgba(255,240,200,0.65)'); gl.addColorStop(1, 'rgba(255,240,200,0)');
-      g.fillStyle = gl; g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
-      g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  // mo: o sahnenin ayı (BA_MOON.forScene) ya da null; d.moon: [x, y, r] yalnız yatay yer ve boyut ipucu
+  function drawSky(g, d, vw, vh, seed, mo) {
+    if (d.draw) d.draw(g, vw, vh);
+    else {
+      const gr = g.createLinearGradient(0, 0, 0, vh);
+      d.stops.forEach(([o, c]) => gr.addColorStop(o, c));
+      g.fillStyle = gr; g.fillRect(0, 0, vw, vh);
+      if (d.stars) { const r = rng(seed * 31 + 7); for (let i = 0; i < d.stars; i++) { const x = r() * vw, y = r() * vh * 0.6, a = 0.3 + r() * 0.7; g.fillStyle = `rgba(255,255,240,${a})`; g.beginPath(); g.arc(x, y, 0.35 + r() * 0.5, 0, TAU); g.fill(); } }
+      if (d.sun) {
+        const [x, y, r, c] = d.sun;
+        const gl = g.createRadialGradient(x, y, r * 0.5, x, y, r * 4); gl.addColorStop(0, 'rgba(255,240,200,0.65)'); gl.addColorStop(1, 'rgba(255,240,200,0)');
+        g.fillStyle = gl; g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
+        g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+      }
     }
-    if (d.moon) {
-      const [x, y, r] = d.moon;
-      const gl = g.createRadialGradient(x, y, r * 0.8, x, y, r * 3.4); gl.addColorStop(0, 'rgba(255,248,210,0.3)'); gl.addColorStop(1, 'rgba(255,248,210,0)');
-      g.fillStyle = gl; g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
-      g.fillStyle = '#fff4c8'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.arc(x + r * 0.42, y - r * 0.18, r * 0.86, 0, TAU, true); g.fill('evenodd');
+    if (mo) {
+      const hint = d.moon, r = hint ? hint[2] : 8;
+      const x = hint ? hint[0] : d.sun ? (d.sun[0] < vw / 2 ? vw * 0.76 : vw * 0.24) : vw * 0.7;
+      const y = root.BA_MOON.skyY(mo.altitudeDeg, vh * 0.6, 14 + r);
+      drawMoon(g, x, y, r, mo, true);
     }
+  }
+  // gerçek ay: aydınlık kısım yarım daire ve terminatör elipsiyle; karanlık kısım hafifçe seçilir (dünya ışığı).
+  // tilt: aydınlık kenarın tepeden saat yönünün tersine açısı. clear: çevresindeki yıldızları sil (gökyüzü tuvalinde)
+  function drawMoon(g, x, y, r, mo, clear) {
+    const f = mo.fraction, a = mo.bright;
+    if (clear) {
+      // ayın çevresinde (yarıçapın ~4 katı) yıldız olmasın: o noktadaki gökyüzü rengiyle yumuşak bir leke
+      try {
+        // çevredeki dört noktadan en koyusu (yıldıza denk gelen nokta seçilmesin)
+        const sc = g.getTransform().a;
+        let px = null;
+        for (const [dx, dy] of [[-4.4, 0], [4.4, 0], [0, -4.4], [0, 4.4]]) {
+          const W0 = g.canvas.width - 1, H0 = g.canvas.height - 1;
+          const q = g.getImageData(Math.max(0, Math.min(W0, Math.round((x + dx * r) * sc))), Math.max(0, Math.min(H0, Math.round((y + dy * r) * sc))), 1, 1).data;
+          if (q[3] < 250) continue;
+          if (!px || q[0] + q[1] + q[2] < px[0] + px[1] + px[2]) px = q;
+        }
+        if (!px) throw new Error('gökyüzü okunamadı');
+        const base = `rgba(${px[0]},${px[1]},${px[2]},`;
+        const gr = g.createRadialGradient(x, y, r, x, y, r * 4.2); gr.addColorStop(0, base + '1)'); gr.addColorStop(0.75, base + '0.9)'); gr.addColorStop(1, base + '0)');
+        g.fillStyle = gr; g.fillRect(x - r * 4.2, y - r * 4.2, r * 8.4, r * 8.4);
+      } catch (e) { /* okunamadı: yıldızlar kalır */ }
+    }
+    const gl = g.createRadialGradient(x, y, r * 0.8, x, y, r * 3.6);
+    gl.addColorStop(0, `rgba(255,248,214,${0.32 * a * (0.3 + 0.7 * f)})`); gl.addColorStop(1, 'rgba(255,248,214,0)');
+    g.fillStyle = gl; g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
+    g.save(); g.translate(x, y);
+    // karanlık yüz: gökyüzünden çok hafif açık
+    g.fillStyle = `rgba(200,210,235,${(a > 0.8 ? 0.07 : 0.03) * (1 - f)})`; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    // aydınlık kenarın yönü: ekranda yukarıdan saat yönünün tersine tilt kadar
+    g.rotate(Math.atan2(-Math.cos(mo.tilt), -Math.sin(mo.tilt)));
+    const rx = r * Math.abs(2 * f - 1);
+    g.beginPath(); g.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false);
+    if (f < 0.5) g.ellipse(0, 0, Math.max(0.01, rx), r, 0, Math.PI / 2, -Math.PI / 2, true);
+    else g.ellipse(0, 0, Math.max(0.01, rx), r, 0, Math.PI / 2, Math.PI * 1.5, false);
+    g.closePath();
+    g.fillStyle = a > 0.6 ? `rgba(255,246,218,${a})` : `rgba(255,255,255,${a})`; g.fill();
+    // denizler: aydınlık yüzde iki soluk leke
+    g.save(); g.clip();
+    g.rotate(-Math.atan2(-Math.cos(mo.tilt), -Math.sin(mo.tilt)));   // denizler ayın kendi yüzünde sabit
+    g.fillStyle = `rgba(175,170,165,${0.11 * a})`;
+    g.beginPath(); g.ellipse(-r * 0.2, -r * 0.25, r * 0.28, r * 0.18, 0.4, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(r * 0.22, r * 0.12, r * 0.16, r * 0.24, -0.3, 0, TAU); g.fill();
+    g.restore();
+    g.restore();
   }
 
   // ---------- dünyalar ----------
@@ -723,10 +771,11 @@
     return L;
   }
   const skyCache = A.cache();
-  function sky(p, vw, vh) {
-    const k = p + ':' + vw;
+  // mo: bölümün ayı (ya da null); anahtara girer, ay değişince gökyüzü yeniden çizilir
+  function sky(p, vw, vh, mo) {
+    const k = p + ':' + vw + ':' + (mo ? `${mo.fraction.toFixed(3)}:${mo.tilt.toFixed(2)}:${mo.altitudeDeg.toFixed(1)}:${mo.bright}` : '-');
     let c = skyCache.get(k);
-    if (!c) { c = A.mk(vw, vh, (g) => drawSky(g, placeDef(p).sky, vw, vh, p), bgScale()); skyCache.set(k, c); if (skyCache.size > 4) skyCache.delete(skyCache.keys().next().value); }
+    if (!c) { c = A.mk(vw, vh, (g) => drawSky(g, placeDef(p).sky, vw, vh, p, mo), bgScale()); skyCache.set(k, c); if (skyCache.size > 4) skyCache.delete(skyCache.keys().next().value); }
     return c;
   }
 
@@ -910,7 +959,7 @@
     return c;
   }
   root.BA_SCENE = {
-    W, H, layers, sky, title, metroLine, SKY, pen, BASE_AT, PLACES, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
+    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, BASE_AT, PLACES, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,

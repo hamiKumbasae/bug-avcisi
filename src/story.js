@@ -10,6 +10,12 @@
   const cache = A.cache();
   function layer(key, w, h, fn) { let c = cache.get(key); if (!c) { c = A.mk(w, h, fn); cache.set(key, c); } return c; }
   function img(g, c, x, y) { g.drawImage(c, x, y, c.lw, c.lh); }
+  // sahnenin ayı: bugünün tarihinde, sahnenin saatinde İstanbul'dan görünen ay (görünmüyorsa çizilmez)
+  const dayKey = () => { const M = root.BA_MOON; if (!M) return ''; const d = M.istanbulDate(); return `:${d.y}-${d.m}-${d.d}`; };
+  function moonIn(b, slot, x, horizonY, topY, r, dayOffset) {
+    const M = root.BA_MOON, mo = M && M.forScene(slot, new Date(), dayOffset);
+    if (mo) SC.drawMoon(b, x, M.skyY(mo.altitudeDeg, horizonY, topY), r, mo, true);
+  }
   const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
   const ease = (x) => { x = clamp01(x); return x * x * (3 - 2 * x); };
   const seg = (t, a, b) => ease((t - a) / (b - a));
@@ -754,10 +760,10 @@
   SCENES.ara8 = {
     dur: 11.5, amb: 'catilar',
     draw(g, t) {
-      const base = layer('ara8', VW, VH, (b) => {
+      const base = layer('ara8' + dayKey(), VW, VH, (b) => {
         b.fillStyle = grad(b, 0, 0, 0, 80, [[0, '#060a24'], [1, '#1a2056']]); b.fillRect(0, 0, VW, 80);
         const r = A.rng(8); for (let i = 0; i < 40; i++) A.circle(b, r() * VW, r() * 60, 0.4 + r() * 0.5, `rgba(255,255,240,${0.4 + r() * 0.6})`, null);
-        b.fillStyle = '#fff4c8'; b.beginPath(); b.arc(220, 28, 10, 0, TAU); b.arc(225, 25, 9, 0, TAU, true); b.fill('evenodd');
+        moonIn(b, 'gece', 220, 80, 14, 10);
         // karşı bina
         rect(b, 20, 30, 236, 210, '#3a3058');
         rect(b, 16, 26, 244, 6, '#2a2244');
@@ -794,9 +800,10 @@
     dur: 13.5, amb: 'finans', cues: [[0.6, 'keys'], [1.7, 'keys'], [2.9, 'ding'], [5.8, 'ding'], [9.6, 'kapak']],
     draw(g, t) {
       const TW = [[6, 60, 34], [86, 166, 16], [174, 214, 64]];   // kuleler: sol, orta (LED cepheli), sağ
-      const base = layer('atasehir', VW, VH, (b) => {
+      const base = layer('atasehir' + dayKey(), VW, VH, (b) => {
         b.fillStyle = grad(b, 0, 0, 0, 200, [[0, '#04081e'], [0.7, '#141a48'], [1, '#3a2a5a']]); b.fillRect(0, 0, VW, 200);
         const r = A.rng(14); for (let i = 0; i < 40; i++) A.circle(b, r() * VW, r() * 70, 0.3 + r() * 0.5, `rgba(255,255,240,${0.3 + r() * 0.6})`, null);
+        moonIn(b, 'gece', 244, 160, 14, 8);
         // uzakta tepede Çamlıca Kulesi
         b.fillStyle = '#0e1238'; b.beginPath(); b.moveTo(190, 200); b.quadraticCurveTo(236, 158, 262, 170); b.lineTo(262, 200); b.closePath(); b.fill();
         K.camlicaTower(b, 238, 170, 0.36, { wall: '#5a6088', wallD: '#4a5078', glass: '#2a3a78', band: '#6a8ac8', lit: '#9ad8ff' });
@@ -942,9 +949,10 @@
   SCENES.eve = {
     dur: 10, amb: 'camlica', cues: [[4.2, 'forge'], [6.4, 'forge']],
     draw(g, t) {
-      const base = layer('eve', VW, VH, (b) => {
+      const base = layer('eve' + dayKey(), VW, VH, (b) => {
         b.fillStyle = grad(b, 0, 0, 0, 150, [[0, '#04061a'], [0.7, '#141a4a'], [1, '#2a2a6a']]); b.fillRect(0, 0, VW, 150);
         const r = A.rng(12); for (let i = 0; i < 70; i++) A.circle(b, r() * VW, r() * 110, 0.3 + r() * 0.5, `rgba(255,255,240,${0.3 + r() * 0.7})`, null);
+        moonIn(b, 'safakOncesi', 200, 130, 14, 9);
         // vadide Ümraniye: apartman ışıkları
         b.fillStyle = '#0c1036'; b.fillRect(0, 130, VW, 110);
         for (let i = 0; i < 500; i++) { const x = r() * VW, y = 134 + Math.pow(r(), 0.8) * 70; b.fillStyle = ['#ffd27a', '#fff0c0', '#ffb070'][Math.floor(r() * 3)]; b.globalAlpha = 0.35 + r() * 0.6; b.fillRect(x, y, 0.9, 0.9); }
