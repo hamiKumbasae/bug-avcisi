@@ -34,6 +34,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import maslak   # noqa: E402  Maslak'ın elle tasarlanmış üç bölümü
+import carsi    # noqa: E402  Kapalıçarşı
+HAND = {0: maslak, 1: carsi}   # elle tasarlanan dünyalar; öteki dünyalar üretilir
 
 H = 14
 # v2.0: iki katmanlı İstanbul. Yukarısı bugünün şehri (Maslak, Şişli, Ataşehir, Köprü, Çamlıca), aşağısı eski İstanbul
@@ -884,10 +886,10 @@ def main():
             r = random.Random(wseed(w) * 1000 + s * 37 + 11)
             rows, room, vcam, rd = make(w, s, r)
             hand = None
-            if w == 0:
-                # Maslak elle tasarlandı (v2.1 prototipi); metrobüs binişi üretilenle aynı
-                hand = maslak.build(s, make_room(r, rd) if rd else None)
-                rows, vcam = hand['map'], hand['vcam']
+            if w in HAND:
+                # elle tasarlanan bölüm; binişi (metro, tramvay...) üretilenle aynı
+                hand = HAND[w].build(s, make_room(r, rd) if rd else None)
+                rows, vcam = hand['map'], hand.get('vcam', [[0, 0, 0]])
                 room = hand.get('room')
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s], 'yer': W['yer'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
@@ -908,7 +910,7 @@ def main():
                 lv['vcam'] = vcam
             if hand:
                 lv['hand'] = True    # el yapımı: çok kayıt noktası, altın simitler, zemine oturan kamera
-                for k in ('links', 'dark'):
+                for k in ('links', 'dark', 'objs', 'blok'):
                     if hand.get(k):
                         lv[k] = hand[k]
             levels.append(lv)

@@ -762,6 +762,69 @@ const place = (G, x, y) => { const p = G.player; p.x = x + (1 - p.w) / 2; p.y = 
   run(G, (g) => { g.player.inv = 99; return {}; }, 1);
   ok(b.prince.flee, 'kral düşünce prens kaçtı');
 }
+// ================= Kapalıçarşı: terazi, çürük tahta, çaycı, kepenk =================
+// ---------- terazi: basılan kefe iner, öbürü kalkar; boşken dengeye döner; ters makara tersine ----------
+{
+  const i = custom(['..P.................', '#'.repeat(20), '#'.repeat(20)], { hand: true, objs: [{ k: 'terazi', xa: 4, xb: 10, y: 9, r: 2 }, { k: 'terazi', xa: 14, xb: 17, y: 9, r: 2, inv: true }] });
+  const G = BA.loadStage(BA.newRun(), i), [sc, inv] = G.scales;
+  ok(sc && sc.A.y === 9 && sc.B.y === 9, 'terazi dengede başlar');
+  place(G, 4.6, 9); G.player.onGround = true; G.player.plat = sc.A;
+  run(G, NONE, 1.2);
+  ok(Math.abs(sc.A.y - 11) < 0.05 && Math.abs(sc.B.y - 7) < 0.05 && G.player.plat === sc.A, `basılan kefe indi, öbürü kalktı (${sc.A.y.toFixed(2)} / ${sc.B.y.toFixed(2)})`);
+  place(G, 1, 12); G.player.onGround = true; run(G, NONE, 1.5);
+  ok(Math.abs(sc.A.y - 9) < 0.05, 'boşken dengeye döndü');
+  place(G, 14.6, 9); G.player.onGround = true; G.player.plat = inv.A;
+  run(G, NONE, 1.2);
+  ok(inv.A.y < 7.1 && inv.B.y > 10.9, `ters makarada basılan kefe kalktı (${inv.A.y.toFixed(2)})`);
+  // sapan: yüksekten düşülünce öbür kefedeki bug fırlar
+  const j = custom(['..P.........', '............', '............', '............', '............', '#'.repeat(12), '#'.repeat(12)], { hand: true, objs: [{ k: 'terazi', xa: 2, xb: 7, y: 10, r: 2 }] });
+  const G2 = BA.loadStage(BA.newRun(), j), s2 = G2.scales[0];
+  G2.ents.push(Object.assign({ kind: 'bug', x: 7.6, y: 10 - 0.875, w: 0.875, h: 0.875, vx: 0, vy: 0, t: 0, dead: false, deadT: 0, flip: false, onGround: true, minion: false, st: 0, plat: s2.B }));
+  run(G2, NONE, 0.3);
+  place(G2, 2.6, 4); G2.player.vy = 0;
+  run(G2, NONE, 1, (g) => g.ents[0].dead);
+  ok(G2.ents[0].dead && G2.ents[0].vy < -5, 'yüksekten kefeye düşen, öbür kefedeki bug\'ı fırlattı');
+}
+// ---------- çürük tahta: basınca çöker, sonra yerine gelir ----------
+{
+  const i = custom(['..P.......', '..........', '###~~#####', '...##.....', '##########']);
+  const G = BA.loadStage(BA.newRun(), i), T = BA.T;
+  place(G, 3.5, 11); G.player.onGround = true;
+  run(G, NONE, 0.3);
+  ok(BA.tile(G, 3, 11) === T.CRUMBLE && G.crumb.size > 0, 'basılan tahta gıcırdıyor');
+  run(G, NONE, 0.5);
+  ok(BA.tile(G, 3, 11) === T.EMPTY && G.player.y + G.player.h > 11.9, 'tahta çöktü, oyuncu düştü');
+  place(G, 7, 13); G.player.onGround = true;
+  run(G, NONE, 5.5);
+  ok(BA.tile(G, 3, 11) === T.CRUMBLE, 'beş saniye sonra yerine geldi');
+}
+// ---------- çaycı: tepsisine binilir, ilk binene çay ikram eder ----------
+{
+  const i = custom(['..P.........', '#'.repeat(12), '#'.repeat(12)], { hand: true, objs: [{ k: 'cayci', x0: 3, x1: 9, y: 12 }] });
+  const S = BA.newRun(), G = BA.loadStage(S, i), n = G.npcs[0], tr = n.tray;
+  run(G, NONE, 0.7);
+  place(G, tr.x + 0.6, tr.y); G.player.y = tr.y - G.player.h - 0.3; G.player.vy = 1;
+  run(G, NONE, 0.2);
+  ok(G.player.plat === tr && S.power === 1, 'tepsiye binen oyuncuya çay ikram edildi (güç)');
+  const x0 = G.player.x;
+  run(G, NONE, 1);
+  ok(G.player.x > x0 + 1 && G.player.plat === tr, 'çaycı yürüdükçe tepsi taşıdı');
+}
+// ---------- kepenk: belli aralıkla iner; altındaki bug ezilir, oyuncu yana itilir ----------
+{
+  const i = custom(['..P.......', '#'.repeat(10), '#'.repeat(10)], { hand: true, objs: [{ k: 'kepenk', x: 5, y0: 9, y1: 11, per: 4, open: 2 }] });
+  const G = BA.loadStage(BA.newRun(), i), T = BA.T, s = G.shutters[0];
+  run(G, NONE, 1);
+  ok(BA.tile(G, 5, 11) === T.EMPTY, 'kepenk açık');
+  place(G, 5, 12); G.player.onGround = true; G.player.inv = 99;
+  G.ents.push({ kind: 'bug', x: 5.06, y: 11.125, w: 0.875, h: 0.875, vx: 0, vy: 0, t: 0, dead: false, deadT: 0, flip: false, onGround: true, minion: false, st: 0 });
+  run(G, NONE, 1.3);
+  ok(BA.tile(G, 5, 11) === T.SHUTTER && s.solid, 'kepenk indi');
+  ok(G.ents[0].dead && !G.player.dead && (G.player.x + G.player.w <= 5.01 || G.player.x >= 5.99), 'altındaki bug ezildi, oyuncu yana itildi');
+  run(G, NONE, 2);
+  ok(BA.tile(G, 5, 11) === T.EMPTY, 'kepenk yeniden kalktı');
+}
+
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
 {
   for (let k = 0; k < NL; k++) {
@@ -770,7 +833,8 @@ const place = (G, x, y) => { const p = G.player; p.x = x + (1 - p.w) / 2; p.y = 
     const G = BA.loadStage(BA.newRun(), k);
     ok(G.golds.length === 3 && G.checkpoints.length >= 2, `${L.world}-${L.section}: 3 altın simit, ${G.checkpoints.length} kayıt noktası`);
   }
-  ok(LV.slice(0, NL).filter((L) => L.hand).length === 3, 'yalnız Maslak elle tasarlandı');
+  const hand = LV.slice(0, NL).filter((L) => L.hand);
+  ok(hand.length >= 3 && hand.length % 3 === 0 && hand.every((L) => LV.slice(0, NL).filter((M) => M.world === L.world).every((M) => M.hand)), `elle tasarlanan dünyalar bütün bölümleriyle (${hand.length / 3} dünya)`);
 }
 
 console.log(fails ? `${fails} hata, ${passes} geçti` : `core: ${passes} denetim geçti`);

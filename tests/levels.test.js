@@ -39,6 +39,14 @@ function analyse(idx, revealHidden) {
       const a = { x: p.a, y: p.ya !== undefined ? p.ya : p.y, w: p.w, h: 0.5, dy: 0 }, z = { x: p.b, y: p.yb !== undefined ? p.yb : p.y, w: p.w, h: 0.5, dy: 0 };
       statics.push(a, z); rides.push([a, z]);
     } else if (p.kind === 'h') statics.push({ x: p.a, y: p.y, w: p.b - p.a + p.w, h: 0.5, dy: 0 });
+    else if (p.kind === 'pan') {
+      // terazi kefesi: tepede, dengede ve dipte durabilir; üstündekini aralarında taşır
+      const ys = [p.base - p.sc.r, p.base, p.base + p.sc.r].map((y) => ({ x: p.x, y, w: p.w, h: 0.5, dy: 0 }));
+      statics.push(...ys); rides.push([ys[0], ys[1]], [ys[1], ys[2]], [ys[0], ys[2]]);
+    } else if (p.kind === 'tray') {
+      // çaycının tepsisi: yürüdüğü yol boyunca
+      statics.push({ x: p.npc.x0 - 0.6, y: p.y, w: p.npc.x1 - p.npc.x0 + p.w, h: 0.5, dy: 0 });
+    }
     else {
       // dikey platform (cam silme sepeti dahil): iki ucunda durur; bir ucundan binilen öbür uca taşır
       const a = { x: p.x, y: p.a, w: p.w, h: 0.5, dy: 0 }, z = { x: p.x, y: p.b, w: p.w, h: 0.5, dy: 0 };
@@ -134,6 +142,17 @@ function analyse(idx, revealHidden) {
     if (s.x1 - s.x0 >= 2) xs.push(s.x0 + 0.6, s.x1 + 0.4 - PW);
     // sıcak kabinin önünden: kenardan bir iki karo geride zıplayış
     if (s.x1 - s.x0 >= 4) xs.push(s.x0 + 1.5, s.x0 + 2.5, s.x1 + 1 - PW - 1.5, s.x1 + 1 - PW - 2.5);
+    // uzun zeminde: yakındaki her parçanın kenarlarına göre zıplama yerleri (yukarıdaki raflar, kefeler)
+    if (L.hand && s.x1 - s.x0 >= 6) {
+      const seen = new Set(xs.map((v) => Math.round(v * 4)));
+      for (const t of segs) {
+        if (t === s || Math.abs(t.y - s.y) > 6 || t.x0 - 6 > s.x1 || t.x1 + 6 < s.x0) continue;
+        for (const v of [t.x0 - 2.5, t.x0 - 1, t.x1 + 1 - PW + 1, t.x1 + 1 - PW + 2.5]) {
+          const xx = Math.max(s.x0, Math.min(s.x1 + 1 - PW, v)), k = Math.round(xx * 4);
+          if (!seen.has(k)) { seen.add(k); xs.push(xx); }
+        }
+      }
+    }
     const len = s.x1 - s.x0 + 1;
     // ayağın altındaki fanlar: üstünde bekleyip yükselir, sonra sağa ya da sola süzülür
     const fanXs = [];

@@ -25,9 +25,10 @@
   // El yapımı bölümlerin karoları (v2.1, Maslak): kartlı cam kapı (kapalı/açık), asma tavan ya da yükseltilmiş taban
   // kapağı, yerdeki soğutma fanı, sıcak (dokununca yakar) ve soğumuş kabin, cam cephe, saksı, turnike, simitçi tezgâhı.
   const T = { EMPTY: 0, GROUND: 1, SOLID: 2, ONEWAY: 3, BLOCK: 4, USED: 5, CRACK: 6, SPIKE: 7, WALL: 8, HIDDEN: 9, MULTI: 10,
-    DOOR: 11, DOOROPEN: 12, PANEL: 13, FAN: 14, HOT: 15, COOL: 16, GLASS: 17, PLANTER: 18, TURN: 19, CART: 20 };
+    DOOR: 11, DOOROPEN: 12, PANEL: 13, FAN: 14, HOT: 15, COOL: 16, GLASS: 17, PLANTER: 18, TURN: 19, CART: 20,
+    CRUMBLE: 21, SHUTTER: 22 };
   const SOLID = [false, true, true, false, true, true, true, false, true, false, true,
-    true, false, true, true, true, true, true, true, true, true];
+    true, false, true, true, true, true, true, true, true, true, true, true];
   // fan: üstündeki hava sütununda yukarı iter (sütun en çok 10 karo, katı karoda biter; tepesine yakın zayıflar)
   // f fanları 4 saniyede bir 2,4 saniye çalışır; patronun ikinci evresinde bütün fanlar kısa kısa çalışır
   const FAN = { lift: 90, grav: 30, cap: 6.5, reach: 10, period: 4, on: 2.4, pPeriod: 1.7, pOn: 0.95 };
@@ -98,6 +99,8 @@
       // el yapımı bölümler: altın simitler, kayıt noktaları, kart okuyucular ve kapılar, fanlar, süsler
       hand: !!L.hand, golds: [], checkpoints: [], readers: [], doors: [], fans: [], decor: [], look: new Map(), dark: null,
       marks: new Map(), carts: new Set(), cartT: new Map(), fanT: 0, fanPulse: false, hasHot: false,
+      scales: [], npcs: [], crumb: new Map(), shutters: [],
+      lanes: [], cars: [], lifts: [], doors2: [], lamps: [],
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -158,6 +161,7 @@
           case 'J': G.grid[i] = T.COOL; break;
           case 'I': G.grid[i] = T.GLASS; break;
           case 'y': G.grid[i] = T.PLANTER; break;
+          case '~': G.grid[i] = T.CRUMBLE; break;   // çürük tahta: basınca çöker, sonra yerine gelir
           case 'W': G.bench = { x, y }; break;
           case 'A': G.arena = { ax: x, locked: false, cam: x + 3 }; break;
           case 'B': G.bossSpawn = { x, y }; break;
@@ -187,6 +191,8 @@
         p.a = p.y; p.b = p.y + 4; p.sp = 1.6; p.dir = 1;
       }
     }
+    // haritanın dışında tanımlanan nesneler: teraziler, çaycı, kepenkler
+    for (const o of L.objs || []) addObj(G, o);
     // karanlık arka planlı bölgeler (tavan arası, taban altı): yalnız çizim içindir
     if (L.dark) {
       G.dark = new Uint8Array(W * MH);
@@ -343,6 +349,216 @@
       const exit = !p.dead && p.x >= d.x + 1 - 0.05 && p.x < d.x + 1.9 && p.y < d.y1 + 1 && p.y + p.h > d.y0;
       const want = (active !== d.inv) || exit;
       if (want !== d.open && (want || !bodyInDoor(G, d))) setDoor(G, d, want);
+    }
+  }
+
+  // ---------------- nesneler (v2.1 Kapalıçarşı ve sonrası) ----------------
+  function addObj(G, o) {
+    if (o.k === 'terazi') {
+      // kuyumcu terazisi: iki kefe birbirine bağlı; ağır gelen kefe iner, öbürü kalkar, boşken dengeye döner.
+      // inv: ters makara (basılan kefe kalkar). loadA/loadB: kefedeki sabit ağırlık (pirinç tartı)
+      const sc = { d: 0, r: o.r || 3, inv: !!o.inv, loadA: o.loadA || 0, loadB: o.loadB || 0, snap: 0, y: o.y };
+      const pan = (x, side) => ({ kind: 'pan', x, y: o.y, w: 3, h: 0.5, tx: x, ty: o.y, dx: 0, dy: 0, base: o.y, side, sc, a: 0, b: 0 });
+      sc.A = pan(o.xa, 1); sc.B = pan(o.xb, -1);
+      sc.d = scaleTarget(G, sc);
+      sc.A.y = o.y + sc.d; sc.B.y = o.y - sc.d;
+      G.plats.push(sc.A, sc.B); G.scales.push(sc);
+    } else if (o.k === 'cayci') {
+      // çaycı: avluda iki uç arasında gidip gelir, başının üstündeki askılı tepsiye binilir; ilk binene çay ikram eder
+      const n = { k: 'cayci', x: o.x0, x0: o.x0, x1: o.x1, y: o.y, dir: 1, wait: 0.6, t: 0, served: false, v: o.v || 1.6 };
+      n.tray = { kind: 'tray', x: n.x - 0.6, y: o.y - 2.1, w: 2, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, npc: n, a: 0, b: 0 };
+      G.plats.push(n.tray); G.npcs.push(n);
+    } else if (o.k === 'yol') {
+      // trafik şeridi: araçlar x0'dan x1'e akar; yaya ışığı yeşilken çizginin önünde durur
+      G.lanes.push({ x0: o.x0, x1: o.x1, y: o.y, dir: o.dir || 1, every: o.every || 2.8, t: o.t0 || 0, light: o.light || null,
+        kinds: o.kinds || ['taksi', 'dolmus'], v: o.v || 5, n: 0 });
+    } else if (o.k === 'kibar') {
+      G.spawns.push({ kind: 'bug', x: o.x, y: o.y, done: false, polite: true });   // kırmızıda bekleyen kibar bug
+    } else if (o.k === 'asansor') {
+      // asansör: kabine binen yarım saniye durunca bir sonraki kata gider; katlardaki düğme kabini çağırır
+      const fl = o.floors, L = { x: o.x, floors: fl, cur: o.start !== undefined ? o.start : fl.length - 1, dir: -1, state: 'idle', wt: 0, target: 0, call: -1 };
+      L.car = { kind: 'lift', x: o.x, y: fl[L.cur], w: 3, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, lift: L, a: 0, b: 0 };
+      G.lifts.push(L); G.plats.push(L.car);
+    } else if (o.k === 'doner') {
+      G.doors2.push({ x: o.x, y: o.y, w: o.w || 2, a: 0 });   // döner kapı: girenin başını döndürüp öbür yana çıkarır
+    } else if (o.k === 'lamba') {
+      G.lamps.push({ x: o.x, y: o.y, t: 0 });                 // hareket sensörlü tavan lambası
+    } else if (o.k === 'kiris') {
+      G.decor.push({ k: 'kiris', x: o.x0, x1: o.x1, y: o.y });   // galerinin korkuluk kirişi: yalnız süs, üstünde durulmaz
+    } else if (o.k === 'kepenk') {
+      // dükkân kepengi: belli aralıkla iner (katı), bir süre kapalı kalır, kalkar
+      G.shutters.push({ x: o.x, y0: o.y0, y1: o.y1, ph: o.ph || 0, per: o.per || 4, open: o.open || 2, k: 1, solid: false });
+    }
+  }
+  function panWeight(G, pan) {
+    let w = 0;
+    const p = G.player;
+    if (p && !p.dead && p.plat === pan && p.onGround) w += 1;
+    for (const e of G.ents) if (!e.dead && e.plat === pan && e.onGround) w += 0.6;
+    return w;
+  }
+  function scaleTarget(G, sc) {
+    const t = clamp((panWeight(G, sc.A) + sc.loadA - panWeight(G, sc.B) - sc.loadB) * sc.r, -sc.r, sc.r);
+    return sc.inv ? -t : t;
+  }
+  function updateScale(G, sc, dt) {
+    const prev = sc.d;
+    sc.d = approach(sc.d, scaleTarget(G, sc), (sc.snap > 0 ? 11 : 3.2) * dt);
+    // sapan: kefeye yüksekten düşülünce öbür kefe birden kalkar, üstündekini fırlatır
+    if (sc.snap > 0) {
+      sc.snap = Math.max(0, sc.snap - dt);
+      const up = sc.d > prev ? sc.B : sc.d < prev ? sc.A : null;
+      if (up) for (const e of G.ents) if (!e.dead && e.plat === up) { killEnemy(G, e, true, 400); e.vy = -17; e.vx = (G.rand() - 0.5) * 3; ev(G, 'fling'); }
+    }
+  }
+  // ---------------- Şişli: trafik, asansör, döner kapı, sensörlü lambalar ----------------
+  const CAR = { taksi: [3, 1.3], dolmus: [4, 1.8], otobus: [7, 2.3] };
+  const greenNow = (G, l) => (((G.t + (l.ph || 0) * l.per) % l.per) + l.per) % l.per < l.green;
+  function updateLanes(G, dt) {
+    for (const ln of G.lanes) {
+      ln.t += dt;
+      if (ln.t >= ln.every) {
+        const kind = ln.kinds[ln.n % ln.kinds.length], [w, h] = CAR[kind];
+        const x = ln.dir > 0 ? ln.x0 : ln.x1 - w;
+        if (!G.cars.some((c) => c.lane === ln && Math.abs(c.x - x) < w + 1.5)) {
+          ln.t = 0; ln.n++;
+          const c = { lane: ln, kind, x, w, h, v: ln.v, hue: (ln.n * 67) % 360 };
+          c.plat = { kind: 'car', x, y: ln.y - h, w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, car: c, a: 0, b: 0 };
+          G.cars.push(c); G.plats.push(c.plat);
+        }
+      }
+    }
+    const p = G.player;
+    for (const c of G.cars) {
+      const ln = c.lane, d = ln.dir, front = d > 0 ? c.x + c.w : c.x;
+      let want = ln.v;
+      const l = ln.light;
+      if (l && greenNow(G, l)) {
+        const line = d > 0 ? l.x - 0.3 : l.x + l.w + 0.3, dist = (line - front) * d;
+        if (dist > -0.2) want = Math.min(want, Math.max(0, dist * 3));
+      }
+      for (const o of G.cars) {
+        if (o === c || o.lane !== ln) continue;
+        const gap = d > 0 ? o.x - (c.x + c.w) : c.x - (o.x + o.w);
+        if (gap > -0.5 && gap < 6) want = Math.min(want, Math.max(0, (gap - 0.7) * 3));
+      }
+      c.v = approach(c.v, want, (want < c.v ? 14 : 6) * dt);
+      const ox = c.x;
+      c.x += d * c.v * dt;
+      c.plat.x = c.x; c.plat.dx = c.x - ox; c.plat.dy = 0;
+      // gövde: hızla gelen araç çarpar; duran araçtan yana itilir; çatısına basılır
+      const body = { x: c.x + 0.1, y: ln.y - c.h + 0.3, w: c.w - 0.2, h: c.h - 0.3 };
+      if (!p.dead && p.plat !== c.plat && overlap(p, body)) {
+        if (c.v > 1.2 && p.inv <= 0 && p.star <= 0) { hurt(G); if (!p.dead) { p.vx = d * 8; p.vy = -9; p.onGround = false; } ev(G, 'honk'); }
+        else p.x = p.x + p.w / 2 < c.x + c.w / 2 ? c.x - p.w - 0.02 : c.x + c.w + 0.02;
+      }
+      for (const e of G.ents) if (!e.dead && !e.harmless && c.v > 1.2 && overlap(e, body)) { killEnemy(G, e, true, 200); ev(G, 'honk'); }
+    }
+    G.cars = G.cars.filter((c) => {
+      const gone = c.lane.dir > 0 ? c.x > c.lane.x1 : c.x + c.w < c.lane.x0;
+      if (gone) { G.plats.splice(G.plats.indexOf(c.plat), 1); if (G.player.plat === c.plat) G.player.plat = null; }
+      return !gone;
+    });
+  }
+  // yaya ışığı kırmızıyken (araçlar geçerken) kibar bug geçidin önünde bekler
+  function politeWait(G, e) {
+    for (const ln of G.lanes) {
+      const l = ln.light;
+      if (!l || Math.abs(ln.y - (e.y + e.h)) > 0.6) continue;
+      const ahead = e.vx > 0 ? e.x + e.w + 0.4 : e.x - 0.4;
+      if (ahead > l.x - 0.6 && ahead < l.x + l.w + 0.6 && !(e.x > l.x - 0.2 && e.x < l.x + l.w) && !greenNow(G, l)) return true;
+    }
+    return false;
+  }
+  function updateLift(G, L, dt) {
+    const car = L.car, p = G.player;
+    const riders = (!p.dead && p.plat === car && p.onGround ? 1 : 0) + G.ents.filter((e) => !e.dead && e.plat === car).length;
+    if (L.state === 'idle') {
+      if (riders) {
+        L.wt += dt;
+        if (L.wt > 0.5) {
+          if (L.cur === 0) L.dir = 1; else if (L.cur === L.floors.length - 1) L.dir = -1;
+          L.target = L.cur + L.dir; L.state = 'move'; ev(G, 'lift');
+        }
+      } else {
+        L.wt = 0;
+        if (L.call >= 0 && L.call !== L.cur) { L.target = L.call; L.state = 'move'; ev(G, 'lift'); }
+        L.call = -1;
+      }
+    } else {
+      const ty = L.floors[L.target];
+      car.y = approach(car.y, ty, 3.2 * dt);
+      if (car.y === ty) { L.cur = L.target; L.state = 'idle'; L.wt = -0.6; ev(G, 'ding'); }
+    }
+    // kattaki düğme: kabinin sol yanında
+    if (!p.dead) for (let k = 0; k < L.floors.length; k++) {
+      const box = { x: L.x - 1, y: L.floors[k] - 1.6, w: 1, h: 1.6 };
+      if (overlap(p, box) && L.cur !== k && L.state === 'idle') { if (L.call !== k) ev(G, 'card'); L.call = k; }
+    }
+  }
+  function updateRevolving(G, dt) {
+    const p = G.player;
+    for (const d of G.doors2) {
+      d.a += dt * (d.spin ? 9 : 0.6);
+      const box = { x: d.x, y: d.y - 3, w: d.w, h: 3 };
+      if (!p.dead && !p.spin && overlap(p, box) && p.onGround) {
+        const dir = p.x + p.w / 2 < d.x + d.w / 2 ? 1 : -1;
+        p.spin = { t: 0, dir, d }; d.spin = true; ev(G, 'whoosh');
+      }
+      for (const e of G.ents) if (!e.dead && !e.harmless && overlap(e, box)) { e.vx = -e.vx; e.x += e.vx > 0 ? 0.3 : -0.3; d.spin = true; }
+      if (d.spin && !(p.spin && p.spin.d === d)) d.spin = false;
+    }
+  }
+  function updateLamps(G, dt) {
+    const p = G.player;
+    for (const l of G.lamps) {
+      const near = !p.dead && Math.abs(p.x + p.w / 2 - (l.x + 0.5)) < 4.5 && p.y > l.y - 2 && p.y < l.y + 12;
+      if (near && l.t <= 0) ev(G, 'lampon');
+      l.t = near ? 3 : Math.max(0, l.t - dt);
+    }
+  }
+  function updateCayci(G, n, dt) {
+    n.t += dt;
+    if (n.wait > 0) { n.wait -= dt; return; }
+    n.x += n.dir * n.v * dt;
+    if (n.x >= n.x1) { n.x = n.x1; n.dir = -1; n.wait = 1.2; }
+    if (n.x <= n.x0) { n.x = n.x0; n.dir = 1; n.wait = 1.2; }
+  }
+  function updateShutters(G) {
+    for (const s of G.shutters) {
+      const ph = (((G.t + s.ph * s.per) / s.per) % 1 + 1) % 1, tOpen = s.open / s.per, tMove = 0.3 / s.per;
+      let k;
+      if (ph < tOpen) k = 1;
+      else if (ph < tOpen + tMove) k = 1 - (ph - tOpen) / tMove;
+      else if (ph < 1 - tMove) k = 0;
+      else k = (ph - (1 - tMove)) / tMove;
+      s.k = k;
+      const want = k < 0.5;
+      if (want === s.solid) continue;
+      s.solid = want;
+      if (want) {
+        // inen kepenk altında kalan bug ezilir; oyuncuyu en yakın yana iter
+        const box = { x: s.x, y: s.y0, w: 1, h: s.y1 - s.y0 + 1 };
+        const p = G.player;
+        if (!p.dead && overlap(p, box)) p.x = p.x + p.w / 2 < s.x + 0.5 ? s.x - p.w - 0.01 : s.x + 1.01;
+        for (const e of G.ents) if (!e.dead && !e.harmless && overlap(e, box)) { killEnemy(G, e, true, 200); ev(G, 'crush'); }
+      }
+      for (let y = s.y0; y <= s.y1; y++) setTile(G, s.x, y, want ? T.SHUTTER : T.EMPTY);
+      if (s.x > G.cam - 2 && s.x < G.cam + VW + 2) ev(G, want ? 'shutter' : 'shutterup');
+    }
+  }
+  // çürük tahtalar: oyuncu basınca yarım saniye sonra çöker, beş saniye sonra yerine gelir
+  function updateCrumbles(G, dt) {
+    for (const [i, c] of G.crumb) {
+      c.t += dt;
+      if (!c.gone && c.t > 0.5) {
+        c.gone = true; c.t = 0; setTile(G, c.x, c.y, T.EMPTY);
+        for (let k = 0; k < 3; k++) G.fx.push({ k: 'plank', x: c.x + 0.2 + k * 0.3, y: c.y + 0.3, vx: (k - 1) * 1.5, vy: -2 - k, t: 0, r: k });
+        ev(G, 'crack');
+      } else if (c.gone && c.t > 5) {
+        const box = { x: c.x, y: c.y, w: 1, h: 1 };
+        if (!overlap(G.player, box) && !G.ents.some((e) => !e.dead && overlap(e, box))) { setTile(G, c.x, c.y, T.CRUMBLE); G.crumb.delete(i); }
+      }
     }
   }
 
@@ -515,6 +731,7 @@
     if (s && s.sleep) { e.state = 'sleep'; e.vx = 0; }            // bankta çay bardağıyla uyuyan bug
     if (s && s.meet) { e.state = 'meet'; e.vx = 0; }             // toplantı masasındaki bug'lar
     if (s && s.slide) { e.slide = true; e.vx = 4.2; }            // kablo kanalında sağa kayan bug (oyuncunun önüne düşer)
+    if (s && s.polite) e.polite = true;
     if (kind === 'hirsiz') {
       // simit hırsızı martı: zararsız; altındaki simiti oyuncu yaklaşınca kapıp kaçar
       e.w = 1; e.h = 0.75; e.homeX = x; e.homeY = y; e.state = 'perch'; e.harmless = true; e.face = -1;
@@ -588,7 +805,9 @@
           walker(G, e, dt, false);
           if (!e.onGround) e.slid = true;
           if (e.slid && e.onGround && air) { e.slide = false; e.vx = toward * 2; }
-        } else walker(G, e, dt, true);
+        } else if (e.polite && politeWait(G, e)) {
+          const v = e.vx; e.vx = 0; walker(G, e, dt, true); e.vx = v; e.waiting = true;
+        } else { e.waiting = false; walker(G, e, dt, true); }
         break;
       case 'hirsiz': {
         e.st += dt;
@@ -655,6 +874,8 @@
 
   // Yürüyen düşman: duvarda ve kenarda döner.
   function walker(G, e, dt, edgeTurn) {
+    // hareketli platformun (terazi kefesi, sepet) üstündeki bug onunla taşınır
+    if (e.plat && e.onGround && G.plats.includes(e.plat)) { e.x += e.plat.dx; e.y = e.plat.y - e.h; }
     e.vy = Math.min(PH.maxFall, e.vy + PH.gFall * dt);
     // fanın üstüne gelen bug havalanır (yerçekimine karşı biraz zayıf: süzülüp geri düşer)
     if (G.fans.length) { const s = fanAt(G, e); if (s) e.vy = Math.max(-5, e.vy - 95 * s * dt); }
@@ -666,6 +887,7 @@
     }
     const r = moveY(G, e, e.vy * dt, true);
     e.onGround = r.down;
+    e.plat = r.down ? r.plat : null;
     if (r.down || r.up) e.vy = 0;
     if (edgeTurn && e.onGround) {
       const fx = e.vx > 0 ? e.x + e.w + 0.05 : e.x - 0.05;
@@ -789,6 +1011,15 @@
 
   function updatePlayer(G, inp, dt) {
     const p = G.player, S = G.S;
+    if (p.spin) {
+      // döner kapıda: girdi yok, kapıyla dönüp öbür yandan çıkar
+      const sp = p.spin, d = sp.d;
+      sp.t += dt; p.vx = 0; p.vy = 0;
+      const k = Math.min(1, sp.t / 0.9), a = sp.dir > 0 ? d.x - p.w : d.x + d.w, b = sp.dir > 0 ? d.x + d.w + 0.05 : d.x - p.w - 0.05;
+      p.x = a + (b - a) * k;
+      if (k >= 1) { p.spin = null; p.vx = sp.dir * 4; }
+      return;
+    }
     const onTrain = p.plat && p.plat.train ? p.plat : null;
     const jumpPressed = inp.jump && !G.prev.jump;
     const runPressed = inp.run && !G.prev.run;
@@ -936,6 +1167,17 @@
       }
     }
     if (p.onGround) p.gFeet = p.y + p.h;
+    if (r.down && !p.dead) {
+      // çürük tahtaya basıldı
+      const ty = Math.floor(p.y + p.h + 0.02);
+      for (let tx = Math.floor(p.x + 0.001); tx <= Math.floor(p.x + p.w - 0.001); tx++) {
+        const i = ty * G.W + tx;
+        if (tile(G, tx, ty) === T.CRUMBLE && !G.crumb.has(i)) { G.crumb.set(i, { x: tx, y: ty, t: 0, gone: false }); ev(G, 'creak'); }
+      }
+      // yüksekten terazi kefesine düşmek: sapan; çaycının tepsisine ilk binişte çay ikramı
+      if (r.plat && r.plat.kind === 'pan' && fallV > 10) r.plat.sc.snap = 0.4;
+      if (r.plat && r.plat.kind === 'tray' && !r.plat.npc.served) { r.plat.npc.served = true; powerUp(G, 'cay', { x: p.x, y: p.y - 0.5, w: 1, h: 1 }); ev(G, 'serve'); }
+    }
     if (p.onGround && p.plat === null) G.combo = 0;
     if (onTrain && p.plat !== onTrain && !p.onGround) { p.carry = onTrain.v; p.carryT = onTrain; }
 
@@ -1457,6 +1699,7 @@
       if (f.k === 'dust') { f.x += f.vx * dt; f.vx *= Math.exp(-6 * dt); f.y -= 0.6 * dt; return f.t < 0.4; }
       if (f.k === 'stomp') return f.t < 0.3;
       if (f.k === 'firework') return f.t < 1.1;
+      if (f.k === 'plank') { f.vy += 30 * dt; f.x += f.vx * dt; f.y += f.vy * dt; return f.t < 1.2; }
       if (f.k === 'panel') { f.vy += 30 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.r += f.vx * dt * 2; return f.t < 1.2; }
       if (f.k === 'bardak') {
         // uyuyan bug'ın çay bardağı: düşer, yere değince şıngırdar
@@ -1525,7 +1768,15 @@
     // platformlar
     for (const pl of G.plats) {
       const ox = pl.x, oy = pl.y;
-      if (pl.train) {
+      if (pl.kind === 'pan') {
+        if (pl.side > 0) updateScale(G, pl.sc, dt);
+        pl.y = pl.base + pl.sc.d * pl.side;
+      } else if (pl.kind === 'lift') {
+        updateLift(G, pl.lift, dt);
+      } else if (pl.kind === 'tray') {
+        updateCayci(G, pl.npc, dt);
+        pl.x = pl.npc.x - 0.6; pl.y = pl.npc.y - 2.1;
+      } else if (pl.train) {
         if (pl.state === 'wait') {
           // oyuncu tavanda yarım saniye durunca kapılar kapanır, tren kalkar
           pl.wt = p.plat === pl && !p.dead ? pl.wt + dt : 0;
@@ -1550,6 +1801,11 @@
     }
     for (const bar of G.bars) bar.a += bar.sp * dt;
     if (G.fans.length) updateFans(G, dt);
+    if (G.shutters.length) updateShutters(G);
+    if (G.crumb.size) updateCrumbles(G, dt);
+    if (G.lanes.length) updateLanes(G, dt);
+    if (G.doors2.length) updateRevolving(G, dt);
+    if (G.lamps.length) updateLamps(G, dt);
 
     updatePlayer(G, inp, dt);
     G.prev.jump = inp.jump; G.prev.run = inp.run;
@@ -1717,6 +1973,6 @@
     H, VW, VHT, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, TRAIN_W, TRAIN_V, GOAL_MAST, GOAL_STEPS, deathY,
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
     levels, moveX, moveY, runUpSpeed, jumpSpeed,
-    FAN, CART_V, fanAt, fanVy, cartUnder, updateFans,
+    FAN, CART_V, fanAt, fanVy, cartUnder, updateFans, updateShutters, CAR, greenNow,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

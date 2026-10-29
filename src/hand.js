@@ -332,8 +332,129 @@
     });
   }
 
+  // ---------------- Kapalıçarşı ----------------
+  // blok biçimleri (bölümün 'blok' ayarı): taş (çarşının kesme taşı), ahşap (hanın kirişleri)
+  function block(style, kind) {
+    return cached(`blok:${style}:${kind}`, (g) => {
+      if (kind === 'oneway') {
+        // ahşap raf: üstü düz, altında iki dirsek
+        box(g, 0.2, 0.4, 15.6, 4, 1, '#b07a44', K, 0.8);
+        g.fillStyle = 'rgba(255,230,190,0.35)'; g.fillRect(1.2, 1.1, 13.6, 0.7);
+        g.fillStyle = '#6a4422'; poly(g, [2.4, 4.4, 4.6, 4.4, 2.4, 8], '#6a4422', null); poly(g, [13.6, 4.4, 11.4, 4.4, 13.6, 8], '#6a4422', null);
+        return;
+      }
+      if (style === 'ahsap') {
+        box(g, 0.4, 0.4, 15.2, 15.2, 1, '#8a5a32', K, 0.8);
+        for (let y = 1.5; y < 15; y += 4.6) { g.fillStyle = '#9e6a3e'; g.fillRect(1.2, y, 13.6, 3.6); g.fillStyle = 'rgba(60,30,10,0.4)'; g.fillRect(1.2, y + 3.6, 13.6, 0.6); }
+        g.strokeStyle = 'rgba(60,30,10,0.35)'; g.lineWidth = 0.5;
+        for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(3 + k * 4, 2 + k); g.quadraticCurveTo(6 + k * 4, 3 + k, 9 + k * 4, 2 + k); g.stroke(); }
+        circle(g, 3, 3.4, 0.7, '#3a2210', null); circle(g, 13, 12.6, 0.7, '#3a2210', null);
+      } else {
+        // kesme taş: sıcak kireç taşı, derz çizgileri
+        g.fillStyle = '#cdb994'; g.fillRect(0, 0, 16, 16);
+        g.fillStyle = '#dccaa6'; g.fillRect(0.8, 0.8, 14.4, 6.4); g.fillRect(0.8, 8.8, 6.4, 6.4); g.fillRect(8.8, 8.8, 6.4, 6.4);
+        g.fillStyle = 'rgba(255,248,230,0.45)'; g.fillRect(0.8, 0.8, 14.4, 0.8); g.fillRect(0.8, 8.8, 6.4, 0.7); g.fillRect(8.8, 8.8, 6.4, 0.7);
+        g.strokeStyle = K; g.lineWidth = 0.8; g.strokeRect(0.4, 0.4, 15.2, 15.2);
+      }
+      if (kind === 'crack') { g.strokeStyle = 'rgba(40,24,10,0.75)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(3, 2); g.lineTo(7, 7); g.lineTo(5, 10); g.lineTo(9, 14); g.moveTo(7, 7); g.lineTo(12, 6); g.stroke(); }
+    });
+  }
+  // çürük tahta: eski, çatlak, çivileri paslı
+  function plank() {
+    return cached('curuk', (g) => {
+      box(g, 0.2, 0.5, 15.6, 6, 0.8, '#9a7048', K, 0.8);
+      g.fillStyle = '#7a5434'; g.fillRect(1, 3.2, 14, 0.6);
+      g.strokeStyle = 'rgba(40,20,8,0.7)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(5, 0.8); g.lineTo(6.5, 3.6); g.lineTo(5.6, 6.2); g.moveTo(11, 6.2); g.lineTo(10.2, 3.4); g.stroke();
+      circle(g, 2, 2, 0.6, '#8a4a2a', null); circle(g, 14, 2, 0.6, '#8a4a2a', null);
+      g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(2, 6.6, 12, 1.4);
+    });
+  }
+  // terazi: tavana asılı direk, eğilen kol ve zincirler (kefeler ayrı çizilir)
+  function drawScale(g, sc) {
+    const ax = (sc.A.x + 1.5) * 16, bx = (sc.B.x + 1.5) * 16, cx = (ax + bx) / 2, py = (sc.y - 4.2) * 16;
+    lin(g, cx, py - 300, cx, py, K, 2.6); lin(g, cx, py - 300, cx, py, '#c89a3a', 1.4);
+    const ay = sc.A.y * 16, by = sc.B.y * 16;
+    const ka = py + (ay - by) / (bx - ax) * (ax - cx) * 0.25, kb = py + (by - ay) / (bx - ax) * (bx - cx) * 0.25;
+    // kol
+    lin(g, ax, ka, bx, kb, K, 3.4); lin(g, ax, ka, bx, kb, '#e0b44a', 2);
+    circle(g, cx, py, 2.6, '#e0b44a', K, 0.7); circle(g, cx, py, 0.9, '#7a5a1a', null);
+    poly(g, [cx - 1.6, py - 2, cx + 1.6, py - 2, cx, py - 8], '#e0b44a', K, 0.6);   // ibre
+    for (const [x, ky, y] of [[ax, ka, ay], [bx, kb, by]]) {
+      for (const dx of [-20, 0, 20]) { g.strokeStyle = 'rgba(80,60,20,0.9)'; g.lineWidth = 0.7; g.beginPath(); g.moveTo(x, ky); g.lineTo(x + dx, y - 1); g.stroke(); }
+      circle(g, x, ky, 1.4, '#e0b44a', K, 0.5);
+    }
+    if (sc.inv) { circle(g, cx, py - 6, 4, '#8a6a3a', K, 0.6); circle(g, cx, py - 6, 1.2, K, null); }
+  }
+  // kefe: geniş pirinç tabak; yükü varsa tartı ağırlığı
+  function drawPan(g, pl) {
+    const x = pl.x * 16, y = pl.y * 16, w = pl.w * 16;
+    g.beginPath(); g.moveTo(x - 1, y); g.lineTo(x + w + 1, y); g.quadraticCurveTo(x + w - 4, y + 9, x + w / 2, y + 9); g.quadraticCurveTo(x + 4, y + 9, x - 1, y); g.closePath();
+    g.fillStyle = grad(g, 0, y, 0, y + 9, [[0, '#f6d27a'], [1, '#a8781e']]); g.fill(); g.strokeStyle = K; g.lineWidth = 0.8; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.55)'; g.fillRect(x + 3, y + 1, w - 6, 0.8);
+    const load = pl.side > 0 ? pl.sc.loadA : pl.sc.loadB;
+    if (load) {
+      // pirinç tartı ağırlığı
+      const cx = x + w / 2;
+      box(g, cx - 7, y - 10, 14, 10, 2, grad(g, cx - 7, 0, cx + 7, 0, [[0, '#a8781e'], [0.5, '#f0c860'], [1, '#8a6214']]), K, 0.8);
+      box(g, cx - 2.5, y - 14, 5, 4, 1.4, '#c8962e', K, 0.6);
+      g.fillStyle = '#5a3a0a'; g.font = '700 5px Fredoka, sans-serif'; g.textAlign = 'center'; g.fillText('1kg', cx, y - 3);
+    }
+  }
+  // çaycı: yelekli, elinde askılı tepsi; tepside ince belli bardaklar
+  function drawCayci(g, n, t, walking) {
+    const cx = n.x * 16 + 8, by = (n.y) * 16, f = n.dir;
+    const st = walking ? Math.sin(t * 9) : 0;
+    // bacaklar
+    lin(g, cx - 2, by - 10, cx - 2 + st * 2, by, K, 2.6); lin(g, cx + 2, by - 10, cx + 2 - st * 2, by, K, 2.6);
+    lin(g, cx - 2, by - 10, cx - 2 + st * 2, by, '#3a3a48', 1.6); lin(g, cx + 2, by - 10, cx + 2 - st * 2, by, '#3a3a48', 1.6);
+    // gövde: beyaz gömlek, koyu yelek
+    box(g, cx - 4.6, by - 21, 9.2, 12, 3, '#f4f2ea', K, 0.8);
+    poly(g, [cx - 4.4, by - 20, cx - 1, by - 20, cx - 0.4, by - 10, cx - 4.4, by - 10], '#5a2a2a', null);
+    poly(g, [cx + 4.4, by - 20, cx + 1, by - 20, cx + 0.4, by - 10, cx + 4.4, by - 10], '#5a2a2a', null);
+    // baş ve bıyık
+    circle(g, cx + f * 0.6, by - 25, 3.8, '#e8b48c', K, 0.8);
+    g.fillStyle = '#3a2a1a'; g.beginPath(); g.arc(cx + f * 0.6, by - 26, 3.9, Math.PI, 0); g.fill();
+    lin(g, cx + f * 1.4 - 1.6, by - 23.4, cx + f * 1.4 + 1.6, by - 23.4, '#3a2a1a', 1);
+    circle(g, cx + f * 2, by - 25.6, 0.5, K, null);
+    // kalkık kol ve askılı tepsinin sapı
+    lin(g, cx + f * 3, by - 19, cx + f * 1, by - 32, K, 2.4); lin(g, cx + f * 3, by - 19, cx + f * 1, by - 32, '#f4f2ea', 1.4);
+  }
+  function drawTray(g, pl, t) {
+    const x = pl.x * 16, y = pl.y * 16, w = pl.w * 16, cx = x + w / 2;
+    // askı: üç kol, tepede halka
+    for (const dx of [-12, 0, 12]) lin(g, cx, y - 9, cx + dx, y, '#9aa0aa', 0.8);
+    circle(g, cx, y - 10, 1.8, null, '#9aa0aa', 0.9);
+    ellipse(g, cx, y + 1, w / 2 + 1, 2.2, '#c8ccd4', K, 0.8);
+    g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(cx - w / 2 + 2, y - 0.2, w - 4, 0.6);
+    if (!pl.npc.served) for (let k = 0; k < 3; k++) {
+      const gx = cx - 8 + k * 8, j = Math.sin(t * 9 + k) * 0.3;
+      poly(g, [gx - 1.6, y - 6 + j, gx + 1.6, y - 6 + j, gx + 1, y, gx - 1, y], '#c83a1e', K, 0.4);
+      g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(gx - 1.2, y - 5.6 + j, 2.4, 0.7);
+    }
+  }
+  // galerinin korkuluk kirişi: ince ahşap kiriş ve parmaklıklar (üstünde durulmaz)
+  function drawBeam(g, x0, x1, y) {
+    lin(g, x0, y - 9, x1, y - 9, K, 2.2); lin(g, x0, y - 9, x1, y - 9, '#8a5a32', 1.2);
+    lin(g, x0, y + 0.6, x1, y + 0.6, K, 1.8); lin(g, x0, y + 0.6, x1, y + 0.6, '#7a4e2a', 0.9);
+    for (let x = x0 + 6; x < x1; x += 10) lin(g, x, y - 9, x, y, 'rgba(110,70,40,0.8)', 0.9);
+  }
+  // kepenk: üstte sarma kutusu, inen oluklu sac
+  function drawShutter(g, s) {
+    const x = s.x * 16, y0 = s.y0 * 16, h = (s.y1 - s.y0 + 1) * 16, down = (1 - s.k) * h;
+    box(g, x - 2, y0 - 6, 20, 6, 1.4, '#7a7e86', K, 0.7);
+    g.fillStyle = 'rgba(255,255,255,0.3)'; g.fillRect(x - 1, y0 - 5.2, 18, 0.8);
+    if (down < 0.5) return;
+    g.save(); g.beginPath(); g.rect(x - 0.5, y0, 17, down); g.clip();
+    g.fillStyle = '#9aa0a8'; g.fillRect(x, y0, 16, down);
+    for (let yy = y0 + down - 3; yy > y0 - 3; yy -= 3) { g.fillStyle = '#7a8088'; g.fillRect(x, yy, 16, 1); g.fillStyle = '#c0c6ce'; g.fillRect(x, yy + 1, 16, 0.6); }
+    g.restore();
+    box(g, x - 0.5, y0 + down - 2.6, 17, 2.6, 0.8, '#5a5e66', K, 0.6);
+    g.strokeStyle = K; g.lineWidth = 0.7; g.strokeRect(x, y0, 16, down);
+  }
+
   root.BA_HAND = {
     glass, planter, turnstile, panel, rack, fanBase, drawFan, drawAir, drawHeat, drawCart, drawDoor, drawReader, coffee,
     drawTable, drawCup, drawGold, goldSlot, drawMoodBug, drawThief, drawPrince, darkTile,
+    block, plank, drawScale, drawPan, drawCayci, drawTray, drawShutter, drawBeam,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

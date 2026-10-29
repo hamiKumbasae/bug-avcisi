@@ -605,7 +605,7 @@
     };
     const blink = Math.floor(app.t * 2.5) % 2 ? 'off' : '';
     const y0 = Math.max(0, Math.floor(camY) - 1), y1 = Math.min(G.H - 1, Math.floor(camY) + BA.VHT + 1);
-    const T = BA.T, rackF = Math.floor(app.t * 3) % 2;
+    const T = BA.T, rackF = Math.floor(app.t * 3) % 2, blok = G.L.blok;
     const isRack = (t) => t === T.HOT || t === T.COOL;
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
@@ -619,7 +619,9 @@
         if (t === 1) put(ART.tile(tw, ty > 0 && up === 1 ? 'fill' : 'surf'), px, py);
         else if ((t === 4 || t === 5) && G.look.get(i) === 'kahve') put(HD.coffee(t === 5), px, py);
         else if (t === 4) put(ART.tile(tw, 'block', blink), px, py);
+        else if (blok && (t === 2 || t === 6 || t === 3) && tw === theme) put(HD.block(blok, t === 2 ? 'solid' : t === 6 ? 'crack' : 'oneway'), px, py);
         else if (TILEK[t]) put(ART.tile(tw, TILEK[t]), px, py);
+        else if (t === T.CRUMBLE) { const c = G.crumb.get(i); put(HD.plank(), px + (c ? Math.sin(c.t * 70) * 0.8 : 0), py + (c ? c.t * 1.2 : 0)); }
         else if (t === T.GLASS) put(HD.glass(theme, up !== T.GLASS, G.grid[i - 1] !== T.GLASS, G.grid[i + 1] !== T.GLASS), px, py);
         else if (t === T.PLANTER) put(HD.planter(), px, py);
         else if (t === T.TURN) put(HD.turnstile(), px, py);
@@ -669,6 +671,8 @@
       if (pl.train) { if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS); }
       else if (pl.kind === 'v' && theme === 18) ART.drawCabin(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, pl.a * TS, pl.b * TS); // Ataşehir: cephe asansörü
       else if (theme === 18 || pl.gondola) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir ve Maslak: cam silme sepeti
+      else if (pl.kind === 'pan') HD.drawPan(ctx, pl);                            // terazi kefesi
+      else if (pl.kind === 'tray') HD.drawTray(ctx, pl, app.t);                   // çaycının tepsisi
       else if (G.L.yer === 'teleferik') ART.drawTeleferik(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Eyüp: teleferik kabini
       else ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
     }
@@ -742,10 +746,12 @@
   const onScreen = (G, x, w) => x + (w || 1) > G.cam - 1 && x < G.cam + 17;
   // arkada: bank ve bardak, toplantı masası, fan hava sütunları, sıcak kabinlerin üstündeki sıcak hava
   function drawHandBack(G) {
+    for (const sc of G.scales) if (onScreen(G, sc.A.x - 2, sc.B.x - sc.A.x + 6)) HD.drawScale(ctx, sc);
     for (const d of G.decor) {
-      if (!onScreen(G, d.x - 1, 3)) continue;
+      if (!onScreen(G, d.x - 1, d.x1 ? d.x1 - d.x + 3 : 3)) continue;
       if (d.k === 'bank') { ART.drawBench(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS); if (d.cup) HD.drawCup(ctx, (d.x + 1.15) * TS, (d.y + 1) * TS - 10); }
       else if (d.k === 'masa') HD.drawTable(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS);
+      else if (d.k === 'kiris') HD.drawBeam(ctx, d.x * TS, d.x1 * TS + TS, d.y * TS);
     }
     for (const f of G.fans) if (onScreen(G, f.x)) HD.drawAir(ctx, f.x * TS, f.y * TS, f.reach, app.t + f.x * 0.13, f.spin);
     if (G.hasHot) {
@@ -757,6 +763,8 @@
   }
   // önde: kapılar, okuyucular, fan kanatları, simitçi tezgâhları, altın simitler
   function drawHandFront(G) {
+    for (const s of G.shutters) if (onScreen(G, s.x)) HD.drawShutter(ctx, s);
+    for (const n of G.npcs) if (onScreen(G, n.x - 1, 3)) HD.drawCayci(ctx, n, app.t, n.wait <= 0);
     for (const d of G.doors) if (onScreen(G, d.x)) HD.drawDoor(ctx, d, G.t, G.L.ic);
     for (const r of G.readers) if (onScreen(G, r.x)) HD.drawReader(ctx, r, app.t);
     const P = G.fanPulse ? BA.FAN.pPeriod : BA.FAN.period, ON = G.fanPulse ? BA.FAN.pOn : BA.FAN.on, ph = G.fanT % P;
@@ -1005,6 +1013,11 @@
           ART.poly(ctx, [0, -1, 1.2, 0.6, -1, 0.8].map((v, j) => (j % 2 ? f.y * TS + v + Math.sin(an) * d + u * u * 40 : f.x * TS + v + Math.cos(an) * d)), `rgba(220,240,255,${a})`, null);
         }
         ART.ellipse(ctx, f.x * TS, f.y * TS + 4, 3 + u * 10, 1, `rgba(200,60,30,${a * 0.7})`, null);
+        break;
+      }
+      case 'plank': {
+        ctx.save(); ctx.translate(f.x * TS, f.y * TS); ctx.rotate(f.t * (f.r - 1) * 4); ctx.globalAlpha = Math.max(0, 1 - f.t / 1.2);
+        ART.box(ctx, -3, -1.2, 6, 2.4, 0.5, '#9a7048', ART.K, 0.5); ctx.restore();
         break;
       }
       case 'panel': {
