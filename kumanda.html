@@ -164,7 +164,7 @@
     if (!m || typeof m !== 'object') return;
     if (m.t === 'v') { buzz(m.p || 60); return; }
     if (m.t !== 's') return;
-    badge.textContent = m.stage ? `${m.stage} · ♥${m.lives}` : 'BUG AVCISI';
+    badge.textContent = m.stage ? `${m.stage} · ♥∞` : 'BUG AVCISI';
     const menu = m.screen !== 'play';
     hint.textContent = m.paused ? 'Duraklatıldı: ▲▼ ile seç, ZIPLA ile onayla'
       : menu ? 'Menü: ▲▼ ile seç, ZIPLA ile onayla'

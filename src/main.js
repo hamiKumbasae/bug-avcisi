@@ -51,6 +51,22 @@
     Promise.all(loads).then(() => ART.clearAll());
   }
   // y: yazının üst kenarı; size: göz yüksekliği (eski 8'lik ölçüyle uyumlu)
+  // sonsuzluk işareti (canlar sonsuz): yuvarlak uçlu iki ilmek, yazılar gibi koyu gölgeli
+  function infinity(cx, cy, r, col) {
+    const path = () => {
+      ctx.beginPath();
+      for (let k = 0; k <= 48; k++) {
+        const a = (k / 48) * Math.PI * 2, d = 1 + Math.sin(a) ** 2;
+        const x = cx + (r * 1.25 * Math.cos(a)) / d, y = cy + (r * 1.25 * Math.sin(a) * Math.cos(a)) / d;
+        if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+    };
+    ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    path(); ctx.strokeStyle = '#1a1430'; ctx.lineWidth = r * 0.78; ctx.stroke();
+    path(); ctx.strokeStyle = col; ctx.lineWidth = r * 0.36; ctx.stroke();
+    ctx.restore();
+  }
   function text(s, x, y, col = '#fff8ec', size = 8, align = 'left', shadow = '#1a1430', weight = 600) {
     s = String(s);
     const px = size * 1.32;
@@ -552,7 +568,7 @@
       text(String(tm).padStart(3, '0'), 180, ty, warn ? '#ff7a6a' : '#fff8ec', sz, 'center');
     }
     panel(203, y, 50, h, 6.5); ART.drawHead(ctx, 213, y + 7.4, 4.4, { skin: St.power === 2 ? 'hacker' : 'normal' });
-    text('×' + St.lives, 234, ty, '#fff8ec', sz, 'center');
+    infinity(234, ty + sz * 0.5, sz * 0.62, '#fff8ec');   // canlar sonsuz
   }
 
   function heroOpts(G) {
@@ -1077,7 +1093,7 @@
       case 'score': {
         // önce büyüyüp yerine oturan puan yazısı
         const t = f.t, k = t < 0.08 ? 0.5 + t / 0.08 * 0.8 : t < 0.2 ? 1.3 - (t - 0.08) / 0.12 * 0.3 : 1;
-        const col = f.text === '1UP' ? '#7cff6a' : +f.text >= 1000 ? '#ffd84a' : '#ffffff';
+        const col = f.text === '5000' ? '#7cff6a' : +f.text >= 1000 ? '#ffd84a' : '#ffffff';
         ctx.globalAlpha = Math.max(0, Math.min(1, (0.95 - t) / 0.25));
         text(f.text, f.x * TS, f.y * TS - 8 - 3 * (k - 1), col, 6 * k, 'center');
         ctx.globalAlpha = 1;
@@ -1473,7 +1489,7 @@
     const big = app.S.power > 0, hy = 228;
     if (L.boss) text('Patron: ' + L.bossName, 20, 214, '#ffa288', 6.6, 'left', null);
     ART.drawHero(ctx, VW - 66, hy, { big: false, face: 1, mode: 'stand', skin: app.S.power === 2 ? 'hacker' : 'normal', t: app.t });
-    text('× ' + app.S.lives, VW - 56, hy - 10, '#fff8ec', 8, 'left');
+    infinity(VW - 48, hy - 6, 5.2, '#fff8ec');
     void big;
   }
   function drawPause() {

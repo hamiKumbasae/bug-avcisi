@@ -199,8 +199,11 @@ const flat = (w, extraRows) => {
   const G2 = BA.loadStage(S2, i);
   G2.player.x = 10; G2.player.y = 10.5;
   run(G2, NONE, 0.05);
-  ok(S2.lives === 4 && S2.simit === 0, `100 simit = +1 can (can ${S2.lives}, simit ${S2.simit})`);
-  ok(BA.afterDeath(S2) && S2.lives === 3, 'afterDeath canı düşürür');
+  ok(S2.lives === 3 && S2.simit === 0 && S2.score >= 5000, `100 simit = 5000 puan (can ${S2.lives}, simit ${S2.simit}, puan ${S2.score})`);
+  S2.power = 2;
+  ok(BA.afterDeath(S2) && S2.lives === 3 && S2.power === 0, 'canlar sonsuz: düşünce küçülür, oyun bitmez');
+  for (let k = 0; k < 10; k++) BA.afterDeath(S2);
+  ok(BA.afterDeath(S2), 'on kez düştükten sonra da devam edilir');
 }
 
 // ---------- hareketli platform ----------

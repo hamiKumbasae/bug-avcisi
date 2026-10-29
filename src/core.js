@@ -1434,10 +1434,12 @@
     ev(G, 'simit');
     while (G.S.simit >= 100) { G.S.simit -= 100; oneUp(G); }
   }
+  // canlar sonsuz: eskiden can veren her şey (100 simit, disket, uzun ezme zinciri) büyük puan verir
+  const BONUS = 5000;
   function oneUp(G, x, y) {
-    G.S.lives = Math.min(99, G.S.lives + 1);
+    G.S.score += BONUS;
     ev(G, 'oneup');
-    if (x !== undefined) G.fx.push({ k: 'score', x, y, t: 0, text: '1UP' });
+    if (x !== undefined) G.fx.push({ k: 'score', x, y, t: 0, text: String(BONUS) });
   }
 
   // ---------------- bloklar ----------------
@@ -2905,7 +2907,8 @@
 
   // Sonraki bölüme geçiş için oturumu güncelle
   function afterClear(S) { S.stage += 1; S.checkpoint = null; }
-  function afterDeath(S) { S.lives -= 1; S.power = 0; return S.lives > 0; }
+  // canlar sonsuz: düşen oyuncu küçülür, son kayıt noktasından devam eder (oyun bitmez)
+  function afterDeath(S) { S.power = 0; return true; }
 
   root.BA = {
     H, VW, VHT, PH, T, SOLID, BOSS, PW, SMALL_H, BIG_H, STAR_TIME, ROOM_W, TRAIN_W, TRAIN_V, GOAL_MAST, GOAL_STEPS, deathY,

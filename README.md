@@ -111,12 +111,13 @@ Her bölümde birkaç **commit noktası** var: ölürsen en son geçtiğinden de
 
 ## Toplananlar ve düşmanlar
 
-- **Simit:** 100 simit = +1 can.
+- **Can:** sonsuz. Düşersen küçülürsün ve son kayıt noktasından devam edersin; oyun bitmez.
+- **Simit:** 100 simit = 5000 puan.
 - **Komut bloğu (`>_`):** alttan vur; içinden simit, çay, laptop, kahve ya da disket çıkar.
 - **Çay:** büyürsün; büyükken çatlak blokları kırarsın, bir darbe alınca küçülürsün.
 - **Laptop:** siyah kapüşonlu "hacker" moduna geçersin ve `{ }` kod fırlatırsın.
 - **Kahve:** kısa süre dokunulmazlık; değdiğin düşman yenilir.
-- **Disket:** +1 can.
+- **Disket:** 5000 puan.
 - **Bug** üstüne basılınca ezilir. **Spam** zarfı uçar. **Martı** üstüne dalış yapar.
   **Virüs** dikenlidir, üstüne basılmaz: kodla ya da kahveyle yen. **Döngü** dönen kıvılcımlardır, yenilmez.
 - **Kısa devre** (dikenli kablolar) can yakar.
@@ -128,7 +129,7 @@ Her bölümde birkaç **commit noktası** var: ölürsen en son geçtiğinden de
 - **Tırmanış ve iniş:** normal bölümlerin çoğunda kamera yukarı-aşağı da kayar. Zikzak platformlarla
   bir kat yukarı tırmanırsın (plaza lobisi, köprü kulesi, Çamlıca'nın asansör boşluğu) ya da simitlerin aşağı
   aktığı bir boşluktan inersin (Yerebatan'ın derinlikleri, hanın mahzeni).
-- **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
+- **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (5000 puan) çıkar.
 - **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
 - **Bonus binişleri:** on bir bölümde bir durak ya da istasyon girişi var. Üstünde ↓'ye bas: bekleyen aracın
   tavanına çıkınca araç kalkar ve seni bölümün epey ilerisine götürür. Biniş kolaydır: düşman yok, yol boyunca
