@@ -343,7 +343,12 @@
         g.fillStyle = '#6a4422'; poly(g, [2.4, 4.4, 4.6, 4.4, 2.4, 8], '#6a4422', null); poly(g, [13.6, 4.4, 11.4, 4.4, 13.6, 8], '#6a4422', null);
         return;
       }
-      if (style === 'ahsap') {
+      if (style === 'beton') {
+        // üst geçit ayağı: düz beton, kalıp izleri
+        box(g, 0.4, 0.4, 15.2, 15.2, 0.8, '#a8aab0', K, 0.8);
+        g.fillStyle = '#b8bac0'; g.fillRect(1.2, 1.2, 13.6, 6.4); g.fillStyle = '#9a9ca4'; g.fillRect(1.2, 8.4, 13.6, 6.4);
+        for (const [cx, cy] of [[4, 4.4], [12, 4.4], [4, 11.6], [12, 11.6]]) circle(g, cx, cy, 0.6, '#7a7c84', null);
+      } else if (style === 'ahsap') {
         box(g, 0.4, 0.4, 15.2, 15.2, 1, '#8a5a32', K, 0.8);
         for (let y = 1.5; y < 15; y += 4.6) { g.fillStyle = '#9e6a3e'; g.fillRect(1.2, y, 13.6, 3.6); g.fillStyle = 'rgba(60,30,10,0.4)'; g.fillRect(1.2, y + 3.6, 13.6, 0.6); }
         g.strokeStyle = 'rgba(60,30,10,0.35)'; g.lineWidth = 0.5;
@@ -452,9 +457,115 @@
     g.strokeStyle = K; g.lineWidth = 0.7; g.strokeRect(x, y0, 16, down);
   }
 
+  // ---------------- Şişli ----------------
+  // yol: şeridin üstü asfalt, kaldırım çizgisi; ışıklı şeritte yaya geçidi
+  function drawRoad(g, ln) {
+    const x0 = ln.x0 * 16, x1 = ln.x1 * 16, y = ln.y * 16;
+    g.fillStyle = '#4a4e58'; g.fillRect(x0, y, x1 - x0, 9);
+    g.fillStyle = '#5a5e68'; g.fillRect(x0, y, x1 - x0, 1.2);
+    g.fillStyle = 'rgba(255,255,255,0.55)';
+    for (let x = x0 + 4; x < x1 - 6; x += 20) g.fillRect(x, y + 4, 9, 1);
+    if (ln.light) { const l = ln.light; g.fillStyle = '#f2f2ee'; for (let x = l.x * 16 + 1; x < (l.x + l.w) * 16 - 1; x += 5) g.fillRect(x, y + 0.5, 3, 8); }
+  }
+  // yaya ışığı: direk, araçlar için kırmızı/yeşil, yayalar için yürüyen adam
+  function drawLight(g, ln, green, t) {
+    const l = ln.light, x = (ln.dir < 0 ? l.x + l.w : l.x) * 16 - 2, gy = ln.y * 16;
+    lin(g, x, gy, x, gy - 70, K, 2.6); lin(g, x, gy, x, gy - 70, '#5a5e68', 1.4);
+    box(g, x - 5, gy - 84, 10, 18, 2, '#2a2e36', K, 0.7);
+    circle(g, x, gy - 79, 3, green ? '#5a1414' : '#ff3a2a', null);
+    circle(g, x, gy - 71, 3, green ? '#2a5a1a' : '#143a14', null);
+    if (!green) { g.save(); g.globalAlpha = 0.35; circle(g, x, gy - 79, 6, '#ff3a2a', null); g.restore(); }
+    // yaya kutusu
+    box(g, x + 3, gy - 60, 9, 11, 1.6, '#2a2e36', K, 0.6);
+    const c = green ? '#7cff6a' : '#ff5a4a';
+    circle(g, x + 7.5, gy - 57, 1.1, c, null);
+    lin(g, x + 7.5, gy - 56, x + 7.5, gy - 52.5, c, 1.2);
+    if (green) { const k = Math.sin(t * 8) * 1.2; lin(g, x + 7.5, gy - 52.5, x + 6 - k, gy - 50.4, c, 1); lin(g, x + 7.5, gy - 52.5, x + 9 + k, gy - 50.4, c, 1); }
+    else { lin(g, x + 7.5, gy - 52.5, x + 6.6, gy - 50.4, c, 1); lin(g, x + 7.5, gy - 52.5, x + 8.4, gy - 50.4, c, 1); }
+  }
+  // araç: taksi (sarı, tepesinde levha), dolmuş (turkuaz minibüs), otobüs (uzun, kırmızı-beyaz)
+  function drawCar(g, c, t) {
+    const x = c.x * 16, gy = c.lane.y * 16, w = c.w * 16, h = c.h * 16, y = gy - h, f = c.lane.dir;
+    const col = c.kind === 'taksi' ? '#f2c21b' : c.kind === 'dolmus' ? '#1fb5ad' : '#e8eef4';
+    g.save();
+    if (f < 0) { g.translate(x * 2 + w, 0); g.scale(-1, 1); }
+    // gövde
+    box(g, x + 0.5, y + (c.kind === 'taksi' ? 5 : 1), w - 1, h - (c.kind === 'taksi' ? 9 : 5), 3, col, K, 0.9);
+    if (c.kind === 'taksi') { box(g, x + 7, y, w - 18, 7, 3, col, K, 0.8); box(g, x + w / 2 - 6, y - 4, 10, 4, 1.2, '#2a2a30', K, 0.5); g.fillStyle = '#ffe14a'; g.fillRect(x + w / 2 - 5, y - 3.2, 8, 2.4); }
+    if (c.kind === 'otobus') { g.fillStyle = '#d23a2a'; g.fillRect(x + 1, y + h - 13, w - 2, 3.5); }
+    // camlar
+    const wy = c.kind === 'taksi' ? y + 1.5 : y + 3.5, wh = c.kind === 'taksi' ? 5 : c.kind === 'dolmus' ? 9 : 12;
+    for (let k = 0, n = Math.max(2, Math.floor(c.w * 1.3)); k < n; k++) {
+      const ww = (w - 10) / n;
+      box(g, x + 5 + k * ww + 0.8, wy, ww - 1.6, wh, 1.2, 'rgba(150,200,230,0.9)', K, 0.5);
+    }
+    // farlar ve tekerlekler
+    box(g, x + w - 3, gy - 10, 2.5, 3, 0.8, '#fff6c0', K, 0.4);
+    box(g, x + 0.5, gy - 10, 2, 3, 0.8, '#e2302a', K, 0.4);
+    const rot = c.x * 2;
+    for (const wx of [x + 7, x + w - 8]) {
+      circle(g, wx, gy - 3, 3.6, '#22242a', K, 0.6); circle(g, wx, gy - 3, 1.4, '#9aa0aa', null);
+      lin(g, wx, gy - 3, wx + Math.cos(rot) * 1.3, gy - 3 + Math.sin(rot) * 1.3, '#5a5e68', 0.6);
+    }
+    g.restore();
+  }
+  // asansör boşluğu: raylar, katlarda kapı çerçevesi ve çağırma düğmesi
+  function drawShaft(g, L, t) {
+    const x = L.x * 16, top = (L.floors[0] - 3) * 16, bot = L.floors[L.floors.length - 1] * 16;
+    g.fillStyle = 'rgba(40,46,60,0.35)'; g.fillRect(x, top, 48, bot - top);
+    for (const rx of [x + 1, x + 47]) lin(g, rx, top, rx, bot, '#7a8496', 1.2);
+    for (let k = 0; k < L.floors.length; k++) {
+      const fy = L.floors[k] * 16, here = L.cur === k && L.state === 'idle', call = L.call === k;
+      box(g, x - 13, fy - 22, 9, 12, 1.6, '#c8ccd4', K, 0.6);
+      circle(g, x - 8.5, fy - 16, 2.4, call || (here && L.wt > -0.6 && L.wt < 0) ? '#7cff6a' : '#f4c531', K, 0.5);
+      // kat göstergesi
+      box(g, x + 14, fy - 40, 20, 6, 1.2, '#1a1e26', null);
+      g.fillStyle = here ? '#7cff6a' : '#ff8a3a'; g.font = '700 4.6px Fredoka, sans-serif'; g.textAlign = 'center'; g.fillText(String(L.floors.length - k - 1), x + 24, fy - 35.4);
+    }
+  }
+  // kabin: arka duvar, aynalı yan duvarlar, tavan lambası; zemin platformdur
+  function drawCabin2(g, car) {
+    const x = car.x * 16, y = car.y * 16, w = 48, h = 36;
+    box(g, x + 1, y - h, w - 2, h, 2, 'rgba(210,214,222,0.55)', K, 0.8);
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x + 4, y - h + 3, 3, h - 6);
+    box(g, x + w / 2 - 6, y - h + 1, 12, 2.5, 1, '#fff6c0', null);
+    box(g, x - 0.5, y, w + 1, 5, 1.4, '#8a909c', K, 0.8);
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(x + 1, y + 0.8, w - 2, 0.8);
+  }
+  // döner kapı: cam silindir, dönen kanatlar
+  function drawRevolving(g, d) {
+    const x = d.x * 16, y = d.y * 16, w = d.w * 16, h = 46, cx = x + w / 2;
+    box(g, x - 2, y - h - 5, w + 4, 6, 2, '#9aa4b2', K, 0.7);
+    g.fillStyle = 'rgba(170,220,240,0.22)'; g.fillRect(x, y - h, w, h);
+    for (let k = 0; k < 4; k++) {
+      const a = d.a + k * Math.PI / 2, s = Math.cos(a), dep = Math.sin(a);
+      g.strokeStyle = `rgba(120,180,210,${0.45 + 0.4 * (dep > 0 ? 1 : 0)})`; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(cx, y - h); g.lineTo(cx + s * w / 2, y - h); g.lineTo(cx + s * w / 2, y); g.lineTo(cx, y); g.stroke();
+    }
+    lin(g, cx, y - h, cx, y, '#7a8496', 1.6);
+    for (const ex of [x, x + w]) lin(g, ex, y - h, ex, y, '#7a8496', 1);
+  }
+  // tavan lambası: yanıkken altına ışık konisi düşer (karanlık örtüsü ayrıca açılır)
+  function drawLamp(g, l) {
+    const x = l.x * 16 + 8, y = l.y * 16;
+    lin(g, x, y - 4, x, y + 2, '#5a5e68', 0.8);
+    box(g, x - 8, y + 2, 16, 3.5, 1.2, l.t > 0 ? '#fff6d0' : '#6a6e78', K, 0.6);
+    if (l.t > 0) { const gr = g.createLinearGradient(0, y + 5, 0, y + 70); gr.addColorStop(0, `rgba(255,240,190,${0.22 * Math.min(1, l.t)})`); gr.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(x - 7, y + 5); g.lineTo(x + 7, y + 5); g.lineTo(x + 40, y + 70); g.lineTo(x - 40, y + 70); g.fill(); }
+  }
+  // fotokopi makinesi: kapağın altından çakan ışık
+  function drawCopier(g, l) {
+    const x = l.x * 16 - 4, by = l.y * 16;
+    box(g, x, by - 18, 24, 18, 2, '#d8dce2', K, 0.8);
+    box(g, x - 1, by - 22, 26, 5, 1.6, '#bcc2ca', K, 0.7);
+    box(g, x + 3, by - 13, 18, 3, 0.8, '#5a6070', null);
+    circle(g, x + 20, by - 6, 1.2, l.t > 0 ? '#7cff6a' : '#3a8a2a', null);
+    if (l.t > 0) { g.fillStyle = 'rgba(200,240,255,0.95)'; g.fillRect(x + 1, by - 17.5, 22, 1.6); }
+  }
+
   root.BA_HAND = {
     glass, planter, turnstile, panel, rack, fanBase, drawFan, drawAir, drawHeat, drawCart, drawDoor, drawReader, coffee,
     drawTable, drawCup, drawGold, goldSlot, drawMoodBug, drawThief, drawPrince, darkTile,
     block, plank, drawScale, drawPan, drawCayci, drawTray, drawShutter, drawBeam,
+    drawRoad, drawLight, drawCar, drawShaft, drawCabin2, drawRevolving, drawLamp, drawCopier,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

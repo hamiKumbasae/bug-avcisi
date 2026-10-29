@@ -672,6 +672,11 @@
       else if (pl.kind === 'v' && theme === 18) ART.drawCabin(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, pl.a * TS, pl.b * TS); // Ataşehir: cephe asansörü
       else if (theme === 18 || pl.gondola) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir ve Maslak: cam silme sepeti
       else if (pl.kind === 'pan') HD.drawPan(ctx, pl);                            // terazi kefesi
+      else if (pl.kind === 'car') {                                               // trafikteki araç: şeridin içinde görünür
+        const ln = pl.car.lane; ctx.save(); ctx.beginPath(); ctx.rect(ln.x0 * TS, -1e4, (ln.x1 - ln.x0) * TS, 2e4); ctx.clip();
+        HD.drawCar(ctx, pl.car, app.t); ctx.restore();
+      }
+      else if (pl.kind === 'lift') HD.drawCabin2(ctx, pl);                        // asansör kabini
       else if (pl.kind === 'tray') HD.drawTray(ctx, pl, app.t);                   // çaycının tepsisi
       else if (G.L.yer === 'teleferik') ART.drawTeleferik(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Eyüp: teleferik kabini
       else ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
@@ -710,6 +715,7 @@
     for (const s of G.bshots) drawBossShot(s);
     for (const f of G.fx) drawFx(f, theme);
     ctx.restore();
+    if (G.L.dim) drawDark(G, ox, oy);
     if (G.area === 'room') rideFront(G, cam);
     // patron canı
     if (G.boss && !G.boss.dead) {
@@ -747,6 +753,10 @@
   // arkada: bank ve bardak, toplantı masası, fan hava sütunları, sıcak kabinlerin üstündeki sıcak hava
   function drawHandBack(G) {
     for (const sc of G.scales) if (onScreen(G, sc.A.x - 2, sc.B.x - sc.A.x + 6)) HD.drawScale(ctx, sc);
+    for (const ln of G.lanes) if (onScreen(G, ln.x0, ln.x1 - ln.x0)) { HD.drawRoad(ctx, ln); if (ln.light) HD.drawLight(ctx, ln, BA.greenNow(G, ln.light), app.t); }
+    for (const L of G.lifts) if (onScreen(G, L.x - 1, 4)) HD.drawShaft(ctx, L, app.t);
+    for (const l of G.lamps) if (onScreen(G, l.x - 1, 3)) (l.flash ? HD.drawCopier : HD.drawLamp)(ctx, l);
+    for (const d of G.doors2) if (onScreen(G, d.x, d.w)) HD.drawRevolving(ctx, d);
     for (const d of G.decor) {
       if (!onScreen(G, d.x - 1, d.x1 ? d.x1 - d.x + 3 : 3)) continue;
       if (d.k === 'bank') { ART.drawBench(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS); if (d.cup) HD.drawCup(ctx, (d.x + 1.15) * TS, (d.y + 1) * TS - 10); }
@@ -778,6 +788,35 @@
     }
     const saved = app.golds[G.idx] || 0;
     for (const gd of G.golds) if (!gd.taken && onScreen(G, gd.x)) HD.drawGold(ctx, (gd.x + 0.4) * TS, (gd.y + 0.42) * TS, app.t + gd.k * 0.7, !!((saved >> gd.k) & 1));
+  }
+  // mesai sonu karanlığı: yanık lambaların konisi, fotokopinin çakışı ve oyuncunun çevresi açık kalır;
+  // karanlıktaki bug'ların yalnız gözleri parlar
+  let darkCv = null;
+  function drawDark(G, ox, oy) {
+    if (!darkCv || darkCv.width !== canvas.width || darkCv.height !== canvas.height) { darkCv = document.createElement('canvas'); darkCv.width = canvas.width; darkCv.height = canvas.height; }
+    const g = darkCv.getContext('2d'), k = S, X = (x) => (x + ox) * k, Y = (y) => (y + oy) * k;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, darkCv.width, darkCv.height);
+    g.fillStyle = 'rgba(6,8,22,0.86)'; g.fillRect(0, 0, darkCv.width, darkCv.height);
+    g.globalCompositeOperation = 'destination-out';
+    const hole = (x, y, r, a) => { const gr = g.createRadialGradient(X(x), Y(y), 0, X(x), Y(y), r * k); gr.addColorStop(0, `rgba(0,0,0,${a})`); gr.addColorStop(0.6, `rgba(0,0,0,${a * 0.85})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(X(x) - r * k, Y(y) - r * k, 2 * r * k, 2 * r * k); };
+    const lit = [];
+    for (const l of G.lamps) {
+      if (l.t <= 0) continue;
+      const a = Math.min(1, l.t / 0.4);
+      if (l.flash) { hole((l.x + 0.5) * TS, (l.y - 4) * TS, 15 * TS, a); lit.push([l.x + 0.5, l.y - 4, 15]); }
+      else { hole((l.x + 0.5) * TS, (l.y + 5) * TS, 5.6 * TS, a); hole((l.x + 0.5) * TS, (l.y + 1.5) * TS, 3 * TS, a); lit.push([l.x + 0.5, l.y + 5, 5.6]); }
+    }
+    const p = G.player;
+    hole((p.x + p.w / 2) * TS, (p.y + p.h / 2) * TS, 2.4 * TS, 0.75);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(darkCv, 0, 0); ctx.setTransform(S, 0, 0, S, 0, 0);
+    // karanlıkta kalan bug'ların gözleri
+    for (const e of G.ents) {
+      if (e.dead || e.kind === 'hirsiz') continue;
+      const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+      if (lit.some(([x, y, r]) => Math.hypot(cx - x, cy - y) < r * 0.8) || Math.hypot(cx - p.x, cy - p.y) < 2.2) continue;
+      const f = e.vx > 0 ? 1 : -1, bx = cx * TS + ox - f * 4, by = (e.y + e.h) * TS + oy - 5.5;
+      for (const dx of [-1.3, 1.3]) ART.circle(ctx, bx + dx + f * (Math.sin(app.t * 3) * 0.3), by, 0.9, Math.floor(app.t * 3 + e.x) % 7 ? '#ff4a3a' : 'rgba(255,74,58,0.2)', null);
+    }
   }
   function heart(x, y, col) {
     ctx.beginPath();

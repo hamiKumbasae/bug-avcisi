@@ -101,6 +101,7 @@
       marks: new Map(), carts: new Set(), cartT: new Map(), fanT: 0, fanPulse: false, hasHot: false,
       scales: [], npcs: [], crumb: new Map(), shutters: [],
       lanes: [], cars: [], lifts: [], doors2: [], lamps: [],
+      boats: [], spawners: [], tides: [],
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -382,7 +383,28 @@
     } else if (o.k === 'doner') {
       G.doors2.push({ x: o.x, y: o.y, w: o.w || 2, a: 0 });   // döner kapı: girenin başını döndürüp öbür yana çıkarır
     } else if (o.k === 'lamba') {
-      G.lamps.push({ x: o.x, y: o.y, t: 0 });                 // hareket sensörlü tavan lambası
+      G.lamps.push({ x: o.x, y: o.y, t: 0, always: !!o.always });   // hareket sensörlü tavan lambası
+    } else if (o.k === 'fotokopi') {
+      G.lamps.push({ x: o.x, y: o.y, t: 0, flash: o.per || 2.4 });   // çaktıkça odayı bir an aydınlatan fotokopi makinesi
+    } else if (o.k === 'vapur') {
+      // vapur: iki iskele arasında gidip gelir, iskelede bekler; alt güverte ve üst güverte basılır
+      const b = { x: o.x0, a: o.x0, b: o.x1, y: o.y, w: o.w || 12, v: 0, vmax: o.v || 3, dir: o.x1 > o.x0 ? 1 : -1, wait: o.wait || 2.5, wt: o.ph || 0, state: 'wait', kind: o.kayik ? 'kayik' : 'vapur' };
+      b.deck = { kind: 'boat', x: b.x, y: b.y, w: b.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, boat: b, a: 0, b: 0 };
+      G.plats.push(b.deck);
+      if (b.kind === 'vapur') { b.roof = { kind: 'boat', x: b.x + 3, y: b.y - 2.6, w: b.w - 6, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, boat: b, upper: true, a: 0, b: 0 }; G.plats.push(b.roof); }
+      G.boats.push(b);
+    } else if (o.k === 'martilar') {
+      // vapurun peşindeki martılar: oyuncunun tepesinde uçar, dalıp simitini kapar
+      for (let k = 0; k < (o.n || 2); k++) G.spawns.push({ kind: 'hirsiz', x: o.x0 + k * 3, y: o.y || 3, done: false, chase: true, x1: o.x1 });
+    } else if (o.k === 'sal') {
+      // dalgayla yükselip alçalan sal (en yakın dalga bölgesine bağlı)
+      G.plats.push({ kind: 'float', x: o.x, y: o.y, w: o.w || 3, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, a: 0, b: 0, off: o.off || 0.2 });
+    } else if (o.k === 'kasa') {
+      // meyve kasası: arada bir yuvarlanan karpuz bırakır
+      G.spawners.push({ x: o.x, y: o.y, every: o.every || 3, t: o.t0 || 0, dir: o.dir || -1, v: o.v || 3.4 });
+    } else if (o.k === 'dalga') {
+      // dalga: deniz belli aralıkla kıyıya vurur; su yükselince kumsal yolu kapanır
+      G.tides.push({ x0: o.x0, x1: o.x1, lo: o.lo, hi: o.hi, per: o.per || 6, high: o.high || 1.6, ph: o.ph || 0, y: o.lo });
     } else if (o.k === 'kiris') {
       G.decor.push({ k: 'kiris', x: o.x0, x1: o.x1, y: o.y });   // galerinin korkuluk kirişi: yalnız süs, üstünde durulmaz
     } else if (o.k === 'kepenk') {
@@ -483,17 +505,17 @@
       } else {
         L.wt = 0;
         if (L.call >= 0 && L.call !== L.cur) { L.target = L.call; L.state = 'move'; ev(G, 'lift'); }
-        L.call = -1;
+        if (L.call === L.cur || L.state === 'move') L.call = -1;
       }
     } else {
       const ty = L.floors[L.target];
       car.y = approach(car.y, ty, 3.2 * dt);
       if (car.y === ty) { L.cur = L.target; L.state = 'idle'; L.wt = -0.6; ev(G, 'ding'); }
     }
-    // kattaki düğme: kabinin sol yanında
-    if (!p.dead) for (let k = 0; k < L.floors.length; k++) {
-      const box = { x: L.x - 1, y: L.floors[k] - 1.6, w: 1, h: 1.6 };
-      if (overlap(p, box) && L.cur !== k && L.state === 'idle') { if (L.call !== k) ev(G, 'card'); L.call = k; }
+    // kattaki sensör: boşluğun önünde (iki yanda bir karo içinde) bekleyen oyuncu kabini o kata çağırır
+    if (!p.dead && p.plat !== car) for (let k = 0; k < L.floors.length; k++) {
+      const box = { x: L.x - 1.5, y: L.floors[k] - 1.6, w: 6, h: 1.6 };
+      if (overlap(p, box) && p.onGround && (L.cur !== k || L.state !== 'idle')) { if (L.call !== k) ev(G, 'card'); L.call = k; }
     }
   }
   function updateRevolving(G, dt) {
@@ -512,9 +534,72 @@
   function updateLamps(G, dt) {
     const p = G.player;
     for (const l of G.lamps) {
+      if (l.always) { l.t = 3; continue; }
+      if (l.flash) {
+        // fotokopi: her turda 0,35 sn çakar
+        const ph = G.t % l.flash;
+        if (ph < 0.35 && l.t <= 0 && Math.abs(l.x - p.x) < 20) ev(G, 'copy');
+        l.t = ph < 0.35 ? 1 : 0;
+        continue;
+      }
       const near = !p.dead && Math.abs(p.x + p.w / 2 - (l.x + 0.5)) < 4.5 && p.y > l.y - 2 && p.y < l.y + 12;
       if (near && l.t <= 0) ev(G, 'lampon');
       l.t = near ? 3 : Math.max(0, l.t - dt);
+    }
+  }
+  // ---------------- Üsküdar: vapur, karpuz, dalga ----------------
+  function updateBoat(G, b, dt) {
+    if (b.kind === 'kayik') {
+      // kayık: yalnız üstünde biri dururken karşıya gider; boş kalınca bir süre sonra kendi iskelesine döner
+      const p = G.player, on = !p.dead && p.plat === b.deck && p.onGround;
+      b.empty = on ? 0 : (b.empty || 0) + dt;
+      const to = on ? b.b : b.empty > 3 ? b.a : null;
+      if (to === null || b.x === to) { b.v = Math.max(0, b.v - 6 * dt); return; }
+      const d = Math.sign(to - b.x), left = Math.abs(to - b.x);
+      b.v = Math.min(b.vmax, b.v + 3 * dt, Math.sqrt(2 * 3 * left) + 0.1);
+      b.x = left <= b.v * dt ? to : b.x + d * b.v * dt;
+      return;
+    }
+    if (b.state === 'wait') {
+      b.wt += dt;
+      if (b.wt >= b.wait) { b.state = 'go'; b.wt = 0; if (Math.abs(b.x - G.player.x) < 20) ev(G, b.kind === 'vapur' ? 'horn' : 'motor'); }
+    } else {
+      const to = b.dir > 0 ? b.b : b.a, left = Math.abs(to - b.x);
+      b.v = Math.min(b.vmax, b.v + 2.5 * dt, Math.sqrt(2 * 2.5 * left) + 0.1);
+      b.x = left <= b.v * dt ? to : b.x + b.dir * b.v * dt;
+      if (b.x === to) { b.state = 'wait'; b.v = 0; b.dir = -b.dir; }
+    }
+  }
+  function updateSpawners(G, dt) {
+    for (const s of G.spawners) {
+      if (s.x < G.cam - 4 || s.x > G.cam + VW + 6) continue;
+      s.t += dt;
+      if (s.t >= s.every) {
+        s.t = 0;
+        const e = makeEnemy(G, 'karpuz', s.x, s.y);
+        e.vx = s.dir * s.v; e.w = 0.9; e.h = 0.9; G.ents.push(e); ev(G, 'roll');
+      }
+    }
+  }
+  function tideY(t, d) {
+    const ph = (((t / d.per + d.ph) % 1) + 1) % 1 * d.per, rise = 0.9, lowT = d.per - d.high - 2 * rise;
+    if (ph < lowT) return d.lo;
+    if (ph < lowT + rise) return d.lo + (d.hi - d.lo) * (ph - lowT) / rise;
+    if (ph < lowT + rise + d.high) return d.hi;
+    return d.hi + (d.lo - d.hi) * (ph - lowT - rise - d.high) / rise;
+  }
+  function updateTides(G) {
+    const p = G.player;
+    for (const d of G.tides) {
+      const prev = d.y;
+      d.y = tideY(G.t, d);
+      if (d.y < prev - 0.01 && prev >= d.lo - 0.02 && Math.abs((d.x0 + d.x1) / 2 - p.x) < 24 && d.y < d.lo - 0.05 && prev === d.lo) ev(G, 'wave');
+      const inX = (b) => b.x + b.w > d.x0 && b.x < d.x1;
+      // suya giren oyuncuyu dalga yakar ve kıyıya doğru fırlatır; bug'ları alıp götürür
+      if (!p.dead && inX(p) && p.y + p.h > d.y + 0.35 && p.inv <= 0 && p.star <= 0) {
+        hurt(G); if (!p.dead) { p.vy = -13; p.vx = -5; p.onGround = false; } ev(G, 'splash');
+      }
+      for (const e of G.ents) if (!e.dead && !e.harmless && inX(e) && e.y + e.h > d.y + 0.3) { killEnemy(G, e, true, 100); ev(G, 'splash'); }
     }
   }
   function updateCayci(G, n, dt) {
@@ -735,7 +820,8 @@
     if (kind === 'hirsiz') {
       // simit hırsızı martı: zararsız; altındaki simiti oyuncu yaklaşınca kapıp kaçar
       e.w = 1; e.h = 0.75; e.homeX = x; e.homeY = y; e.state = 'perch'; e.harmless = true; e.face = -1;
-      for (let ty = y + 1; ty < Math.min(G.H, y + 12); ty++) if (G.coins[ty * G.W + x]) { e.target = { i: ty * G.W + x, x, y: ty }; break; }
+      if (s && s.chase) { e.state = 'follow'; e.chase = true; e.x1 = s.x1; e.cd = 2 + (x % 3); }
+      else for (let ty = y + 1; ty < Math.min(G.H, y + 12); ty++) if (G.coins[ty * G.W + x]) { e.target = { i: ty * G.W + x, x, y: ty }; break; }
     }
     else if (kind === 'virus') e.vx = -1.5;
     else if (kind === 'spam') { e.vx = -2.4; e.baseY = y + 0.125; e.h = 0.75; }
@@ -809,9 +895,34 @@
           const v = e.vx; e.vx = 0; walker(G, e, dt, true); e.vx = v; e.waiting = true;
         } else { e.waiting = false; walker(G, e, dt, true); }
         break;
+      case 'karpuz': {
+        // yuvarlanan karpuz: kenardan düşer, duvara çarpınca patlar
+        const v0 = e.vx;
+        walker(G, e, dt, false);
+        e.rot = (e.rot || 0) + v0 * dt / 0.45;
+        if (e.vx !== v0) { killEnemy(G, e, false, 50); G.fx.push({ k: 'splat', x: e.x + e.w / 2, y: e.y + e.h * 0.6, t: 0 }); ev(G, 'splat'); }
+        if (e.st > 14) return false;
+        e.st += dt;
+        break;
+      }
       case 'hirsiz': {
         e.st += dt;
         const c = e.target;
+        if (e.state === 'follow') {
+          // oyuncunun tepesinde süzülür; sırası gelince dalar
+          const tx = p.x + Math.sin(e.t * 0.9 + e.homeX) * 2.6, ty = p.y - 4.2 + Math.sin(e.t * 2.3) * 0.4;
+          e.face = tx > e.x ? 1 : -1;
+          e.x = approach(e.x, tx, 5.5 * dt); e.y = approach(e.y, ty, 4 * dt);
+          e.cd -= dt;
+          if (e.cd <= 0 && Math.abs(p.x - e.x) < 2.5 && !p.dead) { e.state = 'pdive'; e.st = 0; const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1; e.vx = dx / d * 9; e.vy = dy / d * 9; ev(G, 'cawk'); }
+          if (p.x > e.x1 + 4 || p.x < e.homeX - 12) { e.state = 'flee'; e.st = 0; e.vx = 2.6; e.vy = -2; }
+          break;
+        }
+        if (e.state === 'pdive') {
+          e.x += e.vx * dt; e.y += e.vy * dt;
+          if (e.st > 0.7) { e.state = 'follow'; e.cd = 2.6; }
+          break;
+        }
         if (e.state === 'perch') {
           e.x = e.homeX + Math.sin(e.t * 1.3) * 0.3; e.y = e.homeY + Math.sin(e.t * 3) * 0.12;
           if (c && !G.coins[c.i]) { e.state = 'flee'; e.st = 0; e.vx = 2.6; e.vy = -1.8; }          // oyuncu daha hızlıydı
@@ -1157,7 +1268,7 @@
         p.vy = -CART_V; p.onGround = false; p.bounce = true; p.jumping = inp.jump; p.plat = null;
         p.sq = 0.45; p.sqv = -14;
         G.cartT.set(ct, G.t);
-        if (!G.carts.has(ct)) {
+        if (!G.carts.has(ct) && !G.L.tente) {
           G.carts.add(ct);
           const cx = ct % G.W, cy = Math.floor(ct / G.W);
           for (let k = 0; k < 3; k++) G.fx.push({ k: 'simitpop', x: cx + k * 0.5, y: cy - 1, t: 0 });
@@ -1771,6 +1882,14 @@
       if (pl.kind === 'pan') {
         if (pl.side > 0) updateScale(G, pl.sc, dt);
         pl.y = pl.base + pl.sc.d * pl.side;
+      } else if (pl.kind === 'float') {
+        let td = null;
+        for (const d of G.tides) if (!td || Math.abs((d.x0 + d.x1) / 2 - pl.x) < Math.abs((td.x0 + td.x1) / 2 - pl.x)) td = d;
+        if (td) pl.y = tideY(G.t, td) - pl.off;
+      } else if (pl.kind === 'boat') {
+        const b = pl.boat;
+        if (!pl.upper) updateBoat(G, b, dt);
+        pl.x = b.x + (pl.upper ? 3 : 0);
       } else if (pl.kind === 'lift') {
         updateLift(G, pl.lift, dt);
       } else if (pl.kind === 'tray') {
@@ -1806,6 +1925,8 @@
     if (G.lanes.length) updateLanes(G, dt);
     if (G.doors2.length) updateRevolving(G, dt);
     if (G.lamps.length) updateLamps(G, dt);
+    if (G.spawners.length) updateSpawners(G, dt);
+    if (G.tides.length) updateTides(G);
 
     updatePlayer(G, inp, dt);
     G.prev.jump = inp.jump; G.prev.run = inp.run;
@@ -1858,6 +1979,11 @@
       else if (!s.done && s.x <= G.cam - 2) s.done = true;
     }
     G.ents = G.ents.filter((e) => updateEnemy(G, e, dt));
+    // yuvarlanan karpuz önüne çıkan bug'ı devirir
+    for (const k of G.ents) {
+      if (k.kind !== 'karpuz' || k.dead) continue;
+      for (const b of G.ents) if (b !== k && !b.dead && (b.kind === 'bug' || b.kind === 'virus') && overlap(k, b)) killEnemy(G, b, true, 100);
+    }
     // düşman-düşman: yürüyenler birbirine çarpınca döner
     for (let i = 0; i < G.ents.length; i++) {
       const a = G.ents[i]; if (a.dead || (a.kind !== 'bug' && a.kind !== 'virus')) continue;
@@ -1874,9 +2000,16 @@
       for (const e of G.ents) {
         if (e.dead || !overlap(p, shrink(e, 0.06))) continue;
         if (e.kind === 'hirsiz') {
+          // vapur martısı dalışta değerse simitlerini kapar (en çok beş); kaçarken ezilirse geri verir
+          if (e.chase && e.state === 'pdive' && !(p.vy > 0 && p.prevBottom <= e.y + 0.5)) {
+            const n = Math.min(5, G.S.simit);
+            if (n) { G.S.simit -= n; e.carry = n; G.fx.push({ k: 'score', x: p.x + 0.4, y: p.y, t: 0, text: '-' + n }); }
+            e.state = 'flee'; e.st = 0; e.vx = 2.8; e.vy = -1.2; ev(G, 'cawk'); ev(G, 'steal');
+            continue;
+          }
           // martıya basılınca gagasındaki simit (ve yuttukları) saçılır; değmek zarar vermez
           if (e.state !== 'bonk' && p.vy > 0 && p.prevBottom <= e.y + 0.5) {
-            const n = e.carry ? 5 : 1;
+            const n = e.carry === true ? 5 : e.carry ? e.carry + 1 : 1;
             for (let k = 0; k < n; k++) G.fx.push({ k: 'simitpop', x: e.x + (k - (n - 1) / 2) * 0.7, y: e.y - 0.6, t: 0 });
             addSimit(G, n); addScore(G, 200, e.x + e.w / 2, e.y);
             e.state = 'bonk'; e.st = 0; e.carry = false; e.vx = 3.2; e.vy = -3;
@@ -1900,6 +2033,7 @@
           p.vy = inp.jump ? -14 : -9; p.jumping = inp.jump; p.y = e.y - p.h;
           p.sq = -0.3; p.sqv = 0;
           G.fx.push({ k: 'stomp', x: e.x + e.w / 2, y: e.y + 0.2, t: 0 });
+          if (e.kind === 'karpuz') { G.fx.push({ k: 'splat', x: e.x + e.w / 2, y: e.y + e.h * 0.6, t: 0 }); ev(G, 'splat'); }
           ev(G, 'stomp');
         } else hurt(G);
         if (p.dead) break;

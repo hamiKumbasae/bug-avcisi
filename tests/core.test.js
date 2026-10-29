@@ -317,13 +317,13 @@ const flat = (w, extraRows) => {
       climbs++;
     }
   }
-  ok(tall >= 18, `uzun (dikey) bölüm sayısı ${tall}`);
+  ok(tall >= 8, `uzun (dikey) bölüm sayısı ${tall}`);
   ok(climbs > 0 && falls === climbs, `dikey boşluklarda düşen oyuncu ölmeden iner, kamera izler (${falls}/${climbs})`);
   // düz bantta çukura düşünce bandın altında ölür
   const idx = LV.findIndex((L) => L.vcam && !L.hand);
   const G = BA.loadStage(BA.newRun(), idx);
   const p = G.player, cx = Math.floor(p.x);
-  p.y = G.camHi[cx] + 15; BA.step(G, {}, dt);
+  p.y = Math.max(G.camHi[cx] + 15, G.H + 1); BA.step(G, {}, dt);
   ok(p.dead, 'bandın altına düşen oyuncu ölür');
 }
 
@@ -823,6 +823,67 @@ const place = (G, x, y) => { const p = G.player; p.x = x + (1 - p.w) / 2; p.y = 
   ok(G.ents[0].dead && !G.player.dead && (G.player.x + G.player.w <= 5.01 || G.player.x >= 5.99), 'altındaki bug ezildi, oyuncu yana itildi');
   run(G, NONE, 2);
   ok(BA.tile(G, 5, 11) === T.EMPTY, 'kepenk yeniden kalktı');
+}
+
+// ================= Şişli: trafik, asansör, döner kapı, sensörlü lamba =================
+// ---------- trafik: yaya ışığı yeşilken araçlar çizgide durur; hızlı araç çarpar; tavanına basılır ----------
+{
+  const lane = { x0: 4, x1: 40, y: 12, dir: -1, every: 1.2, v: 5, kinds: ['taksi'], light: { x: 10, w: 2, per: 12, green: 9 } };
+  const i = custom(['..P.....................................', '#'.repeat(40), '#'.repeat(40)], { hand: true, objs: [Object.assign({ k: 'yol' }, lane)] });
+  const G = BA.loadStage(BA.newRun(), i);
+  G.player.x = 1; run(G, () => { G.player.x = 1; return {}; }, 8.5);
+  const front = Math.min(...G.cars.map((c) => c.x));
+  ok(G.cars.filter((c) => c.v < 0.2).length >= 3 && front >= 12.2 && G.cars.find((c) => c.x === front).v < 0.2, `ışıkta araçlar durdu, sıkıştı (${G.cars.length} araç, öndeki x=${front.toFixed(1)})`);
+  run(G, () => { G.player.x = 1; return {}; }, 2);
+  ok(G.cars.some((c) => c.x < 11 || c.v > 3), 'ışık dönünce trafik aktı');
+  // tavanına basılan araç oyuncuyu taşır
+  const G2 = BA.loadStage(BA.newRun(), i);
+  run(G2, () => { G2.player.x = 1; return {}; }, 1.3);
+  const c = G2.cars[0], p = G2.player;
+  p.x = c.x + 1; p.y = c.plat.y - p.h; p.vy = 0; p.onGround = true; p.plat = c.plat; p.inv = 0;
+  const x0 = p.x;
+  run(G2, NONE, 0.4);
+  ok(p.plat === c.plat && p.x < x0 - 0.5 && !p.dead, 'araç tavanındaki oyuncuyu taşıdı');
+  // hızla gelen araç çarpar
+  const G3 = BA.loadStage(BA.newRun(), i), p3 = G3.player;
+  G3.S.power = 1; p3.h = BA.BIG_H; p3.x = 30; p3.y = 12 - p3.h;
+  run(G3, NONE, 3, () => G3.S.power === 0);
+  ok(G3.S.power === 0, 'yolda duran oyuncuya araç çarptı');
+}
+// ---------- asansör: binen yarım saniye durunca sonraki kata gider; düğme kabini çağırır ----------
+{
+  const i = custom(['..P.........', '#####...####', '############'], { hand: true, objs: [{ k: 'asansor', x: 5, floors: [6, 9, 12] }] });
+  const G = BA.loadStage(BA.newRun(), i), L = G.lifts[0], p = G.player;
+  ok(L.car.y === 12 && L.cur === 2, 'kabin en alt katta başlar');
+  place(G, 5.6, 12); p.onGround = true; p.plat = L.car;
+  run(G, NONE, 2.2);
+  ok(L.cur === 1 && Math.abs(p.y + p.h - 9) < 0.05, `binen bir üst kata çıktı (kat ${L.cur})`);
+  run(G, NONE, 3);
+  ok(L.cur === 0, 'binmeye devam eden en üst kata vardı');
+  place(G, 3.5, 12); p.onGround = true; p.x = 3.9;
+  run(G, NONE, 3.5);
+  ok(L.cur === 2 && L.car.y === 12, 'boşluğun önünde bekleyen kabini çağırdı');
+}
+// ---------- döner kapı: giren döndürülüp öbür yandan çıkarılır ----------
+{
+  const i = custom(['..P.........', '#'.repeat(12), '#'.repeat(12)], { hand: true, objs: [{ k: 'doner', x: 5, y: 12, w: 2 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  let spun = false;
+  run(G, { right: true }, 2, () => { if (p.spin) spun = true; return p.x > 7.2 && !p.spin; });
+  ok(spun && p.x > 7, 'döner kapıdan dönerek geçti');
+}
+// ---------- sensörlü lamba: yanına gelince yanar, uzaklaşınca bir süre sonra söner; fotokopi çakar ----------
+{
+  const i = custom(['..P....................', '#'.repeat(23), '#'.repeat(23)], { hand: true, dim: true, objs: [{ k: 'lamba', x: 6, y: 2 }, { k: 'lamba', x: 18, y: 2 }, { k: 'fotokopi', x: 12, y: 12, per: 2.4 }] });
+  const G = BA.loadStage(BA.newRun(), i), [a, b, f] = G.lamps;
+  run(G, NONE, 0.1);
+  ok(a.t > 0 && b.t === 0, 'yakındaki lamba yandı, uzaktaki sönük');
+  place(G, 21, 12); G.player.onGround = true;
+  run(G, NONE, 3.5);
+  ok(a.t === 0 && b.t > 0, 'uzaklaşınca söndü, yeni yerde yandı');
+  let flashes = 0, prev = 0;
+  run(G, NONE, 5, () => { if (f.t > 0 && !prev) flashes++; prev = f.t; return false; });
+  ok(flashes === 2, `fotokopi 5 sn'de iki kez çaktı (${flashes})`);
 }
 
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------

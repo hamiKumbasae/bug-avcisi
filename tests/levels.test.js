@@ -53,6 +53,14 @@ function analyse(idx, revealHidden) {
       statics.push(a, z); rides.push([a, z]);
     }
   }
+  // asansör: her katta durur, katlar arasında taşır
+  for (const L of G.lifts) {
+    const ys = L.floors.map((y) => ({ x: L.x, y, w: 3, h: 0.5, dy: 0 }));
+    statics.push(...ys);
+    for (let k = 0; k + 1 < ys.length; k++) rides.push([ys[k], ys[k + 1]]);
+  }
+  // trafik şeridi: araçların tavanı (en alçak araç: taksi) şerit boyunca köprü sayılır
+  for (const ln of G.lanes) statics.push({ x: ln.x0, y: ln.y - BA.CAR.taksi[1], w: ln.x1 - ln.x0, h: 0.5, dy: 0 });
   G.plats = statics;
   const spikeCol = new Set();
   for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (G.grid[y * W + x] === T.SPIKE) spikeCol.add(x * 100 + y);
@@ -83,11 +91,12 @@ function analyse(idx, revealHidden) {
     }
   }
   // platform yüzeyleri de parça
+  const touch = [];   // zeminle aynı hizadaki platform (kattaki asansör kabini): ikisi arasında yürünür
   for (const p of statics) {
     const y = Math.round(p.y) - 1;
     const s = { id: segs.length, y, x0: Math.floor(p.x), x1: Math.ceil(p.x + p.w) - 1, plat: true, py: p.y };
     segs.push(s); p.seg = s;
-    for (let k = s.x0; k <= s.x1; k++) if (!segAt.has(k * 100 + y)) segAt.set(k * 100 + y, s);
+    for (let k = s.x0; k <= s.x1; k++) { const t = segAt.get(k * 100 + y); if (!t) segAt.set(k * 100 + y, s); else if (t !== s) touch.push([s, t]); }
   }
   const findSeg = (b) => {
     const y = Math.round(b.y + b.h) - 1;
@@ -178,6 +187,7 @@ function analyse(idx, revealHidden) {
     // aynı sıradaki komşu parçaya yürüyerek (tek karo engelsiz) — zaten bitişikse aynı parça
   }
   for (const [a, z] of rides) { edges[a.seg.id].add(z.seg.id); edges[z.seg.id].add(a.seg.id); }
+  for (const [a, b] of touch) { edges[a.id].add(b.id); edges[b.id].add(a.id); }
   // metro: giriş → odaya düşüş, odanın çıkışı → yukarıdaki çıkış noktası
   let metro = null;
   if (G.room) {

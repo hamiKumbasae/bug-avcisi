@@ -35,7 +35,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import maslak   # noqa: E402  Maslak'ın elle tasarlanmış üç bölümü
 import carsi    # noqa: E402  Kapalıçarşı
-HAND = {0: maslak, 1: carsi}   # elle tasarlanan dünyalar; öteki dünyalar üretilir
+import sisli    # noqa: E402  Şişli
+import uskudar  # noqa: E402  Üsküdar
+HAND = {0: maslak, 1: carsi, 2: sisli, 3: uskudar}   # elle tasarlanan dünyalar; öteki dünyalar üretilir
 
 H = 14
 # v2.0: iki katmanlı İstanbul. Yukarısı bugünün şehri (Maslak, Şişli, Ataşehir, Köprü, Çamlıca), aşağısı eski İstanbul
@@ -910,7 +912,7 @@ def main():
                 lv['vcam'] = vcam
             if hand:
                 lv['hand'] = True    # el yapımı: çok kayıt noktası, altın simitler, zemine oturan kamera
-                for k in ('links', 'dark', 'objs', 'blok'):
+                for k in ('links', 'dark', 'objs', 'blok', 'dim', 'tente'):
                     if hand.get(k):
                         lv[k] = hand[k]
             levels.append(lv)
