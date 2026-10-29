@@ -152,6 +152,17 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 
 Her `main` gönderiminde GitHub Actions testleri çalıştırır ve siteyi GitHub Pages'e yayınlar.
 
+## Sürümler
+
+Oyun büyük değişikliklerden önce etiketlenip saklanır. Site her zaman son hâli gösterir; eski bir sürümü
+oynamak için etiketini indirip yerelde aç (`python3 -m http.server`).
+
+| Sürüm | Tarih | İçerik | Kaynak |
+|---|---|---|---|
+| v1.0 | 29 Ekim 2026 | 12 dünya, 36 bölüm, 12 patron; 10 bonus binişi (metro, metrobüs, tramvay, minibüs, taksi, Tünel füniküleri); Ataşehir dünyası; yazısız hikâye ve 12 hatıra parçası | [`v1.0`](https://github.com/hamiKumbasae/bug-avcisi/tree/v1.0) · [zip](https://github.com/hamiKumbasae/bug-avcisi/archive/refs/tags/v1.0.zip) |
+
+Git ile bu sürüme dönmek için: `git checkout v1.0`.
+
 ## Lisans
 
 Kod MIT lisanslıdır (`LICENSE`). Fredoka yazı tipi SIL Open Font License ile gelir
