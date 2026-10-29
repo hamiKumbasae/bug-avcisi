@@ -1,7 +1,7 @@
 // Bug Avcısı: İstanbul — oyun kabuğu: çizim, kamera, HUD, menüler, giriş, ses.
 (function () {
   'use strict';
-  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO, ST = window.BA_STORY, RD = window.BA_RIDE;
+  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO, ST = window.BA_STORY, RD = window.BA_RIDE, HD = window.BA_HAND;
   const LEVELS = window.BA_LEVELS, WORLDS = window.BA_WORLDS;
   const canvas = document.getElementById('oyun');
   const ctx = canvas.getContext('2d');
@@ -187,6 +187,7 @@
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
     progress: store.get('ba-ilerleme', 1), best: store.get('ba-rekor', 0), titleT: 0, selW: 0, selS: 0,
     pieces: store.get('ba-parcalar', new Array(NW).fill(false)),
+    golds: store.get('ba-altin', {}),   // el yapımı bölümlerin altın simitleri: {bölüm: üç bitlik maske}
   };
   window.__ba = { app, BA, start: (stage) => startRun(stage || 0), render: () => render(), story: (id, then) => playStory(id, then || toTitle) };
 
@@ -211,8 +212,8 @@
     AU.stopAmbient(0.6); AU.stopMusic();
     f();
   }
-  function toIntro() {
-    app.screen = 'intro'; app.introT = 0; app.G = null;
+  function toIntro(quick) {
+    app.screen = 'intro'; app.introT = 0; app.G = null; app.introQuick = !!quick;   // ölünce kısa ara
     AU.stopMusic();
   }
   function beginStage() {
@@ -306,6 +307,7 @@
         case 'starend': break;
         case 'train': case 'trainstop': AU.sfx(e.e, G.L.ride && G.L.ride.type); break;
         case 'piece': AU.sfx('piece'); app.pieces[e.world] = true; store.set('ba-parcalar', app.pieces); break;
+        case 'gold': AU.sfx('gold'); app.golds[e.idx] = (app.golds[e.idx] || 0) | (1 << e.k); store.set('ba-altin', app.golds); break;
         default: AU.sfx(e.e);
       }
     }
@@ -326,7 +328,7 @@
   function update(dt) {
     if (app.screen === 'intro') {
       app.introT += dt;
-      if (app.introT > 2.6) beginStage();
+      if (app.introT > (app.introQuick ? 1.2 : 2.6)) beginStage();
     } else if (app.screen === 'play') {
       acc += dt;
       let n = 0;
@@ -341,7 +343,7 @@
       const G = app.G;
       if (G.result === 'dead') {
         AU.stopAmbient(0.4);
-        if (BA.afterDeath(app.S)) toIntro();
+        if (BA.afterDeath(app.S)) toIntro(true);
         else { app.screen = 'over'; app.overT = 0; app.menu = 0; AU.sfx('over'); saveScore(); }
       } else if (G.result === 'clear') {
         BA.afterClear(app.S);
@@ -534,6 +536,15 @@
     panel(3, y, 58, h, 6.5); text(String(St.score).padStart(6, '0'), 32, ty, '#fff8ec', sz, 'center');
     panel(65, y, 44, h, 6.5); img(coinImg(0), 66.5, y - 1.5); text('×' + String(St.simit).padStart(2, '0'), 93, ty, '#ffe08a', sz, 'center');
     panel(113, y, 30, h, 6.5); text(`${L.world}-${L.section}`, 128, ty, '#9af4e4', sz, 'center');
+    if (L.hand && !(G && G.boss && !G.boss.dead)) {
+      // altın simitler: bu koşuda alınanlar dolu, daha önce alınmışlar soluk
+      const idx = G ? G.idx : St.stage, run = (St.golds && St.golds[idx]) || 0, sv = app.golds[idx] || 0;
+      for (let k = 0; k < 3; k++) {
+        ctx.globalAlpha = (run >> k) & 1 ? 1 : (sv >> k) & 1 ? 0.5 : 1;
+        HD.goldSlot(ctx, 120 + k * 8, y + h + 4.5, !!(((run | sv) >> k) & 1));
+        ctx.globalAlpha = 1;
+      }
+    }
     if (!L.quiet) {   // Eyüp'ün tepesinde süre yok
       panel(147, y, 52, h, 6.5); clockIcon(157, y + 6.5, 4.2);
       const tm = G ? Math.ceil(G.time) : L.time;
@@ -560,6 +571,7 @@
   }
 
   const TILEK = { 2: 'solid', 8: 'solid', 3: 'oneway', 5: 'used', 6: 'crack', 7: 'spike', 10: 'crack' };
+  const SOLID_T = BA.SOLID;
   function drawPlay() {
     const G = app.G, w = G.world, pl = G.place, theme = ART.placeTiles(pl);
     let sx = 0, sy = 0;
@@ -593,25 +605,39 @@
     };
     const blink = Math.floor(app.t * 2.5) % 2 ? 'off' : '';
     const y0 = Math.max(0, Math.floor(camY) - 1), y1 = Math.min(G.H - 1, Math.floor(camY) + BA.VHT + 1);
+    const T = BA.T, rackF = Math.floor(app.t * 3) % 2;
+    const isRack = (t) => t === T.HOT || t === T.COOL;
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
         const i = ty * G.W + tx, t = G.grid[i];
+        // tavan arası, taban altı: karanlık arka plan
+        if (G.dark && G.dark[i] && !SOLID_T[t]) put(HD.darkTile(theme, (tx * 7 + ty * 3) % 8), tx * TS, ty * TS);
         if (!t || (G.room && tx >= G.room.x0 && ty < G.room.y0)) continue; // binişin üstündeki görünmez tavan
         const px = tx * TS, py = ty * TS + (bumpOff.get(i) || 0);
         const tw = G.room && tx >= G.room.x0 ? RD.tiles(G.L.ride) : theme; // bonus odası: peron ya da kaldırım
-        if (t === 1) put(ART.tile(tw, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
+        const up = ty > 0 ? G.grid[i - G.W] : 0;
+        if (t === 1) put(ART.tile(tw, ty > 0 && up === 1 ? 'fill' : 'surf'), px, py);
+        else if ((t === 4 || t === 5) && G.look.get(i) === 'kahve') put(HD.coffee(t === 5), px, py);
         else if (t === 4) put(ART.tile(tw, 'block', blink), px, py);
         else if (TILEK[t]) put(ART.tile(tw, TILEK[t]), px, py);
+        else if (t === T.GLASS) put(HD.glass(theme, up !== T.GLASS, G.grid[i - 1] !== T.GLASS, G.grid[i + 1] !== T.GLASS), px, py);
+        else if (t === T.PLANTER) put(HD.planter(), px, py);
+        else if (t === T.TURN) put(HD.turnstile(), px, py);
+        else if (t === T.PANEL) put(HD.panel(theme), px, py);
+        else if (t === T.FAN) put(HD.fanBase(theme), px, py);
+        else if (isRack(t)) put(HD.rack(t === T.HOT, !isRack(up), rackF), px, py);
       }
     }
     ctx.setTransform(S, 0, 0, S, 0, 0);
     ctx.save();
     ctx.translate(ox, oy);
+    if (G.hand) drawHandBack(G, theme);
     // simitler
     const coin = coinImg(Math.floor(app.t * 10));
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) if (G.coins[ty * G.W + tx]) img(coin, tx * TS, ty * TS);
-    // kayıt noktası ve DEPLOY
-    if (G.checkpoint) ART.drawCheckpoint(ctx, G.checkpoint.x * TS, (G.checkpoint.y - 1) * TS, G.checkpoint.on, app.t);
+    // kayıt noktaları ve DEPLOY
+    for (const cp of G.checkpoints) ART.drawCheckpoint(ctx, cp.x * TS, (cp.y - 1) * TS, cp.on, app.t);
+    if (G.hand) drawHandFront(G, theme);
     if (G.bench) ART.drawBench(ctx, (G.bench.x + 0.5) * TS, (G.bench.y + 1) * TS);
     const gl = G.goal;
     if (gl && (gl.active || !G.bossKind)) {
@@ -642,7 +668,7 @@
     for (const pl of G.plats) {
       if (pl.train) { if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS); }
       else if (pl.kind === 'v' && theme === 18) ART.drawCabin(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, pl.a * TS, pl.b * TS); // Ataşehir: cephe asansörü
-      else if (theme === 18) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir: cam silme sepeti
+      else if (theme === 18 || pl.gondola) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir ve Maslak: cam silme sepeti
       else if (G.L.yer === 'teleferik') ART.drawTeleferik(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Eyüp: teleferik kabini
       else ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
     }
@@ -665,6 +691,7 @@
     }
     // düşmanlar, patron
     for (const e of G.ents) drawEnemy(e);
+    if (G.boss && G.boss.prince) HD.drawPrince(ctx, G.boss.prince, app.t);
     if (G.boss) drawBoss(G);
     // oyuncu
     const p = G.player;
@@ -711,6 +738,39 @@
     }
     hud(G);
   }
+  // ---------- el yapımı bölümlerin (Maslak) parçaları ----------
+  const onScreen = (G, x, w) => x + (w || 1) > G.cam - 1 && x < G.cam + 17;
+  // arkada: bank ve bardak, toplantı masası, fan hava sütunları, sıcak kabinlerin üstündeki sıcak hava
+  function drawHandBack(G) {
+    for (const d of G.decor) {
+      if (!onScreen(G, d.x - 1, 3)) continue;
+      if (d.k === 'bank') { ART.drawBench(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS); if (d.cup) HD.drawCup(ctx, (d.x + 1.15) * TS, (d.y + 1) * TS - 10); }
+      else if (d.k === 'masa') HD.drawTable(ctx, (d.x + 0.5) * TS, (d.y + 1) * TS);
+    }
+    for (const f of G.fans) if (onScreen(G, f.x)) HD.drawAir(ctx, f.x * TS, f.y * TS, f.reach, app.t + f.x * 0.13, f.spin);
+    if (G.hasHot) {
+      const T = BA.T, x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
+      for (let ty = 1; ty < G.H; ty++) for (let tx = x0; tx <= x1; tx++) {
+        if (G.grid[ty * G.W + tx] === T.HOT && G.grid[(ty - 1) * G.W + tx] !== T.HOT && !SOLID_T[G.grid[(ty - 1) * G.W + tx]]) HD.drawHeat(ctx, tx * TS, ty * TS, app.t + tx * 0.37);
+      }
+    }
+  }
+  // önde: kapılar, okuyucular, fan kanatları, simitçi tezgâhları, altın simitler
+  function drawHandFront(G) {
+    for (const d of G.doors) if (onScreen(G, d.x)) HD.drawDoor(ctx, d, G.t, G.L.ic);
+    for (const r of G.readers) if (onScreen(G, r.x)) HD.drawReader(ctx, r, app.t);
+    const P = G.fanPulse ? BA.FAN.pPeriod : BA.FAN.period, ON = G.fanPulse ? BA.FAN.pOn : BA.FAN.on, ph = G.fanT % P;
+    for (const f of G.fans) if (onScreen(G, f.x)) HD.drawFan(ctx, f.x * TS, f.y * TS, app.t, f, (f.cyc || G.fanPulse) && f.on && ph > ON - 0.6);
+    const T = BA.T, x0 = Math.max(0, Math.floor(G.cam) - 2), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
+    for (let ty = 0; ty < G.H; ty++) for (let tx = x0; tx <= x1; tx++) {
+      const i = ty * G.W + tx;
+      if (G.grid[i] !== T.CART || G.grid[i - 1] === T.CART) continue;
+      const t0 = G.cartT.get(i), k = t0 === undefined ? 1 : (G.t - t0) / 0.35;
+      HD.drawCart(ctx, tx * TS, ty * TS, k < 1 ? Math.sin(k * Math.PI) * (1 - k) : 0);
+    }
+    const saved = app.golds[G.idx] || 0;
+    for (const gd of G.golds) if (!gd.taken && onScreen(G, gd.x)) HD.drawGold(ctx, (gd.x + 0.4) * TS, (gd.y + 0.42) * TS, app.t + gd.k * 0.7, !!((saved >> gd.k) & 1));
+  }
   function heart(x, y, col) {
     ctx.beginPath();
     ctx.moveTo(x, y + 3.2);
@@ -724,7 +784,11 @@
     ctx.save();
     if (e.dead && e.flip) { const my = by - e.h * TS / 2; ctx.translate(0, my); ctx.scale(1, -1); ctx.translate(0, -my); }
     switch (e.kind) {
-      case 'bug': ART.drawBug(ctx, cx, by, e.t, e.vx > 0 ? 1 : -1, e.dead && !e.flip); break;
+      case 'bug':
+        if (!e.dead && (e.state || e.slide)) { const p = app.G.player; HD.drawMoodBug(ctx, e, app.t, p.x + p.w / 2 < e.x + e.w / 2 ? -1 : 1); }
+        else ART.drawBug(ctx, cx, by, e.t, e.vx > 0 ? 1 : -1, e.dead && !e.flip);
+        break;
+      case 'hirsiz': HD.drawThief(ctx, e, app.t); break;
       case 'virus': ART.drawVirus(ctx, cx, by + 1, e.t); break;
       case 'spam': ART.drawSpam(ctx, cx, by + 1, e.t, e.vx > 0 ? 1 : -1); break;
       case 'leap': {
@@ -761,6 +825,7 @@
     let shakeX = 0;
     if ((b.kind === 'truva' && b.state === 'shake') || (b.kind === 'kralbug' && b.state === 'go' && b.st > 1.5)) shakeX = Math.floor(app.t * 30) % 2 ? 1 : -1;
     const o = { face: b.face || -1, hurt: false, open: b.kind === 'truva' && b.state === 'open', tired: b.kind === 'ddos' && b.state === 'tired', dive: b.kind === 'marti' && b.state === 'dive' };
+    if (b.crownT !== undefined) { const k = (b.t - b.crownT) / 0.5; if (k >= 0 && k < 1) o.crownUp = Math.sin(k * Math.PI); }
     ctx.save();
     if (b.dead) { const my = by - b.h * TS / 2; ctx.translate(0, my); ctx.scale(1, -1); ctx.translate(0, -my); }
     if (hurt && b.kind !== 'glitch') flashed((g, x, y) => ART.drawBoss(g, b.kind, x, y, b.t, o), cx + shakeX, by);
@@ -931,6 +996,34 @@
         ctx.restore();
         break;
       }
+      case 'bardak': {
+        // uyuyan bug'ın çay bardağı: dönerek düşer, yere değince kırılır
+        if (!f.hit) { ctx.save(); ctx.translate(f.x * TS, f.y * TS); ctx.rotate(f.t * 9); HD.drawCup(ctx, 0, 2.5); ctx.restore(); break; }
+        const u = f.t - f.hit, a = Math.max(0, 1 - u / 0.5);
+        for (let k = 0; k < 5; k++) {
+          const an = -0.3 - k * 0.6, d = 2 + u * 22;
+          ART.poly(ctx, [0, -1, 1.2, 0.6, -1, 0.8].map((v, j) => (j % 2 ? f.y * TS + v + Math.sin(an) * d + u * u * 40 : f.x * TS + v + Math.cos(an) * d)), `rgba(220,240,255,${a})`, null);
+        }
+        ART.ellipse(ctx, f.x * TS, f.y * TS + 4, 3 + u * 10, 1, `rgba(200,60,30,${a * 0.7})`, null);
+        break;
+      }
+      case 'panel': {
+        ctx.save(); ctx.translate(f.x * TS, f.y * TS); ctx.rotate(f.r); ctx.globalAlpha = Math.max(0, 1 - f.t / 1.2);
+        ART.box(ctx, -7, -1.5, 14, 3, 0.6, '#e8eaee', ART.K, 0.6); ctx.restore();
+        break;
+      }
+      case 'steam': {
+        if (f.t < 0) break;
+        const a = Math.max(0, 1 - f.t / 0.9);
+        for (let k = 0; k < 3; k++) ART.circle(ctx, f.x * TS + (k - 1) * 4 + Math.sin(f.t * 6 + k) * 2, f.y * TS - f.t * 10 - k * 2, 2.5 + f.t * 6, `rgba(240,250,255,${a * 0.55})`, null);
+        break;
+      }
+      case 'goldpop': {
+        const a = Math.max(0, 1 - f.t / 0.8), r = 4 + f.t * 30;
+        ctx.strokeStyle = `rgba(255,216,74,${a})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(f.x * TS, f.y * TS, r, 0, Math.PI * 2); ctx.stroke();
+        for (let k = 0; k < 8; k++) { const an = k / 8 * Math.PI * 2 + f.t * 3; ART.circle(ctx, f.x * TS + Math.cos(an) * r * 0.8, f.y * TS + Math.sin(an) * r * 0.8, 1.2, `rgba(255,250,210,${a})`, null); }
+        break;
+      }
       case 'puff': { const r = 2 + f.t * 20; ART.circle(ctx, f.x * TS, f.y * TS, r, `rgba(255,255,255,${Math.max(0, 0.9 - f.t / 0.35)})`, null); break; }
       case 'spark': {
         const a = Math.max(0, 1 - f.t / 0.35), r = 3 + f.t * 16;
@@ -1061,12 +1154,19 @@
         ctx.fillStyle = sel ? '#f4c531' : k === 2 ? '#7a2e3a' : '#2e3460'; ctx.fill();
         if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.9; ctx.stroke(); }
         text(`${i + 1}-${k + 1}`, x + 16, y + 0.4, sel ? '#2a1a10' : '#fff8ec', 6, 'center', null);
+        // el yapımı bölümler: alınan altın simitler düğmenin sağında üç küçük nokta
+        if (LEVELS[i * 3 + k].hand) {
+          const m = app.golds[i * 3 + k] || 0;
+          for (let j = 0; j < 3; j++) ART.circle(ctx, x + 28.6, y + 0.4 + j * 2.9, 1.05, (m >> j) & 1 ? '#f4c531' : 'rgba(255,255,255,0.25)', (m >> j) & 1 ? '#6a4a0a' : null, 0.4);
+        }
       }
     }
     const L = LEVELS[w * 3 + app.selS];
     panel(4, 192, VW - 8, 44, 9, 'rgba(18,16,44,0.88)');
     text(WORLDS[w].name + ' · ' + L.name, VW / 2, 196, '#ffffff', 7.4, 'center', null);
-    text(L.boss ? 'Patron: ' + L.bossName : `${L.map[0].length} karo uzunluğunda`, VW / 2, 209, L.boss ? '#ffa288' : '#aab0c8', 6.4, 'center', null, 500);
+    let info = L.boss ? 'Patron: ' + L.bossName : `${L.map[0].length} karo uzunluğunda`;
+    if (L.hand) { const m = app.golds[w * 3 + app.selS] || 0; info += ` · altın simit ${(m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)}/3`; }
+    text(info, VW / 2, 209, L.boss ? '#ffa288' : '#aab0c8', 6.4, 'center', null, 500);
     if (Math.floor(app.t * 2) % 2) text('BAŞLAMAK İÇİN Z', VW / 2, 223, '#f4c531', 6.6, 'center', null);
   }
   // ---------- İstanbul yol haritası: Maslak'tan Ümraniye'ye ----------

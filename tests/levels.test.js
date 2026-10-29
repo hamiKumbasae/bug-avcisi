@@ -26,6 +26,10 @@ function analyse(idx, revealHidden) {
   const W = G.W, H = G.H;
   // gizli bloklar açığa çıkmış (katı) hâlde de bölüm geçilebilmeli
   if (revealHidden) for (let i = 0; i < G.grid.length; i++) if (G.grid[i] === T.HIDDEN) G.grid[i] = T.USED;
+  // kartlı kapılar açık sayılır (okuyucu hep yolun üstünde); fanlar çalışıyor sayılır
+  for (let i = 0; i < G.grid.length; i++) if (G.grid[i] === T.DOOR) G.grid[i] = T.DOOROPEN;
+  BA.updateFans(G, 0);
+  const isHot = (x, y) => BA.tile(G, x, y) === T.HOT;
   // patron arenası için duvarı da ekle (gerçekte kilitlendiğinde gelir; geçiş denetimi için önemsiz)
   // hareketli platformları menzilleri boyunca sabit say
   const statics = [], rides = [];
@@ -35,7 +39,11 @@ function analyse(idx, revealHidden) {
       const a = { x: p.a, y: p.ya !== undefined ? p.ya : p.y, w: p.w, h: 0.5, dy: 0 }, z = { x: p.b, y: p.yb !== undefined ? p.yb : p.y, w: p.w, h: 0.5, dy: 0 };
       statics.push(a, z); rides.push([a, z]);
     } else if (p.kind === 'h') statics.push({ x: p.a, y: p.y, w: p.b - p.a + p.w, h: 0.5, dy: 0 });
-    else { statics.push({ x: p.x, y: p.a, w: p.w, h: 0.5, dy: 0 }); statics.push({ x: p.x, y: p.b, w: p.w, h: 0.5, dy: 0 }); }
+    else {
+      // dikey platform (cam silme sepeti dahil): iki ucunda durur; bir ucundan binilen öbür uca taşır
+      const a = { x: p.x, y: p.a, w: p.w, h: 0.5, dy: 0 }, z = { x: p.x, y: p.b, w: p.w, h: 0.5, dy: 0 };
+      statics.push(a, z); rides.push([a, z]);
+    }
   }
   G.plats = statics;
   const spikeCol = new Set();
@@ -47,6 +55,7 @@ function analyse(idx, revealHidden) {
     const t = BA.tile(G, x, y), below = BA.tile(G, x, y + 1);
     if (SOLID[t] || t === T.SPIKE) return false;
     if (SOLID[BA.tile(G, x, y - 1)]) return false;
+    if (below === T.CART || below === T.HOT) return false;   // tezgâhta durulmaz (seker), sıcak kabinde durulmaz
     return STAND(below);
   };
   // Parçalar: aynı sırada bitişik durulabilen hücreler
@@ -83,24 +92,31 @@ function analyse(idx, revealHidden) {
   };
   const dt = 1 / 120;
   // Tek bir zıplama/düşme denemesi
-  function sim(x, y, dir, speed, hold, startV, delayDir) {
+  function sim(x, y, dir, speed, hold, startV, delayDir, tmax) {
     const b = { x, y, w: PW, h: BIG_H };
-    let vx = startV * dir, vy = 0, t = 0, jumping = hold > 0, left = false;
+    let vx = startV * dir, vy = 0, t = 0, jumping = hold > 0, left = false, bounce = false;
     if (hold > 0) vy = -BA.jumpSpeed(vx);
     let hitSpike = false;
-    while (t < 3) {
+    while (t < (tmax || 3)) {
       t += dt;
       const d = t < delayDir ? 0 : dir;
       if (d) vx = Math.max(-speed, Math.min(speed, vx + d * PH.accA * dt));
       if (jumping && t > hold) jumping = false;
-      const g = vy < 0 ? (jumping ? PH.gHold : PH.gRel) : PH.gFall;
-      vy = Math.min(PH.maxFall, vy + g * dt);
+      if (vy >= 0) bounce = false;
+      const g = vy < 0 ? (jumping || bounce ? PH.gHold : PH.gRel) : PH.gFall;
+      const fs = G.fans.length ? BA.fanAt(G, b) : 0;
+      vy = fs ? BA.fanVy(vy, fs, dt) : Math.min(PH.maxFall, vy + g * dt);
       if (BA.moveX(G, b, vx * dt)) vx = 0;
       const r = BA.moveY(G, b, vy * dt, true);
       if (r.up) { vy = 0; jumping = false; }
-      // dikene değdi mi
+      // dikene ya da sıcak kabine değdi mi
       const tx0 = Math.floor(b.x + 0.1), tx1 = Math.floor(b.x + b.w - 0.1), ty0 = Math.floor(b.y), ty1 = Math.floor(b.y + b.h - 0.01);
       for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) if (spikeCol.has(tx * 100 + ty) && b.y + b.h > ty + 0.45) hitSpike = true;
+      if (G.hasHot) {
+        for (let ty = Math.floor(b.y - 0.06); ty <= Math.floor(b.y + b.h + 0.06 - 1e-9); ty++) for (let tx = Math.floor(b.x - 0.06); tx <= Math.floor(b.x + b.w + 0.06 - 1e-9); tx++) if (isHot(tx, ty)) hitSpike = true;
+      }
+      // simitçi tezgâhı: inen seker
+      if (r.down && BA.cartUnder(G, b) >= 0) { vy = -BA.CART_V; bounce = true; left = true; continue; }
       if (r.down) {
         if (left) return hitSpike ? null : findSeg(b);
         if (hitSpike) return null;
@@ -116,7 +132,16 @@ function analyse(idx, revealHidden) {
     // kenardan, kenarın biraz gerisinden (dikene değmeden erken zıplama) ve ortadan
     const xs = [s.x0, s.x1 + 1 - PW, (s.x0 + s.x1 + 1 - PW) / 2];
     if (s.x1 - s.x0 >= 2) xs.push(s.x0 + 0.6, s.x1 + 0.4 - PW);
+    // sıcak kabinin önünden: kenardan bir iki karo geride zıplayış
+    if (s.x1 - s.x0 >= 4) xs.push(s.x0 + 1.5, s.x0 + 2.5, s.x1 + 1 - PW - 1.5, s.x1 + 1 - PW - 2.5);
     const len = s.x1 - s.x0 + 1;
+    // ayağın altındaki fanlar: üstünde bekleyip yükselir, sonra sağa ya da sola süzülür
+    const fanXs = [];
+    for (const f of G.fans) if (f.y === s.y + 1 && f.x >= s.x0 && f.x <= s.x1) fanXs.push(f.x + 0.125);
+    for (const x of fanXs) for (const dir of [-1, 1]) for (const speed of [PH.walk, PH.run]) for (const delay of [0.6, 1.2, 2.0]) {
+      const r = sim(x, py, dir, speed, 0, 0, delay, 6);
+      if (r && r !== s) edges[s.id].add(r.id);
+    }
     for (const x of xs) {
       for (const dir of [-1, 1]) {
         for (const speed of [PH.walk, PH.run]) {
@@ -186,14 +211,14 @@ for (let i = 0; i < LEVELS.length; i++) {
   const L = LEVELS[i];
   const rows = L.map;
   ok(rows.length === H || (rows.length > H && Array.isArray(L.vcam)), `${L.world}-${L.section}: ${H} satır ya da dikey kamera bilgisi`);
-  if (L.boss) ok(rows.length === H, `${L.world}-${L.section}: patron bölümü tek bant`);
+  if (L.boss && !L.hand) ok(rows.length === H, `${L.world}-${L.section}: patron bölümü tek bant`);
   ok(rows.every((r) => r.length === rows[0].length), `${L.world}-${L.section}: satırlar eşit uzunlukta`);
   const count = (ch) => rows.reduce((n, r) => n + r.split(ch).length - 1, 0);
   ok(count('P') === 1, `${L.world}-${L.section}: tek başlangıç`);
   if (L.quiet) ok(count('W') === 1 && count('G') === 0 && count('Q') === 0 && !L.boss, `${L.world}-${L.section}: sessiz bölüm: bank var, DEPLOY ve kayıt noktası yok`);
   else ok(count('G') === 1 && count('W') === 0, `${L.world}-${L.section}: tek DEPLOY`);
   if (L.boss) { ok(count('A') === 1 && count('B') === 1, `${L.world}-${L.section}: patron arenası`); }
-  else if (!L.quiet) ok(count('Q') === 1, `${L.world}-${L.section}: kayıt noktası`);
+  else if (!L.quiet) ok(L.hand ? count('Q') >= 1 : count('Q') === 1, `${L.world}-${L.section}: kayıt noktası`);
   ok(count('h') === (L.section === 2 ? 1 : 0), `${L.world}-${L.section}: hatıra parçası yalnız 2. bölümde, bir tane`);
   const r = analyse(i);
   ok(r.start, `${L.world}-${L.section}: başlangıç zeminde`);
@@ -209,7 +234,7 @@ for (let i = 0; i < LEVELS.length; i++) {
     const mi = rows.findIndex((row) => row.includes('E')), mo = rows.findIndex((row) => row.includes('R'));
     ok(rows[mi].indexOf('E') < rows[mo].indexOf('R'), `${L.world}-${L.section}: metro çıkışı girişten ileride`);
   }
-  if (count('X')) {
+  if (count('X') || count('x')) {
     const r2 = analyse(i, true);
     ok(r2.reached && r2.traps.length === 0, `${L.world}-${L.section}: gizli bloklar açılınca da geçilebilir`);
   }

@@ -412,7 +412,9 @@
       case 'kralbug': {
         const d = o.face > 0 ? 1 : -1;
         g.save(); g.scale(2.2, 2.2); drawBug(g, 0, 0, t, d, false); g.restore();
-        g.save(); g.scale(d > 0 ? -1 : 1, 1); crown(g, -16.5, -24.5, 10); g.restore();
+        // ikinci evrede taç açılır: tacın kalkıp yerine oturması (o.crownUp 0..1)
+        const cu = o.crownUp || 0;
+        g.save(); g.scale(d > 0 ? -1 : 1, 1); g.translate(-11.5, -24.5 - cu * 6); g.rotate(-cu * 0.5); crown(g, -5, 0, 10); g.restore();
         break;
       }
       case 'spam': {

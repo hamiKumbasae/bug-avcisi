@@ -104,6 +104,19 @@
       case 'glitch': for (let i = 0; i < 5; i++) osc('square', 200 + Math.random() * 1800, t + i * 0.03, 0.03, 0.05, B); break;
       case 'drip': osc('pulse', 900, t, 0.05, 0.05, B, 0.6); break;
       case 'cawk': osc('sawtooth', 1100, t, 0.18, 0.06, B, 0.7); noise(t, 0.12, 0.08, 3000, B, true); break;
+      // v2.1 Maslak: tente sekişi, uyanan bug, kırılan bardak, kart, kapılar, kapak, fan, kabin, altın simit, kralın kükremesi
+      case 'boing': osc('triangle', 180, t, 0.28, 0.25, B, 3.2); osc('pulse', 360, t + 0.02, 0.18, 0.05, B, 2.4); break;
+      case 'wake': seq([84, 91], 0.05, 'pulse', 0.07, 0.06); break;
+      case 'glass': for (let i = 0; i < 4; i++) osc('sine', 2400 + i * 700 + Math.random() * 300, t + i * 0.035, 0.12, 0.035, B, 0.9); noise(t, 0.08, 0.06, 6000, B, true); break;
+      case 'look': osc('pulse', 1046, t, 0.07, 0.06, B); osc('pulse', 1046, t + 0.1, 0.07, 0.06, B); break;
+      case 'card': osc('sine', 1760, t, 0.08, 0.07, B); osc('sine', 2349, t + 0.09, 0.12, 0.06, B); break;
+      case 'door': noise(t, 0.3, 0.06, 1800, B, true); osc('sine', 420, t, 0.25, 0.03, B, 1.4); break;
+      case 'doorshut': noise(t, 0.22, 0.06, 1400, B, true); osc('triangle', 160, t + 0.18, 0.12, 0.12, B, 0.7); break;
+      case 'panel': osc('triangle', 220, t, 0.12, 0.18, B, 0.6); noise(t, 0.18, 0.12, 2400, B); break;
+      case 'cool': noise(t, 0.6, 0.1, 5000, B, true); seq([72, 76, 79], 0.06, 'triangle', 0.15, 0.1); break;
+      case 'sizzle': noise(t, 0.35, 0.16, 7000, B, true); osc('square', 220, t, 0.12, 0.05, B, 0.5); break;
+      case 'gold': seq([84, 88, 91, 96, 91, 96], 0.06, 'triangle', 0.22, 0.12); for (const [f, v] of [[2093, 0.03], [3136, 0.015]]) osc('sine', f, t + 0.35, 0.8, v, B, 1, 0.003); break;
+      case 'roar': osc('sawtooth', 70, t, 0.8, 0.14, B, 0.6); noise(t, 0.6, 0.18, 600, B); break;
       case 'select': seq([72, 79], 0.05, 'pulse', 0.08); break;
       case 'move': osc('pulse', 880, t, 0.04, 0.05, B); break;
       case 'pause': seq([72, 79], 0.07, 'triangle', 0.2); break;

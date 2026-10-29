@@ -87,7 +87,7 @@
     const G = {
       S, idx, L, W, H: MH, world: L.world - 1, section: L.section - 1, place: (L.world - 1) * 3 + (L.section - 1),
       grid: new Uint8Array(W * MH), content: new Map(), coins: new Uint8Array(W * MH),
-      camY: 0, camLo: new Float32Array(W), camHi: new Float32Array(W),
+      camY: 0, camLo: new Float32Array(W), camHi: new Float32Array(W), camOff: new Float32Array(W),
       spawns: [], ents: [], items: [], shots: [], bshots: [], plats: [], bars: [], fx: [], bumps: [],
       goal: null, checkpoint: null, arena: null, boss: null, bossKind: L.boss || null,
       time: L.time, t: 0, phase: 'play', result: null, ev: [], cam: 0, shake: 0,
@@ -105,8 +105,9 @@
     // dikey kamera aralıkları: her sütunda kameranın üst satırı [lo, hi] arasında kalır (düz bölümlerde 0)
     const vc = L.vcam || [[0, MH - VHT, MH - VHT]];
     for (let k = 0; k < vc.length; k++) {
-      const [x0, lo, hi] = vc[k], x1 = k + 1 < vc.length ? vc[k + 1][0] : W;
-      for (let x = x0; x < x1; x++) { G.camLo[x] = lo; G.camHi[x] = hi; }
+      // dördüncü değer (el yapımı bölümler): ayakların ekranda durduğu satır (yukarı açılan yerlerde daha aşağıda değil)
+      const [x0, lo, hi, off] = vc[k], x1 = k + 1 < vc.length ? vc[k + 1][0] : W;
+      for (let x = x0; x < x1; x++) { G.camLo[x] = lo; G.camHi[x] = hi; G.camOff[x] = off || 12; }
     }
     let start = { x: 2, y: 11 };
     for (let y = 0; y < MH; y++) {
@@ -139,7 +140,7 @@
           case 'g': G.golds.push({ x: x + 0.1, y: y + 0.08, w: 0.8, h: 0.84, taken: false }); break;
           case 'V': G.plats.push({ kind: 'v', gondola: true, x, y: y + 1, w: 3, h: 0.5, tx: x, ty: y + 1, dx: 0, dy: 0 }); break;
           case ':': G.marks.set(x, (G.marks.get(x) || []).concat([y])); break;
-          case 'z': G.spawns.push({ kind: 'bug', x, y, done: false, sleep: true }); G.decor.push({ k: 'bank', x, y }); break;
+          case 'z': G.spawns.push({ kind: 'bug', x, y, done: false, sleep: true }); G.decor.push({ k: 'bank', x, y, cup: true }); break;
           case 'w': G.spawns.push({ kind: 'bug', x, y, done: false, meet: true }); break;
           case 'n': G.spawns.push({ kind: 'bug', x, y, done: false, slide: true }); break;
           case 'q': G.spawns.push({ kind: 'hirsiz', x, y, done: false }); break;
@@ -152,7 +153,6 @@
           case 'c': G.grid[i] = T.BLOCK; G.content.set(i, 'kahve'); G.look.set(i, 'kahve'); break;
           case 't': G.grid[i] = T.TURN; break;
           case 'p': G.grid[i] = T.PANEL; break;
-          case ',': (G.dark || (G.dark = new Uint8Array(W * MH)))[i] = 1; break;
           case 'F': case 'f': G.grid[i] = T.FAN; G.fans.push({ x, y, cyc: ch === 'f', on: true, reach: 0, spin: 1 }); break;
           case 'H': G.grid[i] = T.HOT; G.hasHot = true; break;
           case 'J': G.grid[i] = T.COOL; break;
@@ -187,6 +187,11 @@
         p.a = p.y; p.b = p.y + 4; p.sp = 1.6; p.dir = 1;
       }
     }
+    // karanlık arka planlı bölgeler (tavan arası, taban altı): yalnız çizim içindir
+    if (L.dark) {
+      G.dark = new Uint8Array(W * MH);
+      for (const [x0, y0, x1, y1] of L.dark) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) G.dark[y * W + x] = 1;
+    }
     // kayıt noktaları soldan sağa; ilki eski bölümlerin tek kayıt noktası
     G.checkpoints.sort((a, b) => a.x - b.x);
     G.checkpoint = G.checkpoints[0] || null;
@@ -209,7 +214,7 @@
     };
     G.cam = clamp(G.player.x - 6, 0, G.mainW - VW);
     G.player.gFeet = G.player.y + G.player.h;
-    { const cx = colAt(G, G.player.x + G.player.w / 2); G.camY = clamp(G.player.y + G.player.h - 12, G.camLo[cx], G.camHi[cx]); }
+    { const cx = colAt(G, G.player.x + G.player.w / 2); G.camY = clamp(G.player.y + G.player.h - G.camOff[cx], G.camLo[cx], G.camHi[cx]); }
     G.base0 = G.camY;
     return G;
   }
@@ -450,6 +455,7 @@
       ev(G, 'bump');
       return;
     }
+    if (t === T.PANEL) { openPanel(G, tx, ty); bumpAbove(G, tx, ty); return; }   // asma tavan / taban kapağı
     if (t === T.HIDDEN) {
       setTile(G, tx, ty, T.BLOCK);
       ev(G, 'secret');
@@ -508,7 +514,7 @@
     if (kind === 'bug') e.vx = -2;
     if (s && s.sleep) { e.state = 'sleep'; e.vx = 0; }            // bankta çay bardağıyla uyuyan bug
     if (s && s.meet) { e.state = 'meet'; e.vx = 0; }             // toplantı masasındaki bug'lar
-    if (s && s.slide) { e.slide = true; e.vx = -4.2; }           // kablo kanalında kayan bug
+    if (s && s.slide) { e.slide = true; e.vx = 4.2; }            // kablo kanalında sağa kayan bug (oyuncunun önüne düşer)
     if (kind === 'hirsiz') {
       // simit hırsızı martı: zararsız; altındaki simiti oyuncu yaklaşınca kapıp kaçar
       e.w = 1; e.h = 0.75; e.homeX = x; e.homeY = y; e.state = 'perch'; e.harmless = true; e.face = -1;
@@ -529,10 +535,16 @@
     ev(G, flip ? 'kick' : 'stomp');
     coolNear(G, e.x + e.w / 2, e.y + e.h);
   }
+  // iki nokta arasında aynı satırda katı karo yok mu (kapalı cam kapının ardındakiler oyuncuyu görmez)
+  function clearRow(G, xa, xb, ty) {
+    for (let tx = Math.floor(Math.min(xa, xb)); tx <= Math.floor(Math.max(xa, xb)); tx++) if (solid(G, tx, ty)) return false;
+    return true;
+  }
   // uyuyan bug uyanır: irkilip zıplar, çay bardağı düşer, sonra oyuncudan kaçar
   function wakeBug(G, e) {
     if (e.state !== 'sleep') return;
     e.state = 'jolt'; e.st = 0; e.vy = -7.5; e.vx = 0; e.onGround = false;
+    for (const d of G.decor) if (d.k === 'bank' && Math.abs(d.x - e.x) < 2) d.cup = false;   // bardak bankta değil artık
     G.fx.push({ k: 'bardak', x: e.x + e.w / 2 + 0.3, y: e.y + 0.1, vx: 1.6, vy: -5, t: 0, y0: e.y + e.h });
     ev(G, 'wake');
   }
@@ -562,7 +574,7 @@
           if (e.vx !== v0 || e.st > 1.3) { e.state = null; e.vx = toward * 2.2; }
         } else if (e.state === 'meet') {
           walker(G, e, dt, true);
-          if (!p.dead && Math.abs(p.x - e.x) < 6.5 && Math.abs(p.y - e.y) < 4) {
+          if (!p.dead && Math.abs(p.x - e.x) < 6.5 && Math.abs(p.y - e.y) < 4 && clearRow(G, e.x + e.w / 2, p.x + p.w / 2, Math.floor(e.y + e.h - 0.5))) {
             // masadakilerin hepsi aynı anda başını çevirir
             for (const o of G.ents) if (o.state === 'meet' && !o.dead && Math.abs(o.x - e.x) < 9) { o.state = 'look'; o.st = 0; }
             ev(G, 'look');
@@ -575,7 +587,7 @@
           const air = !e.onGround;
           walker(G, e, dt, false);
           if (!e.onGround) e.slid = true;
-          if (e.slid && e.onGround && air) { e.slide = false; e.vx = Math.sign(e.vx) * 2; }
+          if (e.slid && e.onGround && air) { e.slide = false; e.vx = toward * 2; }
         } else walker(G, e, dt, true);
         break;
       case 'hirsiz': {
@@ -670,7 +682,7 @@
     const p = G.player, cx = colAt(G, p.x + p.w / 2);
     const lo = G.camLo[cx], hi = G.camHi[cx];
     // el yapımı bölümlerde kamera son basılan zemine göre ayarlanır (zıplarken oynamaz): ayaklar 12. satırda
-    let target = lo === hi ? lo : G.hand ? (p.gFeet !== undefined ? p.gFeet : p.y + p.h) - 12 : p.y + p.h - 10;
+    let target = lo === hi ? lo : G.hand ? (p.gFeet !== undefined ? p.gFeet : p.y + p.h) - G.camOff[cx] : p.y + p.h - 10;
     target = clamp(target, lo, hi);
     const d = target - G.camY;
     G.camY += clamp(d * Math.min(1, 6 * dt), -14 * dt, 14 * dt);
@@ -710,7 +722,7 @@
         if (!G.room.under) { p.y = w.rise; w.clip = null; } // sokakta duraktan yürüyerek çıkar
         p.gFeet = w.rise + p.h;
         G.cam = clamp(p.x - 6.5, 0, G.mainW - VW);
-        { const cx = colAt(G, p.x + p.w / 2); G.camY = clamp(w.rise + p.h - 12, G.camLo[cx], G.camHi[cx]); }
+        { const cx = colAt(G, p.x + p.w / 2); G.camY = clamp(w.rise + p.h - G.camOff[cx], G.camLo[cx], G.camHi[cx]); }
         for (const s of G.spawns) if (!s.done && s.x <= G.cam - 2) s.done = true;
       }
       if (w.moved) {
@@ -1618,8 +1630,8 @@
           }
           continue;
         }
-        // uyuyan bug'a yandan değmek onu uyandırır (zarar yok)
-        if (e.state === 'sleep' && !(p.vy > 0 && p.prevBottom <= e.y + 0.4)) { wakeBug(G, e); continue; }
+        // uyuyan bug'a yandan değmek onu uyandırır; irkilip kaçarken de kimseye zarar vermez (ezilebilir)
+        if ((e.state === 'sleep' || e.state === 'jolt' || e.state === 'flee') && !(p.vy > 0 && p.prevBottom <= e.y + 0.4)) { wakeBug(G, e); continue; }
         if (p.star > 0) { killEnemy(G, e, true, 200); continue; }
         const stomp = p.vy > 0 && p.prevBottom <= e.y + 0.4 && e.kind !== 'virus';
         if (stomp) {

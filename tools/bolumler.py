@@ -29,7 +29,11 @@ vcam: [[sütun, kameranın en üst satırı, en alt satırı], ...] kameranın d
 """
 import json
 import random
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import maslak   # noqa: E402  Maslak'ın elle tasarlanmış üç bölümü
 
 H = 14
 # v2.0: iki katmanlı İstanbul. Yukarısı bugünün şehri (Maslak, Şişli, Ataşehir, Köprü, Çamlıca), aşağısı eski İstanbul
@@ -879,6 +883,12 @@ def main():
         for s in range(3):
             r = random.Random(wseed(w) * 1000 + s * 37 + 11)
             rows, room, vcam, rd = make(w, s, r)
+            hand = None
+            if w == 0:
+                # Maslak elle tasarlandı (v2.1 prototipi); metrobüs binişi üretilenle aynı
+                hand = maslak.build(s, make_room(r, rd) if rd else None)
+                rows, vcam = hand['map'], hand['vcam']
+                room = hand.get('room')
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s], 'yer': W['yer'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
                   'time': (300 if s < 2 else 330) + 50 * round(2 * min(1.0, (wdpos(w) * 3 + s) / DSPAN)), 'map': rows}
@@ -896,6 +906,11 @@ def main():
                 lv['ride'] = rd
             if len(rows) > H:
                 lv['vcam'] = vcam
+            if hand:
+                lv['hand'] = True    # el yapımı: çok kayıt noktası, altın simitler, zemine oturan kamera
+                for k in ('links', 'dark'):
+                    if hand.get(k):
+                        lv[k] = hand[k]
             levels.append(lv)
     worlds = [{'name': W['name'], 'sub': W['sub']} for W in WORLDS]
     out = Path(__file__).resolve().parent.parent / 'src' / 'levels.js'

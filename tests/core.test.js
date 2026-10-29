@@ -302,7 +302,7 @@ const flat = (w, extraRows) => {
 {
   let tall = 0, climbs = 0, falls = 0;
   for (let idx = 0; idx < NL; idx++) {
-    if (!LV[idx].vcam) continue;
+    if (!LV[idx].vcam || LV[idx].hand) continue;   // el yapımı bölümlerin kendi denetimleri var
     tall++;
     const G = BA.loadStage(BA.newRun(), idx);
     // boşluk sütunları: kameranın oynayabildiği yerler
@@ -317,10 +317,10 @@ const flat = (w, extraRows) => {
       climbs++;
     }
   }
-  ok(tall >= 20, `uzun (dikey) bölüm sayısı ${tall}`);
+  ok(tall >= 18, `uzun (dikey) bölüm sayısı ${tall}`);
   ok(climbs > 0 && falls === climbs, `dikey boşluklarda düşen oyuncu ölmeden iner, kamera izler (${falls}/${climbs})`);
   // düz bantta çukura düşünce bandın altında ölür
-  const idx = LV.findIndex((L) => L.vcam);
+  const idx = LV.findIndex((L) => L.vcam && !L.hand);
   const G = BA.loadStage(BA.newRun(), idx);
   const p = G.player, cx = Math.floor(p.x);
   p.y = G.camHi[cx] + 15; BA.step(G, {}, dt);
@@ -465,7 +465,7 @@ const flat = (w, extraRows) => {
   };
   const res = [];
   for (let idx = 0; idx < NL; idx++) {
-    if (LV[idx].boss || LV[idx].quiet) continue;
+    if (LV[idx].boss || LV[idx].quiet || LV[idx].hand) continue;
     const runJ = leap(idx, BA.PH.run, true), walkJ = leap(idx, BA.PH.walk, true), off = leap(idx, BA.PH.walk, false);
     const G2 = BA.loadStage(BA.newRun(), idx), g = G2.goal;
     G2.player.x = g.x - 3; G2.player.y = g.y + 2 - G2.player.h; G2.cam = Math.max(0, g.x - 10);
@@ -568,6 +568,209 @@ function bossBot(G) {
     const got = run(G, () => ({}), 0.5, (g) => g.piece.taken);
     ok(got && S.pieces && S.pieces[w] === true && S.score >= before + 2000, `${w + 1}-2: hatıra parçası alındı ve kaydedildi`);
   }
+}
+
+// ================= v2.1 Maslak: el yapımı bölümlerin mekanikleri =================
+const place = (G, x, y) => { const p = G.player; p.x = x + (1 - p.w) / 2; p.y = y - p.h; p.vx = 0; p.vy = 0; p.onGround = false; p.gFeet = y; G.cam = Math.max(0, x - 6); };
+// ---------- cam silme sepeti: ':' işaretine kadar gider, uçta bekler, üstündekini taşır ----------
+{
+  const i = custom(['..P.....V.........', '..................', '..................', '..................', '........:.........', '###.........######', '##################'], { hand: true });
+  const G = BA.loadStage(BA.newRun(), i), g = G.plats.find((q) => q.gondola);
+  ok(g && g.w === 3 && g.a === g.y && g.b === g.y + 4 && g.dir === 1, `sepetin menzili ':' işaretine kadar (${g && [g.a, g.b, g.dir]})`);
+  run(G, NONE, 4 / g.sp + 0.05);
+  ok(Math.abs(g.y - g.b) < 0.01 && g.hold > 0, 'sepet uçta bir an bekliyor');
+  place(G, 8.6, g.y); G.player.onGround = true; G.player.plat = g;
+  const y0 = G.player.y;
+  run(G, NONE, 1.2);
+  ok(G.player.y < y0 - 1 && G.player.plat === g, `sepet üstündekini yukarı taşıdı (${y0.toFixed(1)} → ${G.player.y.toFixed(1)})`);
+}
+// ---------- simitçi tezgâhı: yükseğe sektirir, ilk inişte 3 simit ----------
+{
+  const i = custom(['..P..........', '.............', '......kk.....', '#############', '#############']);
+  const S = BA.newRun(), G = BA.loadStage(S, i), p = G.player;
+  place(G, 6.2, 9); p.y = 9; p.vy = 4;
+  let minY = 99, bounced = false;
+  run(G, NONE, 1.6, (g) => { minY = Math.min(minY, g.player.y + g.player.h); if (g.ev.some((e) => e.e === 'boing')) bounced = true; return false; });
+  ok(bounced && 13 - minY > 6, `tezgâhın tentesi 6 karodan yükseğe sektirdi (${(13 - minY).toFixed(1)} karo)`);
+  ok(S.simit === 3, `ilk inişte tezgâhtan 3 simit (${S.simit})`);
+  run(G, NONE, 2.5);
+  ok(S.simit === 3, `sonraki sekişlerde yeni simit yok (${S.simit})`);
+}
+// ---------- gizli basamak: alttan vurulunca simit verir, üstüne basılır ----------
+{
+  const i = custom(['..P..........', '.....x.......', '.............', '.............', '.............', '#############', '#############']);
+  const S = BA.newRun(), G = BA.loadStage(S, i);
+  place(G, 5, 12); G.player.onGround = true;
+  run(G, { jump: true }, 0.5);
+  ok(BA.tile(G, 5, 8) === BA.T.USED && S.simit === 1, 'gizli basamak açıldı, simit verdi');
+}
+// ---------- uyuyan bug: yandan değmek zarar vermez, yaklaşınca irkilir ve kaçar ----------
+{
+  const i = custom(['..P.........z...........', '#'.repeat(24), '#'.repeat(24)], { hand: true });
+  const S = BA.newRun(), G = BA.loadStage(S, i);
+  G.cam = 0; run(G, NONE, 0.05);
+  const e = G.ents.find((q) => q.state === 'sleep');
+  ok(!!e && G.decor[0].k === 'bank' && G.decor[0].cup, 'bankta çay bardağıyla uyuyan bug');
+  run(G, { right: true }, 2, (g) => e.state !== 'sleep');
+  ok(e.state === 'jolt' && !G.decor[0].cup && G.fx.some((f) => f.k === 'bardak'), 'yaklaşınca irkildi, bardak düştü');
+  run(G, NONE, 0.8, () => e.state === 'flee');
+  ok(e.state === 'flee' && e.vx > 4, `oyuncudan kaçıyor (vx ${e.vx.toFixed(1)})`);
+  // uyurken yandan değen oyuncu yanmaz
+  const G2 = BA.loadStage(BA.newRun(), i); G2.cam = 0; run(G2, NONE, 0.05);
+  const e2 = G2.ents[0]; place(G2, 11.3, 12); G2.player.onGround = true; G2.player.x = e2.x - G2.player.w + 0.1;
+  BA.step(G2, NONE, dt);
+  ok(!G2.player.dead && G2.phase === 'play' && e2.state !== 'sleep', 'uyuyana değmek zarar vermedi, uyandırdı');
+}
+// ---------- simit hırsızı martı: son simiti kapar; ezilince beş simit bırakır; değmek zararsız ----------
+{
+  const i = custom(['..P.......q....', '...............', '...............', '...............', '...............', '......bbbbb....', '...............', '...............', '#'.repeat(15), '#'.repeat(15)]);
+  const S = BA.newRun(), G = BA.loadStage(S, i);
+  run(G, NONE, 0.05);
+  const m = G.ents.find((q) => q.kind === 'hirsiz');
+  ok(m && m.target && m.target.x === 10, 'martı altındaki simiti gözlüyor');
+  place(G, 7, 13); G.player.onGround = true;
+  run(G, NONE, 1.5, () => m.carry);
+  ok(m.carry && !G.coins[m.target.i], 'oyuncu yaklaşınca son simiti kaptı');
+  // havada üstüne basılınca
+  const p = G.player; p.x = m.x; p.y = m.y + 0.1 - p.h; p.vy = 6; p.inv = 0;
+  const s0 = S.simit;
+  BA.step(G, NONE, dt); BA.step(G, NONE, dt);
+  ok(m.state === 'bonk' && S.simit === s0 + 5 && !p.dead, `ezilen martı beş simit bıraktı (+${S.simit - s0})`);
+}
+// ---------- kartlı cam kapı ----------
+{
+  const i = custom([
+    '..P.r....D.....d....',
+    '#'.repeat(20), '#'.repeat(20)], { hand: true, links: [{ r: [4, 11], doors: [[9, 11], [15, 11]], dur: 3 }] });
+  const S = BA.newRun(), G = BA.loadStage(S, i), T = BA.T;
+  ok(G.doors.length === 2 && G.readers[0].dur === 3 && G.doors.every((d) => d.readers.length === 1), 'kapılar okuyucuya bağlandı');
+  ok(BA.tile(G, 9, 11) === T.DOOR && BA.tile(G, 15, 11) === T.DOOROPEN, 'D kapalı, d açık başlar');
+  run(G, { right: true }, 1, (g) => g.readers[0].t > 0);
+  run(G, NONE, 0.02);
+  ok(BA.tile(G, 9, 11) === T.DOOROPEN && BA.tile(G, 15, 11) === T.DOOR, 'kart okutunca D açıldı, d kapandı');
+  // kapının içinde durana kapanmaz
+  place(G, 9, 12); G.player.onGround = true;
+  run(G, NONE, 3.5);
+  ok(BA.tile(G, 9, 11) === T.DOOROPEN, 'kapı içinde duranın üstüne kapanmadı');
+  place(G, 7, 12); G.player.onGround = true;
+  run(G, NONE, 0.3);
+  ok(BA.tile(G, 9, 11) === T.DOOR && BA.tile(G, 15, 11) === T.DOOROPEN, 'süre bitince D kapandı, d açıldı');
+  // çıkış tarafı: kapının sağında durana açılır
+  place(G, 10, 12); G.player.onGround = true;
+  run(G, NONE, 0.05);
+  ok(BA.tile(G, 9, 11) === T.DOOROPEN, 'kapının sağından (çıkış) gelen için kapı açılır');
+}
+// ---------- toplantı masası: kapalı kapının ardındakiler görmez; görünce hepsi aynı anda döner ve saldırır ----------
+{
+  const i = custom(['..P.r...D...w.u.w...', '#'.repeat(20), '#'.repeat(20)], { hand: true });
+  const S = BA.newRun(), G = BA.loadStage(S, i);
+  run(G, NONE, 0.05);
+  const ws = G.ents.filter((e) => e.state === 'meet');
+  ok(ws.length === 2 && G.decor.some((d) => d.k === 'masa'), 'masada iki bug');
+  place(G, 7, 12); G.player.onGround = true; G.player.x = 7.2;
+  run(G, NONE, 0.3);
+  ok(ws.every((e) => e.state === 'meet'), 'kapalı cam kapının ardındakiler fark etmedi');
+  G.readers[0].t = 3; run(G, NONE, 0.1);
+  ok(ws.every((e) => e.state === 'look'), 'kapı açılınca hepsi aynı anda döndü');
+  G.player.inv = 99; run(G, NONE, 1);
+  ok(ws.every((e) => !e.state && e.vx < -2.5), 'sonra oyuncunun üstüne koştular');
+}
+// ---------- turnike: küçükken kolun altından geçilir, büyükken geçilmez ----------
+{
+  const i = custom(['.....I......', '.....I......', '.....t......', '..P.........', '#'.repeat(12), '#'.repeat(12)]);
+  const S = BA.newRun(); let G = BA.loadStage(S, i);
+  run(G, { right: true }, 1.5);
+  ok(G.player.x > 7, `küçük oyuncu turnikenin altından geçti (x ${G.player.x.toFixed(1)})`);
+  S.power = 1; G = BA.loadStage(S, i);
+  run(G, { right: true }, 1.5);
+  ok(G.player.x < 5, `büyük oyuncu turnikede kaldı (x ${G.player.x.toFixed(1)})`);
+}
+// ---------- kapaklar: asma tavana alttan vurulunca, taban kapağında aşağı basınca bitişikleriyle açılır ----------
+{
+  const i = custom(['====pp====', '..........', '..........', '..P.......', '###pp#####', '###..#####', '..........', '##########']);
+  const S = BA.newRun(), G = BA.loadStage(S, i), T = BA.T;
+  place(G, 4, 10); G.player.onGround = true; G.player.x = 4.1;
+  run(G, { jump: true }, 0.35);
+  ok(BA.tile(G, 4, 6) === T.EMPTY && BA.tile(G, 5, 6) === T.EMPTY && BA.tile(G, 3, 6) === T.SOLID, 'tavan kapağı alttan vurulunca açıldı (iki karo)');
+  run(G, NONE, 1);
+  place(G, 3.4, 10); G.player.onGround = true; G.player.x = 3.2;
+  run(G, { down: true }, 0.05);
+  ok(BA.tile(G, 3, 10) === T.EMPTY && BA.tile(G, 4, 10) === T.EMPTY, 'taban kapağında aşağı basınca açıldı');
+  run(G, NONE, 0.6);
+  ok(G.player.y + G.player.h > 12.9, `kapaktan aşağı düştü (${(G.player.y + G.player.h).toFixed(1)})`);
+}
+// ---------- fanlar: süzdürür ama tavana sürtmez; aralıklı fan durunca düşülür ----------
+{
+  const i = custom(['==========', '..........', '..........', '..........', '..........', '..........', '..........', '..........', '..........', '..........', '..P.......', '###FF##f##', '##########'], { hand: true });
+  const S = BA.newRun(), G = BA.loadStage(S, i);
+  place(G, 3.5, 11); G.player.onGround = true;
+  let minY = 99, thunk = false;
+  run(G, NONE, 3, (g) => { minY = Math.min(minY, g.player.y); if (g.ev.some((e) => e.e === 'thunk')) thunk = true; return false; });
+  const feet = G.player.y + G.player.h;
+  ok(feet < 6.5 && feet > 2.5 && !thunk && minY > 1, `fan oyuncuyu tavana değdirmeden süzdürüyor (ayak ${feet.toFixed(1)})`);
+  // aralıklı fan: 4 sn'de 2,4 sn çalışır
+  const G2 = BA.loadStage(BA.newRun(), i), f = G2.fans.find((q) => q.cyc);
+  run(G2, NONE, 1); const on1 = f.on; run(G2, NONE, 2); const on2 = f.on; run(G2, NONE, 1.5);
+  ok(on1 && !on2 && f.on, 'aralıklı fan çalışıp duruyor');
+  place(G2, 7.5, 11); G2.player.onGround = true; G2.fanT = 0;
+  run(G2, NONE, 2.3);
+  const hi = G2.player.y;
+  run(G2, NONE, 1);
+  ok(G2.player.onGround && G2.player.y > hi + 3, 'fan durunca oyuncu yere indi');
+}
+// ---------- sıcak kabin yakar; yanında ezilen bug onu soğutur ----------
+{
+  const i = custom(['..P..........', '.......e.....', '.....HH......', '.....HH......', '#############', '#############'], { hand: true });
+  const S = BA.newRun(); S.power = 1;
+  const G = BA.loadStage(S, i), T = BA.T;
+  place(G, 4, 12); G.player.onGround = true;
+  run(G, { right: true }, 0.6, (g) => g.S.power === 0);
+  ok(S.power === 0 && !G.player.dead, 'sıcak kabine değen büyük oyuncu küçüldü');
+  const G2 = BA.loadStage(BA.newRun(), i); G2.cam = 0; run(G2, NONE, 0.02);
+  const e = G2.ents[0]; G2.player.x = e.x; G2.player.y = e.y - G2.player.h - 0.3; G2.player.vy = 5; G2.player.inv = 0;
+  run(G2, NONE, 0.1);
+  ok(e.dead && BA.tile(G2, 5, 10) === T.COOL && BA.tile(G2, 6, 11) === T.COOL, 'bug ezilince yanındaki kabin soğudu');
+}
+// ---------- birden çok kayıt noktası ve altın simit ----------
+{
+  const i = custom(['..P....Q.....g...Q......G...=', '#'.repeat(29), '#'.repeat(29)], { hand: true });
+  const S = BA.newRun();
+  let G = BA.loadStage(S, i);
+  ok(G.checkpoints.length === 2 && G.golds.length === 1 && G.golds[0].k === 0, 'iki kayıt noktası, bir altın simit');
+  run(G, { right: true }, 3, (g) => g.checkpoints[1].on);
+  ok(S.checkpoint && S.checkpoint.k === 1 && G.checkpoints[0].on, `ikinci kayıt noktası yazıldı (${JSON.stringify(S.checkpoint)})`);
+  ok(S.golds && S.golds[i] === 1, 'altın simit koşuya işlendi');
+  G = BA.loadStage(S, i);
+  ok(Math.abs(G.player.x - 17.125) < 0.01 && G.golds[0].taken, 'ikinci kayıt noktasından başladı, alınan altın yok');
+}
+// ---------- Kral Bug: canı yarıya inince tacından bug'lar, fanlar kesik kesik; prens kral düşünce kaçar ----------
+{
+  const k = LV.findIndex((L) => L.boss === 'kralbug');
+  const S = BA.newRun(); S.power = 1;
+  const G = BA.loadStage(S, k);
+  G.player.x = G.arena.ax + 4; G.player.y = 12 - G.player.h; G.cam = G.arena.ax;
+  run(G, (g) => { g.player.inv = 99; return {}; }, 2);
+  const b = G.boss;
+  ok(b && b.prince && b.maxHp === 4, 'Kral Bug ve prensi arenada');
+  b.hp = 2.5; b.hurtT = 0;
+  const n0 = G.ents.length;
+  b.hp = 2; run(G, (g) => { g.player.inv = 99; return {}; }, 1.5);
+  ok(b.p2 && G.fanPulse && G.ents.filter((e) => e.minion).length >= 2 && G.ents.length > n0, 'ikinci evre: tacından iki bug, fanlar kesik kesik');
+  b.hp = 0.0001; G.boss.hp = 0.0001;
+  run(G, (g) => { g.player.inv = 99; return {}; }, 0.01);
+  b.hp = 0; b.dead = true; b.state = 'dead';
+  run(G, (g) => { g.player.inv = 99; return {}; }, 1);
+  ok(b.prince.flee, 'kral düşünce prens kaçtı');
+}
+// ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
+{
+  for (let k = 0; k < NL; k++) {
+    const L = LV[k];
+    if (!L.hand) continue;
+    const G = BA.loadStage(BA.newRun(), k);
+    ok(G.golds.length === 3 && G.checkpoints.length >= 2, `${L.world}-${L.section}: 3 altın simit, ${G.checkpoints.length} kayıt noktası`);
+  }
+  ok(LV.slice(0, NL).filter((L) => L.hand).length === 3, 'yalnız Maslak elle tasarlandı');
 }
 
 console.log(fails ? `${fails} hata, ${passes} geçti` : `core: ${passes} denetim geçti`);
