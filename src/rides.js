@@ -580,15 +580,20 @@
   // tramvayın geçtiği tarihi cadde: arkada Beyazıt Kulesi ve pus içinde binalar; önde taş hanlar,
   // Çemberlitaş sütunu ve kubbeli türbe
   const sceneCache = A.cache();
-  function scene(name, vw, vh) {
-    const k = name + ':' + vw;
+  // night: gece hâli (o gecenin ayıyla); gündüz çizimi gece ışığına taşınır, hanların bazı pencereleri ve fenerler yanar
+  function scene(name, vw, vh, night, mo) {
+    const k = name + ':' + vw + ':' + (night ? 'n' : 'd') + ':' + (mo ? `${mo.fraction.toFixed(3)}:${mo.tilt.toFixed(2)}:${mo.altitudeDeg.toFixed(1)}` : '-');
     let L = sceneCache.get(k);
     if (L) return L;
-    const kit = SC.kit;
+    const kit = SC.kit, NL = SC.LIGHT.gece;
+    const skyD = night ? SC.skyOf('gece') : { stops: [[0, '#58a8e6'], [0.62, '#b6ddf6'], [1, '#f6ead0']], sun: [200, 56, 12, '#fffbe6'] };
+    const far = (g) => { SC.pen(null); divanFar(g, kit); };
+    const near = (g) => { SC.pen(null); divanNear(g, kit, night); };
+    const lamps = (g) => { for (const x of [40, 172, 322, 470]) SC.pk.lamp(g, x, 200, 30); };
     L = {
-      sky: mk(vw, vh, (g) => kit.drawSky(g, { stops: [[0, '#58a8e6'], [0.62, '#b6ddf6'], [1, '#f6ead0']], sun: [200, 56, 12, '#fffbe6'] }, vw, vh, 9), bg()),
-      far: mk(512, 240, (g) => { SC.pen(null); divanFar(g, kit); }, bg()),
-      near: mk(512, 240, (g) => { SC.pen(null); divanNear(g, kit); }, bg()),
+      sky: mk(vw, vh, (g) => kit.drawSky(g, skyD, vw, vh, 9, mo), bg()),
+      far: mk(512, 240, night ? SC.tinted(far, NL.mul, { night: NL.night }) : far, bg()),
+      near: mk(512, 240, night ? SC.tinted(near, NL.mul, { night: NL.night, post: lamps }) : near, bg()),
     };
     sceneCache.set(k, L);
     return L;
@@ -608,13 +613,16 @@
     kit.P(g, [tx - 5, 72, tx + 5, 72, tx, 62], pal.roof);
     rect(g, 0, 182, 512, 58, '#c9d0dc');
   }
-  function divanNear(g, kit) {
+  function divanNear(g, kit, night) {
     const by = 200, R = rngOf(11);
-    // taş han: kemerli pencereler, saçak
+    // taş han: kemerli pencereler, saçak (gece bazı pencereler yanık)
     const han = (x, w, h, col) => {
       kit.B(g, x, by - h, w, h, 0, col);
       rect(g, x - 2, by - h - 4, w + 4, 4, shade(col, -0.25));
-      for (let fy = by - h + 8; fy < by - 18; fy += 22) kit.windowsRow(g, x + 5, x + w - 5, fy, 7, 12, 5, '#5a4a3e');
+      for (let fy = by - h + 8; fy < by - 18; fy += 22) {
+        kit.windowsRow(g, x + 5, x + w - 5, fy, 7, 12, 5, '#5a4a3e');
+        if (night) for (let wx = x + 5; wx + 7 <= x + w - 5 + 0.01; wx += 12) if (SC.h01(wx, fy) < 0.4) SC.emit(g, (q) => kit.archWin(q, wx, fy, 7, 12, '#ffd98a'));
+      }
       for (let ax = x + 4; ax + 12 <= x + w - 4; ax += 16) kit.archWin(g, ax, by - 16, 12, 16, '#3a2e26');
       rect(g, x, by - h + 2, w, 0.8, 'rgba(255,255,255,0.3)');
     };

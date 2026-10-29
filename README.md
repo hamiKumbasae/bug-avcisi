@@ -418,7 +418,7 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
   `flag` ve gereksiz cami çağrıları.
 - [x] `src/places.js`: `PLACES` (yer = dünya × 3 + bölüm) yeni sıraya; yeni bölümler mevcut çizimlerin farklı ışıklı hâlleriyle.
 - [ ] `src/art.js`: her mekânın zemin ve karo teması yeni sıraya; `PIECES` ve yeni parça çizimleri; Glitch hiçbir bölümde yok.
-- [ ] `src/rides.js`: Marmaray (metro çizimi, yeni hat adı ve rengi), gece dolmuşu, T1 Sirkeci → Sultanahmet;
+- [x] `src/rides.js`: Marmaray (metro çizimi, yeni hat adı ve rengi), gece dolmuşu, T1 Sirkeci → Sultanahmet;
   tramvay arka planındaki camiler çıkar; füniküler kullanılmaz.
 - [ ] `src/story.js`: Hikâye sahneleri tablosundaki değişiklikler.
 - [x] `src/audio.js`: Müzik ve ses bölümündeki maddeler.

@@ -427,7 +427,7 @@
     } else {
       if (rd.scene) {
         // bölümün kendi arka planı sokağa uymuyorsa (çarşının içi gibi) binişin kendi sahnesi
-        const Ls = RD.scene(rd.scene, VW, VH);
+        const Ls = RD.scene(rd.scene, VW, VH, rd.night, G.moon);
         full(Ls.sky); layerDraw(Ls.far, cam * 0.15); layerDraw(Ls.near, cam * 0.4);
       } else backdrop(G.place, cam, 0, 0, 99, 99);
       const P = RD.streetLine(rd, VH);
@@ -571,7 +571,7 @@
         const rd = G.L.ride;
         if (G.room.under) { ctx.fillStyle = '#151820'; ctx.fillRect(0, 0, VW, VH); }
         else {
-          const sky = rd && rd.scene ? RD.scene(rd.scene, VW, VH).sky : SC.sky(G.place, VW, VH);
+          const sky = rd && rd.scene ? RD.scene(rd.scene, VW, VH, rd.night, G.moon).sky : SC.sky(G.place, VW, VH, G.moon);
           ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(sky, 0, 0, sky.width, 1, 0, 0, canvas.width, canvas.height); ctx.setTransform(S, 0, 0, S, 0, 0);
         }
       } else rideBack(G, cam);
