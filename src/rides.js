@@ -577,8 +577,8 @@
   }
 
   // ---------------- özel sokak sahnesi: Divanyolu (Beyazıt → Çemberlitaş) ----------------
-  // tramvayın geçtiği tarihi cadde: arkada Ayasofya, Beyazıt Kulesi ve Sultanahmet; önde taş binalar,
-  // Çemberlitaş sütunu, kubbeli türbe ve küçük bir cami
+  // tramvayın geçtiği tarihi cadde: arkada Beyazıt Kulesi ve pus içinde binalar; önde taş hanlar,
+  // Çemberlitaş sütunu ve kubbeli türbe
   const sceneCache = A.cache();
   function scene(name, vw, vh) {
     const k = name + ':' + vw;
@@ -599,18 +599,17 @@
     // pus içinde damlar
     const R = rngOf(5);
     for (let x = -4; x < 512; x += 10 + R() * 8) { const h = 10 + R() * 14; rect(g, x, 186 - h, 10 + R() * 8, h + 20, R() < 0.5 ? '#cdd4e0' : '#c2cad8'); }
-    SC.hagiaSophia(g, 110, 178, 0.95, { ...pal, brick: '#c9c2cf' });
+    // uzakta pus içinde apartmanlar ve üniversitenin taş binaları
+    for (const [x, w, h] of [[70, 40, 44], [118, 26, 58], [150, 34, 38], [330, 48, 46], [384, 30, 60], [420, 40, 40]]) { kit.B(g, x, 182 - h, w, h, 0, pal.wallD); for (let y = 186 - h; y < 176; y += 7) for (let wx = x + 3; wx < x + w - 3; wx += 6) rect(g, wx, y, 3, 3.4, pal.win); }
     // Beyazıt Kulesi
     const tx = 262;
     kit.B(g, tx - 5, 92, 10, 90, 0, pal.wall); kit.B(g, tx - 7, 86, 14, 8, 1, pal.trim);
     kit.B(g, tx - 4, 72, 8, 14, 0, pal.wall); for (let k = 0; k < 3; k++) rect(g, tx - 3 + k * 2.4, 75, 1.2, 6, pal.win);
     kit.P(g, [tx - 5, 72, tx + 5, 72, tx, 62], pal.roof);
-    SC.blueMosque(g, 400, 182, 0.78, pal);
     rect(g, 0, 182, 512, 58, '#c9d0dc');
   }
   function divanNear(g, kit) {
     const by = 200, R = rngOf(11);
-    const stone = { wall: '#ecdcb8', wallD: '#dcc8a0', roof: '#8e9aa8', trim: '#f4e8cc', win: '#4a5a6e', alem: '#c8a040' };
     // taş han: kemerli pencereler, saçak
     const han = (x, w, h, col) => {
       kit.B(g, x, by - h, w, h, 0, col);
@@ -620,12 +619,9 @@
       rect(g, x, by - h + 2, w, 0.8, 'rgba(255,255,255,0.3)');
     };
     han(0, 84, 70, '#e2c690');
-    // küçük cami (Firuz Ağa): tek kubbe, tek minare
-    kit.minaret(g, 160, by, 96, 4.4, stone, 1);
-    kit.B(g, 100, by - 34, 56, 34, 0, stone.wall);
-    kit.windowsRow(g, 106, 150, by - 26, 6, 12, 5, stone.win);
-    kit.dome(g, 128, by - 34, 20, { ...stone, roof: '#7e8a98', roofL: '#9aa6b4' }, 0.9);
-    kit.B(g, 96, by - 8, 64, 8, 0, stone.wallD);
+    // ikinci han: zemin katta dükkânlar, tenteler
+    han(96, 66, 56, '#d8c4a0');
+    for (let k = 0; k < 3; k++) { const ax = 100 + k * 20; kit.P(g, [ax, by - 22, ax + 18, by - 22, ax + 20, by - 16, ax - 2, by - 16], ['#2a6fc4', '#c8302a', '#3f8a4a'][k]); }
     // Çemberlitaş sütunu: porfir tamburlar, bronz çemberler
     const cx = 214;
     kit.B(g, cx - 13, by - 22, 26, 22, 1, '#b8ae9c'); rect(g, cx - 15, by - 24, 30, 3, '#a8a08e');

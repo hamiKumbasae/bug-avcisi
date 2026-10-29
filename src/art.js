@@ -1294,8 +1294,8 @@
   }
 
   // ---------------- hatıra parçaları (her dünyadan bir tane) ----------------
-  // 0 Maslak camı, 1 Kadıköy'den martı tüyü, 2 vapur çanı, 3 çarşı nazarı, 4 sarnıç damlası, 5 Galata Kulesi, 6 köprü, 7 kedi, 8 lale
-  const PIECES = ['cam', 'tuy', 'can', 'nazar', 'damla', 'kule', 'sepet', 'kopru', 'kedi', 'anahtar', 'lale', 'cekic'];
+  // 0 Maslak camı, 1 Kadıköy'den martı tüyü, 2 vapur çanı, 3 çarşı nazarı, 4 sarnıç damlası, 5 Galata Kulesi, 6 köprü, 7 anten, 8 lale
+  const PIECES = ['cam', 'tuy', 'can', 'nazar', 'damla', 'kule', 'sepet', 'kopru', 'anten', 'anahtar', 'lale', 'cekic'];
   function drawPiece(g, i, cx, cy, s, t) {
     s = s || 1; t = t || 0;
     g.save(); g.translate(cx, cy); g.scale(s, s);
@@ -1339,13 +1339,11 @@
         for (const x of [-4.4, 4.4]) box(g, x - 0.9, -8, 1.8, 13, 0.4, '#c8ccd6', K, 0.6);
         box(g, -8, 1, 16, 2, 0.6, '#9aa0ac', K, 0.6);
         break;
-      case 'kedi':
-        ellipse(g, 0, 3, 4.6, 4, '#f0a050', K, 0.8);
-        circle(g, 1.2, -3.4, 3.6, '#f0a050', K, 0.8);
-        poly(g, [-1.6, -5.6, -1.2, -9, 1, -6.4], '#f0a050', K, 0.6); poly(g, [2, -6.6, 4, -9, 4.4, -5.2], '#f0a050', K, 0.6);
-        g.strokeStyle = K; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-4, 5); g.quadraticCurveTo(-8, 4, -6.6, -1); g.stroke();
-        circle(g, 0.2, -3.6, 0.5, K, null); circle(g, 2.6, -3.6, 0.5, K, null);
-        lin(g, -2.6, 1, -2.6, 6, '#d07a30', 0.8);
+      case 'anten':
+        // çatıdaki eski televizyon anteni
+        lin(g, 0, 8, 0, -8, '#8a909c', 1.4);
+        for (const [y, w] of [[-6, 7], [-2, 9], [2, 7]]) lin(g, -w / 2, y, w / 2, y, '#b8bec8', 1.1);
+        lin(g, -3, 8, 3, 8, '#5a606c', 1.6);
         break;
       case 'sepet':
         // Balat'ta pencereden ipe bağlı sarkıtılan hasır sepet

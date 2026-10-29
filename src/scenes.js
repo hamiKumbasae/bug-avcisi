@@ -99,14 +99,6 @@
     B(g, cx - 13 * s, by - 28 * s, 26 * s, 6 * s, 0, pal.wall);
     dome(g, cx, by - 28 * s, 14 * s, pal, 0.92);
   }
-  function flag(g, x, y, s) {
-    lin(g, x, y, x, y + 14 * s, '#d8dde6', 0.6 * s);
-    const w = 9 * s, h = 6 * s;
-    g.fillStyle = '#e30a17'; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + w / 2, y - 1 * s, x + w, y + 0.6 * s); g.lineTo(x + w, y + h + 0.6 * s); g.quadraticCurveTo(x + w / 2, y + h - 1 * s, x, y + h); g.closePath(); g.fill();
-    g.fillStyle = '#ffffff'; g.beginPath(); g.arc(x + w * 0.38, y + h / 2, h * 0.3, 0, TAU); g.fill();
-    g.fillStyle = '#e30a17'; g.beginPath(); g.arc(x + w * 0.44, y + h / 2, h * 0.24, 0, TAU); g.fill();
-    star(g, x + w * 0.66, y + h / 2, h * 0.13, '#ffffff');
-  }
   function star(g, x, y, r, col) {
     g.fillStyle = col; g.beginPath();
     for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, d = i % 2 ? r * 0.42 : r; g.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); }
@@ -142,7 +134,6 @@
     for (let k = 0; k < 3; k++) archWin(g, cx + 1.4 * s + k * 2.4 * s, by - 32.2 * s, 1.5 * s, 3.6 * s, pal.lit || pal.win || pal.wallD);
     P(g, [cx - 0.2 * s, by - 33 * s, cx + 9.2 * s, by - 33 * s, cx + 4.5 * s, by - 42 * s], pal.roof);
     lin(g, cx + 4.5 * s, by - 42 * s, cx + 4.5 * s, by - 45 * s, pal.roof, 0.5 * s);
-    if (pal.flag) flag(g, cx - 16 * s, by - 24 * s, s * 0.8);
   }
   // Boğaz Köprüsü: iki ince kule, sarkan ana halat, zikzak askılar
   function bridge(g, x0, x1, deckY, topY, pal) {
@@ -253,25 +244,11 @@
     for (let k = 0; k < 5; k++) B(g, cx - 10 * s + k * 5 * s, by - 21 * s, 3.4 * s, 3 * s, 0.6 * s, pal.win || '#3a5a7a');
     B(g, cx + 0.5 * s, by - 32 * s, 6.5 * s, 10 * s, 0.8 * s, pal.funnel || '#f2dc8a');
     rect(g, cx + 0.5 * s, by - 32 * s, 6.5 * s, 2.6 * s, '#22222a');
-    lin(g, cx - 18 * s, by - 22.5 * s, cx - 18 * s, by - 31 * s, '#4a4a54', 0.5 * s);
-    if (pal.flag !== false) flag(g, cx - 18 * s, by - 31 * s, s * 0.55);
   }
   function seagull(g, x, y, s, col, flap) {
     const f = flap === undefined ? 1 : flap;
     g.strokeStyle = col; g.lineWidth = 0.9 * s; g.lineCap = 'round';
     g.beginPath(); g.moveTo(x - 4.6 * s, y - 0.6 * s * f); g.quadraticCurveTo(x - 2.2 * s, y - 2.8 * s * f, x, y); g.quadraticCurveTo(x + 2.2 * s, y - 2.8 * s * f, x + 4.6 * s, y - 0.6 * s * f); g.stroke();
-  }
-  // İstanbul kedisi
-  function cat(g, x, by, s, col, eyes, dir) {
-    dir = dir || 1;
-    g.save(); g.translate(x, by); g.scale(dir * s, s);
-    g.strokeStyle = col; g.lineWidth = 1.6; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(-3, -1.4); g.quadraticCurveTo(-8, -2, -7, -8); g.stroke();
-    E(g, 0, -4, 3.8, 4, col);
-    C(g, 1.6, -9.4, 2.8, col);
-    P(g, [-0.6, -10.6, -0.2, -14, 1.8, -11.6], col); P(g, [1.6, -11.8, 3.6, -14, 4, -10.4], col);
-    if (eyes) { g.fillStyle = eyes; g.beginPath(); g.arc(1, -9.6, 0.55, 0, TAU); g.arc(3, -9.6, 0.55, 0, TAU); g.fill(); }
-    g.restore();
   }
   // simitçi arabası
   function simitCart(g, x, by, s) {
@@ -391,8 +368,6 @@
         const back = hillsY(178, 22, 3);
         hills(g, back, '#b4d2e8');
         homeTower(g, 340, back(340) + 3, 0.13, '#a2c0d8');
-        const hz = { wall: '#9ec0da', roof: '#93b6d2', trim: '#a8c8e0' };
-        blueMosque(g, 116, back(116) + 4, 0.5, hz); hagiaSophia(g, 52, back(52) + 4, 0.42, hz);
         bridge(g, 230, 500, 166, 124, { cable: '#8fb0ca', deck: '#8fb0ca', tower: '#8fb0ca' });
         const front = hillsY(202, 16, 8);
         hills(g, front, '#9cc2a8');
@@ -412,11 +387,9 @@
     {
       far(g) {
         pen(null);
-        const hz = { wall: '#b4808e', roof: '#a87484', trim: '#bc8a96' };
         const base = hillsY(206, 10, 21);
         hills(g, base, '#c08c94');
         hillHouses(g, base, ['#c89aa0', '#bc8c96', '#d0a4a8'], null, 22);
-        hagiaSophia(g, 150, 208, 1, hz); blueMosque(g, 300, 208, 1, hz); hillMosque(g, 440, 204, 0.7, hz);
         // Topkapı surları ve servi ağaçları
         for (let x = 30; x < 92; x += 7) { g.fillStyle = '#a87484'; g.beginPath(); g.ellipse(x, 199, 2.4, 7, 0, 0, TAU); g.fill(); }
         rect(g, 24, 202, 74, 8, '#b4808e');
@@ -432,7 +405,6 @@
         while (x < 500) { const w = 16 + r() * 8, h = 28 + r() * 18; house(g, x, 214, w, h, cols[Math.floor(r() * cols.length)], '#a8503a', r, { door: true }); x += w + 1; }
         lonelyWindow(g, 262, 160, 7, 9, '#5a3a30');
         tram(g, 300, 214, 1, {});
-        cat(g, 190, 214, 0.8, '#f0a050', null, 1); cat(g, 470, 214, 0.7, '#e8e8ec', null, -1);
         seagull(g, 220, 60, 1, '#ffffff'); seagull(g, 250, 74, 0.8, '#ffffff'); seagull(g, 90, 92, 0.9, '#ffffff');
       },
     },
@@ -446,13 +418,11 @@
         hills(g, base, '#9ab6cc');
         hillHouses(g, base, ['#c8d2da', '#e2d4c4', '#d4c2b8', '#bccad6'], '#c49a86', 32);
         const hz = { wall: '#d6c2b2', wallD: '#c4ae9e', roof: '#8c9cae', roofL: '#a8b6c6', trim: '#e2d2c4', win: '#a89488', brick: '#c88e7a' };
-        hagiaSophia(g, 140, 210, 1.15, { ...hz, wall: '#e0a898', wallD: '#cc9282', trim: '#ebb8a8' });
-        blueMosque(g, 300, 210, 1.15, hz);
         galataTower(g, 462, base(462) + 3, 0.9, { wall: '#cfc0aa', wallD: '#b8a892', roof: '#6a7a8e', trim: '#bcae98', win: '#8a7c6a' });
       },
       near(g) {
         pen('rgba(30,40,60,0.6)', 0.5);
-        maidensTower(g, 150, 214, 1.5, { wall: '#f4efe4', wallD: '#d6d0c4', roof: '#7e8c9e', roofL: '#9eacbc', trim: '#d8d0c0', win: '#4a6280', rock: '#5e6a72', rockL: '#76828a', flag: true });
+        maidensTower(g, 150, 214, 1.5, { wall: '#f4efe4', wallD: '#d6d0c4', roof: '#7e8c9e', roofL: '#9eacbc', trim: '#d8d0c0', win: '#4a6280', rock: '#5e6a72', rockL: '#76828a' });
         ferry(g, 390, 216, 1.1, {});
         seagull(g, 250, 70, 1.1, '#ffffff'); seagull(g, 276, 84, 0.8, '#ffffff'); seagull(g, 60, 110, 0.9, '#ffffff'); seagull(g, 470, 60, 1, '#ffffff');
       },
@@ -500,8 +470,6 @@
         homeTower(g, 470, 186, 0.34, '#9a6482', '#ff6a5a');
         hills(g, base, '#a26a86');
         hillHouses(g, base, ['#b47a92', '#a87088', '#c08aa0'], null, 62, '#ffd890', 0.25);
-        const hz = { wall: '#8e5a78', roof: '#80506e', trim: '#9a6684' };
-        hillMosque(g, 130, base(130) + 4, 1.05, hz); hillMosque(g, 330, 210, 0.75, hz);
         rect(g, 0, 208, W, 4, '#8e5a78');
       },
       near(g) {
@@ -518,13 +486,11 @@
         galataTower(g, 191, 214, 2.4, { wall: '#d8c8ae', wallD: '#bcac92', roof: '#4e5a70', roofL: '#6a7890', trim: '#a89478', trimD: '#5a4a3a', win: '#4a4036', lit: '#ffe39a' });
         tram(g, 330, 214, 1.05, { lit: 'rgba(255,230,150,0.55)' });
         simitCart(g, 120, 214, 1);
-        cat(g, 252, 214 - 52, 0.7, '#2a2630', '#f4e04a', -1);
         lonelyWindow(g, 362, 186, 8, 10, '#5a3a30');
-        cat(g, 440, 214, 0.8, '#d0d0d4', null, 1);
       },
     },
     null, // Haliç
-    // 7 Köprü: alacakaranlıkta Boğaz Köprüsü, önde Ortaköy Camii
+    // 7 Köprü: alacakaranlıkta Boğaz Köprüsü, önde kıyı evleri
     {
       far(g) {
         pen(null);
@@ -536,15 +502,14 @@
       },
       near(g) {
         pen('rgba(20,10,40,0.6)', 0.5);
-        ortakoy(g, 150, 214, 1.7, { wall: '#f4ece0', wallD: '#d8ccbc', roof: '#8a94a8', roofL: '#a6b0c2', trim: '#e0d4c2', win: '#ffd88a' });
         const r = rng(77);
-        let x = 238;
+        let x = 62;
         while (x < 470) { const w = 15 + r() * 8, h = 28 + r() * 22; house(g, x, 214, w, h, ['#d89a8a', '#e8c08a', '#a8b8d8', '#c8a0c0'][Math.floor(r() * 4)], '#7a3a3a', r, { lit: '#ffe39a', litP: 0.6 }); x += w + 1; }
         for (const lx of [40, 250, 480]) { lin(g, lx, 214, lx, 186, '#2a2440', 1); C(g, lx, 185, 2, '#ffe9a0'); }
         seagull(g, 330, 80, 1, '#f4ecff'); seagull(g, 356, 92, 0.7, '#f4ecff');
       },
     },
-    // 8 Gece çatıları: ay ışığında Sultanahmet ve Ayasofya, kiremit çatılar, bacalar, kediler
+    // 8 Gece çatıları: ay ışığında kiremit çatılar, bacalar, Galata Kulesi
     {
       far(g) {
         pen(null);
@@ -552,8 +517,6 @@
         homeTower(g, 250, base(250) + 4, 0.52, '#1a2050', '#ff5a4a');
         hills(g, base, '#1c2250');
         hillHouses(g, base, ['#222a5a', '#1e2654'], null, 82, '#ffd27a', 0.5);
-        const lit = { wall: '#3a3a6a', wallD: '#30305e', roof: '#4a4e82', roofL: '#7a78a8', trim: '#f4d48a', win: '#ffd27a', lit: '#ffd27a', alem: '#f4d48a' };
-        blueMosque(g, 140, 206, 1.25, lit); hagiaSophia(g, 340, 206, 1.15, { ...lit, wall: '#4a3a64', wallD: '#3e3058' });
         galataTower(g, 470, base(470) + 3, 0.8, { wall: '#3a3a6a', wallD: '#30305e', roof: '#4a4e82', trim: '#f4d48a', lit: '#ffd27a' });
       },
       near(g) {
@@ -568,13 +531,12 @@
           if (r() < 0.8) { const cx = x + 6 + r() * (w - 14); B(g, cx, by - h - 16, 6, 12, 0.6, '#6a3a2e'); B(g, cx - 1, by - h - 17, 8, 2.4, 0.6, '#4a2a22'); }
           if (r() < 0.6) { const ax = x + w * 0.7; lin(g, ax, by - h - 6, ax, by - h - 22, '#5a5a70', 0.6); lin(g, ax - 5, by - h - 18, ax + 5, by - h - 18, '#5a5a70', 0.6); lin(g, ax - 3.6, by - h - 14, ax + 3.6, by - h - 14, '#5a5a70', 0.6); }
           if (r() < 0.35) { E(g, x + w * 0.3, by - h - 8, 4, 4.4, '#c8ccd8', -0.5); }
-          if (r() < 0.45) cat(g, x + w * (0.35 + r() * 0.3), by - h - 6, 0.75, '#141022', '#c8f04a', r() < 0.5 ? 1 : -1);
           x += w + 4;
         }
       },
     },
     null, // Ataşehir
-    // 9 Çamlıca: gece ışıkları, LED'li köprü, Kız Kulesi; önde Çamlıca Kulesi ve Camii
+    // 9 Çamlıca: gece ışıkları, LED'li köprü, Kız Kulesi; önde Çamlıca Kulesi ve çamlar
     {
       far(g) {
         pen(null);
@@ -592,9 +554,8 @@
         const base = hillsY(206, 14, 95);
         hills(g, base, '#141842');
         camlicaTower(g, 150, 214, 1.12, { wall: '#c8ccdc', wallD: '#9aa0b8', glass: '#3a6ab8', band: '#9ad8ff', lit: '#bff0ff' });
-        blueMosque(g, 372, 212, 1, { wall: '#d8dce8', wallD: '#b8bccc', roof: '#6a7898', roofL: '#8a98b8', trim: '#ffe39a', win: '#ffd27a', lit: '#ffe39a', alem: '#ffe39a' });
         const r = rng(96);
-        for (let x = 0; x < W; x += 12 + r() * 14) { if (Math.abs(x - 150) < 20 || Math.abs(x - 372) < 74) continue; pine(g, x, 216, 0.8 + r() * 0.5); }
+        for (let x = 0; x < W; x += 12 + r() * 14) { if (Math.abs(x - 150) < 20) continue; pine(g, x, 216, 0.8 + r() * 0.5); }
       },
     },
     null, // Ümraniye
@@ -688,7 +649,6 @@
       B(g, x + 14, 180, 100, 34, 1, '#7a4a28');
       for (let j = 0; j < 4; j++) { const cx = x + 30 + j * 22; E(g, cx, 182, 7, 2, '#c8a060'); nazar(g, cx, 176, 5); }
     }
-    cat(g, x + 116, 214, 0.75, ['#f0a050', '#2a2630', '#e8e8ec', '#a8a8b0'][i % 4], null, -1);
   }
   function carpet(g, x, y, w, h, c) {
     B(g, x, y, w, h, 0.6, c[0]);
@@ -912,19 +872,32 @@
       g.fillStyle = gl; g.fillRect(0, 60, vw, 140);
       g.fillStyle = '#fff1c4'; g.beginPath(); g.arc(sx, sy, 15, 0, TAU); g.fill();
       pen(null);
-      // Asya yakası tepeleri ve köprü
+      // Avrupa yakası: güneşe karşı modern kuleler (sol) ve Boğaz köprüsü
       g.fillStyle = '#9a6a94';
-      g.beginPath(); g.moveTo(0, 168); g.quadraticCurveTo(30, 150, 70, 156); g.quadraticCurveTo(110, 146, 150, 160); g.lineTo(150, 176); g.lineTo(0, 176); g.closePath(); g.fill();
-      bridge(g, -6, 140, 150, 118, { cable: '#c494b8', hang: 'rgba(196,148,184,0.7)', deck: '#b688ac', tower: '#c494b8' });
-      // tarihi yarımada silueti (güneşe karşı)
-      const sil = { wall: '#6a3c6a', wallD: '#5e3460', roof: '#5a3260', trim: '#744474', win: null };
-      g.fillStyle = '#6a3c6a'; g.beginPath(); g.moveTo(120, 176); g.quadraticCurveTo(160, 162, 256, 164); g.lineTo(256, 176); g.closePath(); g.fill();
-      hagiaSophia(g, 150, 170, 0.62, sil);
-      blueMosque(g, 222, 168, 0.68, sil);
-      // Galata Kulesi (sol tepe)
-      g.fillStyle = '#5a3458'; g.beginPath(); g.moveTo(0, 150); g.quadraticCurveTo(18, 138, 52, 150); g.quadraticCurveTo(80, 160, 100, 176); g.lineTo(0, 176); g.closePath(); g.fill();
-      hillHousesT(g, '#6a3e66', '#ffd890');
-      galataTower(g, 30, 146, 0.92, { wall: '#4e2c4e', wallD: '#44264a', roof: '#3e2244', trim: '#5e3a5e', lit: '#ffd890' });
+      g.beginPath(); g.moveTo(0, 166); g.quadraticCurveTo(40, 156, 90, 162); g.quadraticCurveTo(120, 166, 140, 170); g.lineTo(140, 176); g.lineTo(0, 176); g.closePath(); g.fill();
+      const tw = [[6, 14, 58, 'f'], [22, 12, 74, 'r'], [36, 16, 92, 'd'], [54, 11, 66, 'r'], [66, 14, 50, 'r'], [82, 10, 40, 'r']];
+      for (const [x, w, h, k] of tw) {
+        const by = 170, top = by - h;
+        g.fillStyle = '#6e4272'; g.beginPath();
+        if (k === 'd') { g.moveTo(x, by); g.lineTo(x, top + 8); g.lineTo(x + w, top); g.lineTo(x + w, by); }
+        else if (k === 'f') { g.moveTo(x, by); g.lineTo(x, top); g.lineTo(x + w, top + 6); g.lineTo(x + w, by); }
+        else g.rect(x, top, w, h);
+        g.closePath(); g.fill();
+        g.fillStyle = 'rgba(255,216,144,0.55)';
+        const r = rng(x * 3 + 1);
+        for (let y = top + 9; y < by - 3; y += 4) for (let xx = x + 2; xx < x + w - 2; xx += 3) if (r() < 0.22) g.fillRect(xx, y, 1.4, 1.6);
+        g.fillStyle = '#ff5a4a'; g.fillRect(x + w / 2 - 0.5, top - 2, 1, 1);
+      }
+      bridge(g, 86, 206, 152, 120, { cable: '#c494b8', hang: 'rgba(196,148,184,0.7)', deck: '#b688ac', tower: '#c494b8' });
+      // Anadolu yakası: tepeler, evler ve Çamlıca Kulesi
+      g.fillStyle = '#7a4a7c'; g.beginPath(); g.moveTo(150, 176); g.quadraticCurveTo(190, 150, 228, 150); g.quadraticCurveTo(246, 152, 256, 158); g.lineTo(256, 176); g.closePath(); g.fill();
+      const rh = rng(9);
+      for (let x = 160; x < 256; x += 4 + rh() * 3) {
+        const y = 176 - Math.max(0, Math.min(22, (x - 150) * 0.5, (262 - x) * 1.2)) + 4, w = 3 + rh() * 2.4, h = 2.4 + rh() * 3;
+        g.fillStyle = '#6a3e66'; g.fillRect(x, y - h, w, h + 30);
+        if (rh() < 0.4) { g.fillStyle = '#ffd890'; g.fillRect(x + 1, y - h * 0.6, 0.8, 0.8); }
+      }
+      camlicaTower(g, 226, 152, 0.62, { wall: '#5a3458', wallD: '#4e2c4e', glass: '#4a2a50', band: '#ffd890', lit: '#ffd890' });
       // deniz
       const sea = g.createLinearGradient(0, 174, 0, 240); sea.addColorStop(0, '#e8907a'); sea.addColorStop(0.35, '#8a5a8a'); sea.addColorStop(1, '#3a3a78');
       g.fillStyle = sea; g.fillRect(0, 174, vw, vh - 174);
@@ -936,18 +909,8 @@
     titleCache.set(vw, c);
     return c;
   }
-  function hillHousesT(g, col, lit) {
-    const r = rng(5);
-    for (let x = 2; x < 98; x += 4 + r() * 3) {
-      const y = x < 52 ? 150 - Math.sin((x / 52) * Math.PI) * 9 + 4 : 150 + (x - 52) * 0.5 + 3;
-      const w = 3 + r() * 2.4, h = 2.6 + r() * 3;
-      g.fillStyle = col; g.fillRect(x, y - h, w, h + 30);
-      if (r() < 0.4) { g.fillStyle = lit; g.fillRect(x + 1, y - h * 0.6, 0.8, 0.8); }
-    }
-  }
-
   root.BA_SCENE = {
-    W, H, layers, sky, title, metroLine, SKY, pen, BASE_AT, PLACES, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
+    W, H, layers, sky, title, metroLine, SKY, pen, BASE_AT, PLACES, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,

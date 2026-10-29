@@ -177,7 +177,6 @@
         SC.pen(null);
         b.fillStyle = '#6a5a86'; b.beginPath(); b.moveTo(120, 175); b.quadraticCurveTo(230, 112, 320, 128); b.lineTo(320, 175); b.closePath(); b.fill();
         K.camlicaTower(b, 248, 128, 0.62, { wall: '#7a6a96', wallD: '#6a5a86', glass: '#8a7aa6', band: '#a898c0' });
-        K.hillMosque(b, 196, 140, 0.32, { wall: '#7a6a96', roof: '#74648e', trim: '#7a6a96' });
         // apartmanlar
         apartment(b, -6, 205, 60, 104, '#cdb8a6', 3);
         apartment(b, 56, 205, 52, 86, '#d8c4a0', 5);
@@ -202,10 +201,9 @@
         for (let x = 6; x < 320; x += 28) rect(b, x, 227, 14, 1.4, '#c8c2b0');
         // sokak lambası
         A.lin(b, 102, 205, 102, 150, '#2a2a34', 1.4); A.lin(b, 102, 151, 112, 151, '#2a2a34', 1.2);
-        // park etmiş dolmuş ve üstünde uyuyan kedi
+        // park etmiş dolmuş
         A.box(b, 14, 182, 58, 23, 4, '#e8c23a'); rect(b, 18, 186, 50, 8, '#4a5a74');
         A.circle(b, 26, 205, 5, '#2a2630'); A.circle(b, 60, 205, 5, '#2a2630');
-        SC.cat(b, 40, 182, 0.55, '#f0a050', null, 1);
         wires(b, 320, 54, 'rgba(30,24,40,0.6)');
         // alçak sabah güneşi sağdan: binaların gölgeleri sola, yola uzanır
         b.fillStyle = 'rgba(40,30,70,0.22)';
@@ -370,7 +368,7 @@
       img(g, back, 0, 0);
       seaBand(g, 152, 196, '#7a8ab8', '#3e5a8a', t, 214);
       // karşıdan geçen vapur
-      SC.pen('rgba(30,20,50,0.4)', 0.4); SC.ferry(g, 300 - t * 9, 156, 0.32, { hull: '#3a3058', white: '#f6e6da', win: '#7a6a8a', funnel: '#f2c87a', flag: false }); SC.pen(null);
+      SC.pen('rgba(30,20,50,0.4)', 0.4); SC.ferry(g, 300 - t * 9, 156, 0.32, { hull: '#3a3058', white: '#f6e6da', win: '#7a6a8a', funnel: '#f2c87a' }); SC.pen(null);
       img(g, base, 0, 0);
       // kahraman bankta, dizinde laptop; yanında simit
       hero(g, 186, 196, 34, { pose: 'sit', dir: 1, typing: t < 7, phase: t });
@@ -408,16 +406,14 @@
       glow(g, 70, 120, 60, 'rgba(255,220,170,A)', 0.55);
       const far = layer('ara3far', 420, 60, (b) => {
         SC.pen(null);
-        const sil = { wall: '#8e7c9e', roof: '#86749a', trim: '#8e7c9e' };
         b.fillStyle = '#8e7c9e'; b.beginPath(); b.moveTo(0, 60); b.lineTo(0, 44); b.quadraticCurveTo(80, 36, 150, 46); b.lineTo(150, 60); b.closePath(); b.fill();
-        SC.hagiaSophia(b, 40, 52, 0.32, sil); SC.blueMosque(b, 106, 52, 0.32, sil);
         b.fillStyle = '#7a6c94'; b.beginPath(); b.moveTo(260, 60); b.quadraticCurveTo(330, 30, 420, 40); b.lineTo(420, 60); b.closePath(); b.fill();
         K.camlicaTower(b, 360, 46, 0.18, { wall: '#6a5c88', wallD: '#5e5080', glass: '#6a5c88', band: '#7a6c98' });
       });
       img(g, far, -slide * 0.4, 96 + bob * 0.3);
       seaBand(g, 152, 240, '#8a8ab8', '#3a4a7a', t, 70);
       SC.pen('rgba(30,20,50,0.5)', 0.5);
-      SC.maidensTower(g, 186 - slide, 160 + bob * 0.5, 0.95, { wall: '#f2ece0', wallD: '#d0c8bc', roof: '#7e8a9e', trim: '#d2c8b6', win: '#5a6a86', rock: '#5a5660', flag: true });
+      SC.maidensTower(g, 186 - slide, 160 + bob * 0.5, 0.95, { wall: '#f2ece0', wallD: '#d0c8bc', roof: '#7e8a9e', trim: '#d2c8b6', win: '#5a6a86', rock: '#5a5660' });
       SC.pen(null);
       g.save(); g.translate(0, bob);
       // güverte çatısı ve direkleri: kadraj
@@ -573,9 +569,7 @@
       A.circle(g, 96, sunY, 13, '#ffd890', null);
       const city = layer('ara6city', VW, 110, (b) => {
         SC.pen(null);
-        const sil = { wall: '#5a3a5e', wallD: '#4e3254', roof: '#4e3254', trim: '#5a3a5e' };
         b.fillStyle = '#5e3e62'; b.beginPath(); b.moveTo(0, 110); b.lineTo(0, 46); b.quadraticCurveTo(70, 30, 150, 44); b.lineTo(150, 110); b.closePath(); b.fill();
-        K.hillMosque(b, 70, 42, 0.42, sil); SC.blueMosque(b, 120, 52, 0.28, sil);
         b.fillStyle = '#4a3a62'; b.beginPath(); b.moveTo(150, 110); b.lineTo(150, 60); b.quadraticCurveTo(210, 30, 256, 36); b.lineTo(256, 110); b.closePath(); b.fill();
         K.camlicaTower(b, 226, 40, 0.2, { wall: '#5a4a72', wallD: '#4e3e66', glass: '#5a4a72', band: '#6a5a82' });
         b.fillStyle = '#3e2c48'; b.fillRect(0, 70, VW, 40);
@@ -784,13 +778,11 @@
           rect(g, x + 5, y + 14, 6, 5, '#2a2e38'); rect(g, x + 6, y + 15, 4, 3, '#9ad0f0');
         }
       }
-      // ön plan: kiremit çatı, kahraman laptopuyla; kedi yanına gelir
+      // ön plan: kiremit çatı, kahraman laptopuyla
       K.roofTiles(g, -10, 240, 150, 46, '#a84e34');
       hero(g, 60, 214, 46, { pose: 'sit', dir: 1, wave: t > 7.4 && t < 9.6, typing: !(t > 7.4 && t < 9.6), phase: t });
       A.box(g, 70, 194, 12, 2, 0.6, '#c9ccd4', A.K, 0.5); A.poly(g, [72, 194, 82, 194, 84, 185, 74, 185], '#2a2e38', A.K, 0.5);
       glow(g, 76, 190, 14, 'rgba(160,220,255,A)', 0.5);
-      const ck = seg(t, 1.6, 4.2);
-      SC.cat(g, lerp(-20, 38, ck), 214, 0.9, '#2a2234', '#c8f04a', 1);
     },
   };
 
@@ -942,7 +934,6 @@
       const reach = t > 5.4 && t < 6.6;
       hero(g, hx, 214, 58, walk < 1 ? { pose: 'walk', dir: 1, phase: t * 1.3, bag: true } : { pose: 'stand', dir: 1, look: 'up', bag: true, reach: reach ? [(bx - 2 - hx) / 0.58, (by + 4 - 214) / 0.58] : undefined, wave: t > 8.2 && t < 10.5, phase: t });
       if (t > 6.4) { A.drawSimit(g, hx + 12, 180, 0, 2.6); }
-      SC.cat(g, lerp(270, 210, seg(t, 3, 6)), 214, 0.9, '#f0a050', null, -1);
     },
   };
 
@@ -993,7 +984,6 @@
         const far = layer('sonA', VW, 70, (b) => {
           SC.pen(null);
           b.fillStyle = '#8a6a8e'; b.beginPath(); b.moveTo(0, 70); b.lineTo(0, 30); b.quadraticCurveTo(70, 18, 130, 30); b.lineTo(130, 70); b.closePath(); b.fill();
-          SC.hagiaSophia(b, 40, 34, 0.24, { wall: '#7a5a80', wallD: '#6e5076', roof: '#6e5076', trim: '#7a5a80' });
           K.bridge(b, 100, 256, 46, 18, { cable: '#9a7a9e', hang: 'rgba(154,122,158,0.6)', deck: '#9a7a9e', tower: '#9a7a9e' });
         });
         img(g, far, 0, 96);
@@ -1061,7 +1051,6 @@
         if (tb > 5 && (tb % 0.7) < 0.1) glow(g, 136, 168, 14, 'rgba(255,230,160,A)', 0.9);
         sparks(g, 136, 168, tb, 0.7, 10, 9);
       } else { A.box(g, 80, 188, 16, 3, 1, '#8a5a34'); A.lin(g, 84, 191, 82, 214, '#5a3a24', 1.6); A.lin(g, 92, 191, 94, 214, '#5a3a24', 1.6); hero(g, 86, 214, 46, { pose: 'desk', dir: -1, typing: true, phase: t }); }
-      SC.cat(g, 220, 214, 0.9, '#f0a050', null, -1);
       g.fillStyle = `rgba(255,248,230,${1 - seg(t, 7.2, 8)})`; g.fillRect(0, 0, VW, VH);
     },
   };

@@ -10,8 +10,8 @@ Kurulum gerekmez: düz HTML, CSS ve JavaScript. Bütün çizimler, müzikler ve 
 
 Çizimler çizgi film tarzında ve vektördür: oyun ekranın gerçek çözünürlüğünde çizildiği için telefonda da
 4K ekranda da pürüzsüz görünür. Her dünyanın arka planında dünyaca tanınan bir İstanbul simgesi var:
-Ayasofya, Sultanahmet Camii, Kız Kulesi, Galata Kulesi, Boğaz Köprüsü, Ortaköy Camii, Haydarpaşa Garı,
-Çamlıca Kulesi; aralarda kırmızı nostaljik tramvay, Şehir Hatları vapuru, simitçi, martılar ve kediler.
+Kız Kulesi, Galata Kulesi, Boğaz Köprüsü, Haydarpaşa Garı, Çamlıca Kulesi; aralarda kırmızı nostaljik tramvay,
+Şehir Hatları vapuru, simitçi ve martılar.
 
 ## Hikâye
 
@@ -26,7 +26,7 @@ Ataşehir'de fidye yazılımının kilitlediği kuleleri yeniden yakar; gece bek
   Herhangi bir tuşla ya da dokunarak atlanabilirler.
 - **Ufuktaki ev:** Çamlıca Kulesi dünyaların ufkunda görünür; ilerledikçe yaklaşır.
 - **Hatıra parçaları:** her dünyanın 2. bölümünde, yoldan ayrılan yüksek bir köşede bir parça var
-  (Maslak camı, martı tüyü, vapur çanı, nazar, sarnıç damlası, Galata Kulesi, Balat'ın sepeti, köprü, kedi,
+  (Maslak camı, martı tüyü, vapur çanı, nazar, sarnıç damlası, Galata Kulesi, Balat'ın sepeti, köprü, anten,
   Ataşehir'de fidye yazılımından geri alınan anahtar, lale, demirci çekici).
   Topladıkların kalıcı olarak kaydedilir; son sahnede atölyenin rafında durur, Bölüm seç ekranında da görünür.
 - **Ses:** her dünyanın kendi şehir sesi var (martılar, vapur düdüğü, çarşı uğultusu, damlayan su, gece rüzgârı).
@@ -195,18 +195,18 @@ Git ile bu sürüme dönmek için: `git checkout 2a82261`.
 - [ ] **Matrix göndermesi yok.** Yeşil kod yağmuru, glitch titremesi, yeşil filtre, firewall kapıları, binişlerde renk
   değiştiren geçiş efektleri ve "kırmızı hap" yapılmayacak. Bilgisayar göndermeleri bugünkü seviyede kalır
   (bug düşmanlar, DEPLOY terminali, sunucu odaları, patron adları); yenisi eklenmez.
-- [ ] **Kedi yok.** `scenes.js`'teki `cat()` ve bütün çağrıları kalkar (`places.js`, `scenes.js`, `story.js`): giriş
+- [x] **Kedi yok.** `scenes.js`'teki `cat()` ve bütün çağrıları kalkar (`places.js`, `scenes.js`, `story.js`): giriş
   sahnesinde dolmuşun üstünde uyuyan kedi, çatı sahnesinde kahramanın yanına gelen kedi, son sahnedeki kedi,
   arka planlardaki kediler, hatıra parçası `kedi` ve README'deki anışlar. Yerine başka hayvan konmaz, yerleri boş kalır.
   Martılar kalabilir.
-- [ ] **Minare sadece Eyüp'te ve Üsküdar sahilinde.** Oralarda gerçekten görüntünün parçasıdırlar (Üsküdar'dan karşı
+- [x] **Minare sadece Eyüp'te ve Üsküdar sahilinde.** Oralarda gerçekten görüntünün parçasıdırlar (Üsküdar'dan karşı
   kıyının uzak silüeti dahil). Başka hiçbir dünyada, arka planda, binişte, sahnede ya da başlık ekranında minare
   ve cami silüeti yok. Çıkacaklar arasında: Maslak arka planındaki uzak Sultanahmet ve Ayasofya, Köprü'deki Ortaköy
   Camii, Çamlıca'daki cami ve Yayın Odası ekranındaki cami, Ümraniye çarşısındaki ve giriş sahnesindeki cami,
   tramvay binişinin arka planındaki Ayasofya, Sultanahmet ve Firuz Ağa Camii, başlık ekranındaki Sultanahmet ve
   Ayasofya. Hepsi `grep -n "minaret\|Mosque\|hagiaSophia\|ortakoy" src/*.js` ile bulunur. Başlık ekranı minaresiz
   yeniden kurulur: modern kuleler, köprü, Kız Kulesi, Çamlıca Kulesi.
-- [ ] **Bayrak yok.** `flag()` hiçbir yerde çizilmez: vapurlar (`ferry` şu an varsayılan olarak bayrak çiziyor) ve
+- [x] **Bayrak yok.** `flag()` hiçbir yerde çizilmez: vapurlar (`ferry` şu an varsayılan olarak bayrak çiziyor) ve
   Kız Kulesi dahil. Ay da bayraktaki hilal gibi çizilmez (aşağıda).
 - [ ] **Oryantalist bakış yok.** İstanbul bugün yaşanan bir şehir olarak gösterilir. Bakış turistin değil, bu şehirde
   yaşayan birinin bakışıdır. Arka planlardaki ve sahnelerdeki insanlar bugünün insanlarıdır: mont, sırt çantası, telefon.
