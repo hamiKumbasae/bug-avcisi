@@ -1071,7 +1071,10 @@
   // ---------- İstanbul yol haritası: Maslak'tan Ümraniye'ye ----------
   // Dünyaların harita üzerindeki yerleri (kutuya göre 0..1)
   // Maslak, Kapalıçarşı, Şişli, Üsküdar, Ataşehir, Yerebatan, Köprü, Eyüp, Şile, Sanayi, Çamlıca, Ümraniye
-  const ROUTE = [[0.46, 0.22], [0.40, 0.75], [0.49, 0.40], [0.66, 0.70], [0.88, 0.74], [0.50, 0.77], [0.635, 0.46], [0.36, 0.58], [0.98, 0.18], [0.96, 0.48], [0.80, 0.62], [0.93, 0.55]];
+  // dünyaların haritadaki yerleri (v2.0 sırası): Maslak, Kapalıçarşı, Şişli, Üsküdar, Ataşehir, Yerebatan, Köprü, Eyüp,
+  // Şile, Sanayi (Dudullu), Çamlıca, Ümraniye. Şile haritanın çok doğusunda kalır: Karadeniz kıyısında kenarda, yön okuyla.
+  const ROUTE = [[0.46, 0.22], [0.44, 0.745], [0.49, 0.40], [0.655, 0.71], [0.87, 0.76], [0.515, 0.775], [0.635, 0.46], [0.36, 0.58], [0.955, 0.17], [0.92, 0.5], [0.76, 0.655], [0.85, 0.6]];
+  const W_SILE = 8, W_CAMLICA = 10, W_HOME = 11;
   const STRAIT = [[0.67, -0.02], [0.69, 0.12], [0.63, 0.28], [0.645, 0.4], [0.625, 0.5], [0.605, 0.62], [0.585, 0.72], [0.575, 0.84]];
   const mapCache = ART.cache();
   function mapBase(w, h) {
@@ -1121,13 +1124,21 @@
     ctx.save(); ART.rr(ctx, x, y, w, h, 5); ctx.clip();
     img(mapBase(w, h), x, y);
     const P = ROUTE.map(([u, v]) => [x + u * w, y + v * h]);
-    // gidilecek yol kesik, geçilen yol altın
+    // gidilecek yol kesik, geçilen yol altın; her yolculuk hafif bir kavis (yukarı ve aşağı katman arasında gidip gelen yol)
+    const legs = (n) => {
+      ctx.beginPath(); ctx.moveTo(...P[0]);
+      for (let i = 1; i <= n; i++) {
+        const [ax, ay] = P[i - 1], [bx, by] = P[i], dx = bx - ax, dy = by - ay, k = (i % 2 ? 0.16 : -0.16);
+        ctx.quadraticCurveTo((ax + bx) / 2 - dy * k, (ay + by) / 2 + dx * k, bx, by);
+      }
+    };
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.setLineDash([2.2, 2.4]); ctx.strokeStyle = 'rgba(90,60,40,0.7)'; ctx.lineWidth = 1.2;
-    ctx.beginPath(); P.forEach((p, i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, ...p)); ctx.stroke(); ctx.setLineDash([]);
-    if (cur > 0) { ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 3.2; ctx.beginPath(); P.slice(0, cur + 1).forEach((p, i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, ...p)); ctx.stroke(); ctx.strokeStyle = '#f4c531'; ctx.lineWidth = 1.8; ctx.stroke(); }
-    // yol üstünde Çamlıca Kulesi, hedef: Ümraniye'deki ev ve atölye
-    const [gx, gy] = P[9], [ux, uy] = P[10];
+    legs(P.length - 1); ctx.stroke(); ctx.setLineDash([]);
+    if (cur > 0) { ctx.strokeStyle = '#1a1430'; ctx.lineWidth = 3.2; legs(cur); ctx.stroke(); ctx.strokeStyle = '#f4c531'; ctx.lineWidth = 1.8; ctx.stroke(); }
+    // yol üstünde Çamlıca Kulesi, hedef: Ümraniye'deki ev ve atölye; Şile kenarda, doğuyu gösteren okla
+    const [gx, gy] = P[W_CAMLICA], [ux, uy] = P[W_HOME], [sx, sy] = P[W_SILE];
+    ART.poly(ctx, [sx + 5, sy - 2.2, sx + 9, sy - 2.2, sx + 9, sy - 4.4, sx + 13, sy, sx + 9, sy + 4.4, sx + 9, sy + 2.2, sx + 5, sy + 2.2], '#5a3a24', null);
     ART.box(ctx, ux - 4, uy - 9, 8, 6, 0.6, '#e8d8b8', '#1a1430', 0.6); ART.poly(ctx, [ux - 5, uy - 9, ux + 5, uy - 9, ux, uy - 13], '#c8503a', '#1a1430', 0.6);
     ART.box(ctx, ux + 2, uy - 14, 2, 4, 0.3, '#6a5a5a', null);
     for (let k = 0; k < 3; k++) ART.circle(ctx, ux + 3 + k * 1.4, uy - 16 - k * 2.4 - (app.t * 3 % 2), 0.9 + k * 0.4, `rgba(220,220,220,${0.6 - k * 0.15})`, null);
@@ -1147,6 +1158,7 @@
     ctx.restore();
     text('MASLAK', P[0][0], P[0][1] + 4, '#5a3a24', 5, 'center', null);
     text('ÜMRANİYE', Math.min(ux, x + w - 18), uy + 4.5, '#5a3a24', 5, 'center', null);
+    text('ŞİLE', sx - 4, sy + 4.5, '#5a3a24', 5, 'center', null);
   }
   function drawIntro() {
     const L = LEVELS[app.S.stage], Wd = WORLDS[L.world - 1], wi = L.world - 1;

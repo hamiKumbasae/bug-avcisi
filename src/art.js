@@ -540,7 +540,7 @@
           if (label) { g.fillStyle = '#3a2410'; g.font = '700 3.6px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, x + w / 2 + 3, y + h - 4.5); }
         };
         crate(-20, -16, 40, 16, '#b8743a', 'v0.1');
-        crate(-15 + wob, -29, 30, 13.4, '#a8642e', 'LEGACY');
+        crate(-15 + wob, -29, 30, 13.4, '#a8642e', null);
         crate(-11 - wob, -40, 22, 11.4, '#c0803e', null);
         eye(g, -5 - wob, -34.6, 2.6, o.face > 0 ? 0.6 : -0.6, 0.2, true, 1); eye(g, 5 - wob, -34.6, 2.6, o.face > 0 ? 0.6 : -0.6, 0.2, true, -1);
         g.strokeStyle = K; g.lineWidth = 0.9; g.beginPath(); g.moveTo(-4 - wob, -30.4); g.lineTo(-1 - wob, -31.6); g.lineTo(2 - wob, -30.4); g.lineTo(5 - wob, -31.6); g.stroke();
@@ -638,18 +638,14 @@
   const METRO = 9;
   // mekân çizimi ('yer') → karo teması ve su rengi (yoksa false); bölüm 'zemin' / 'su' ile değiştirebilir
   const TILE_OF = {
-    maslak: 0, toplanti: 10, sunucu: 11, kadikoy: 1, balikPazari: 1, moda: 1, iskele: 12, vapur: 2, kaptan: 2,
-    carsi: 3, han: 3, bedesten: 13, sarnic: 4, medusa: 4, karanlikSu: 4, kamondo: 5, galata: 5, catiArasi: 15,
-    karakoy: 1, halicKiyisi: 5, eyupBalat: 5, kopru: 6, halatlar: 14, kopruTepe: 14, catilar: 7, antenler: 7, saatKulesi: 15,
-    finans: 18, veri: 19, kontrol: 20, camlica: 8, asansor: 8, yayin: 8, umraniyeCarsi: 16, yeniPlazalar: 0, sanayi: 17,
-    // v2.0 mekânları (places2.js)
-    mecidiyekoy: 0, plazaLobi: 10, mesaiSonu: 10, iskeleAksam: 12, carsiAksam: 1, sahil: 1, kopruGece: 6, halatlarGece: 14,
-    balatGece: 5, teleferik: 5, tepe: 5, sileYol: 6, benzin: 16, fener: 4, imes: 17, des: 17, kadosan: 17, atolye: 17,
+    asansor: 8, atolye: 17, balatGece: 5, bedesten: 13, benzin: 16, camlica: 8, carsi: 3, carsiAksam: 1, des: 17,
+    fener: 4, finans: 18, halatlarGece: 14, han: 3, imes: 17, iskeleAksam: 12, kadosan: 17, karanlikSu: 4, kontrol: 20,
+    kopruGece: 6, kopruTepe: 14, maslak: 0, mecidiyekoy: 0, medusa: 4, mesaiSonu: 10, plazaLobi: 10, sahil: 1,
+    sarnic: 4, sileYol: 6, sunucu: 11, teleferik: 5, tepe: 5, toplanti: 10, umraniyeCarsi: 16, veri: 19, yayin: 8,
+    yeniPlazalar: 0,
   };
   const WATER_OF = {
-    kadikoy: '#2f7fa8', moda: '#3a7ab0', iskele: '#2a8ac0', vapur: '#2a86c8', kaptan: '#2a4a6a',
-    sarnic: '#0f4a50', medusa: '#0e5a58', karanlikSu: '#081c22', karakoy: '#2a7ab0', halicKiyisi: '#3a7290', kopru: '#24387a',
-    iskeleAksam: '#4a6a9a', sahil: '#4a4a86', kopruGece: '#141e48', fener: '#1a2a44',
+    sarnic: '#0f4a50', medusa: '#0e5a58', karanlikSu: '#081c22', iskeleAksam: '#4a6a9a', sahil: '#4a4a86', kopruGece: '#141e48', fener: '#1a2a44',
   };
   const levelAt = (p) => (root.BA_LEVELS && root.BA_LEVELS[p]) || {};
   const placeTiles = (p) => { const L = levelAt(p); return L.zemin !== undefined ? L.zemin : TILE_OF[L.yer] ?? 0; };
@@ -1387,9 +1383,10 @@
         // eski bir fotoğraf: beyaz kenar, soluk renkte bir kıyı ve iki kişi
         g.save(); g.rotate(-0.12);
         box(g, -6.5, -7.5, 13, 15, 0.5, '#f4eedc', K, 0.8);
-        rect(g, -5, -6, 10, 9, '#c8ae84'); rect(g, -5, -6, 10, 4.4, '#dcc8a0'); rect(g, -5, -1.6, 10, 0.6, '#a88e66');
-        circle(g, 2.8, -4, 1.1, '#f0e2c0', null);
-        for (const [x, h] of [[-2.2, 5], [0.4, 3.2]]) { rect(g, x - 0.6, 3 - h + 1.4, 1.2, h - 1.4, '#6a5038'); circle(g, x, 3 - h + 0.8, 0.8, '#6a5038', null); }
+        // solmuş renkler: soluk mavi gök, yeşilimsi deniz, kum
+        rect(g, -5, -6, 10, 9, '#d8c8a8'); rect(g, -5, -6, 10, 4.4, '#a8c4d0'); rect(g, -5, -1.6, 10, 1.8, '#7aa4a8');
+        circle(g, 2.8, -4, 1.1, '#f4ecd4', null);
+        for (const [x, h, c] of [[-2.2, 5, '#a8584a'], [0.4, 3.2, '#5a6a8a']]) { rect(g, x - 0.6, 3 - h + 1.4, 1.2, h - 1.4, c); circle(g, x, 3 - h + 0.8, 0.8, '#7a5a48', null); }
         g.restore();
         break;
       case 'karanfil':

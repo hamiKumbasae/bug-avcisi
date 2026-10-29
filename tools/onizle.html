@@ -14,9 +14,14 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<script src="../src/levels.js"></script>
+<script src="../src/vendor/suncalc.js"></script>
+<script src="../src/moon.js"></script>
 <script src="../src/art.js"></script>
 <script src="../src/scenes.js"></script>
 <script src="../src/places.js"></script>
+<script src="../src/places2.js"></script>
+<script src="../src/story.js"></script>
 <script>
 (async function () {
   const q = new URLSearchParams(location.search);
@@ -27,15 +32,28 @@
   const c = document.getElementById('c'), g = c.getContext('2d');
   const draw = (img, x, y) => g.drawImage(img, x, y, img.lw, img.lh);
   if (mode === 'bg') {
-    // 512 genişliğin tamamı: gökyüzü + uzak + yakın + su
+    // 512 genişliğin tamamı: gökyüzü (o günün ayıyla) + uzak + yakın + su
+    // w: bölüm numarası (dünya*3 + bölüm), ya da k: çizim anahtarı (örneğin ?k=teleferik)
+    const k = q.get('k'), idx = k ? window.BA_LEVELS.findIndex((L) => L.yer === k) : w;
+    const L0 = window.BA_LEVELS[idx], mo = L0 && L0.saat ? window.BA_MOON.forScene(L0.saat, new Date()) : null;
     c.width = 512 * S; c.height = 240 * S; g.scale(S, S);
-    draw(SC.sky(w, 512, 240), 0, 0);
-    const L = SC.layers(w);
+    draw(SC.sky(idx, 512, 240, mo), 0, 0);
+    const L = SC.layers(idx);
     draw(L.far, -off, 0); if (off) draw(L.far, 512 - off, 0);
     draw(L.near, -off, 0); if (off) draw(L.near, 512 - off, 0);
-    // w burada mekân numarası (dünya*3 + bölüm)
-    if (A.placeWater(w)) { g.fillStyle = A.placeWater(w); g.fillRect(0, 214, 512, 26); }
-    for (let x = 0; x < 512; x += 16) draw(A.tile(A.placeTiles(w), 'surf'), x, 224);
+    if (A.placeWater(idx)) { g.fillStyle = A.placeWater(idx); g.fillRect(0, 214, 512, 26); }
+    for (let x = 0; x < 512; x += 16) draw(A.tile(A.placeTiles(idx), 'surf'), x, 224);
+  } else if (mode === 'story') {
+    // hikâye sahnesinin bir anı: ?m=story&k=eyup&t=6
+    const ST = window.BA_STORY;
+    c.width = 256 * S; c.height = 240 * S; g.scale(S, S);
+    ST.draw(g, q.get('k') || 'giris', +(q.get('t') || 5), { pieces: new Array(12).fill(true) });
+  } else if (mode === 'pieces') {
+    // hatıra parçaları: büyük ve oyundaki boyutta
+    const n = A.PIECES.length;
+    c.width = n * 40 * S; c.height = 60 * S; g.scale(S, S);
+    g.fillStyle = '#3a3048'; g.fillRect(0, 0, n * 40, 60);
+    for (let i = 0; i < n; i++) { A.drawPiece(g, i, 20 + i * 40, 22, 2, 0.5); A.drawPiece(g, i, 20 + i * 40, 50, 0.66, 0.5); }
   } else if (mode === 'title') {
     c.width = 256 * S; c.height = 240 * S; g.scale(S, S);
     draw(SC.title(256, 240), 0, 0);
@@ -52,8 +70,8 @@
       g.restore();
     }
   } else if (mode === 'sprites') {
-    c.width = 400 * S; c.height = 230 * S; g.scale(S, S);
-    g.fillStyle = '#bfe6fb'; g.fillRect(0, 0, 400, 230);
+    c.width = 520 * S; c.height = 230 * S; g.scale(S, S);
+    g.fillStyle = '#bfe6fb'; g.fillRect(0, 0, 520, 230);
     const modes = ['stand', 'walk', 'walk', 'walk', 'walk', 'jump', 'skid', 'shoot', 'dead'];
     let x = 14;
     for (const [big, skin] of [[false, 'normal'], [true, 'normal'], [true, 'hacker']]) {
@@ -86,8 +104,10 @@
     A.drawDeploy(g, x, by - 32, 0); x += 22;
     A.drawLift(g, x, by - 10, 48);
     // patronlar
-    const B = [['kralbug', 2, 1.75], ['spam', 2, 1.5], ['marti', 2, 1.25], ['truva', 2.25, 2], ['sizinti', 2, 1.5], ['dongu', 1.5, 1.5], ['ddos', 2.5, 1.5], ['glitch', 1.25, 1.75], ['maviekran', 2.75, 2.5]];
-    x = 30;
+    // v2.0: dünya sırasıyla on bir patron (Eyüp'te patron yok)
+    const B = [['kralbug', 2, 1.75], ['truva', 2.25, 2], ['spam', 2, 1.5], ['marti', 2, 1.25], ['fidye', 2.25, 2.25], ['sizinti', 2, 1.5], ['ddos', 2.5, 1.5],
+      ['dongu', 1.5, 1.5], ['spagetti', 2.25, 1.75], ['maviekran', 2.75, 2.5], ['teknikborc', 2.5, 2.5]];
+    x = 26;
     for (const [k, bw, bh] of B) {
       const cx = x, b = 210;
       g.strokeRect(cx - bw * 8, b - bh * 16, bw * 16, bh * 16);

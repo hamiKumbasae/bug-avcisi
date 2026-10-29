@@ -1,13 +1,13 @@
-// Bug Avcısı: İstanbul — bölüm mekânları. Her dünyanın 3 bölümü ayrı bir yerde geçer;
-// dünyanın ilk çizimi (scenes.js) bir bölümde kullanılır, diğer iki bölüm burada çizilir.
+// Bug Avcısı: İstanbul — bölüm mekânları. Her bölüm ayrı bir yerde geçer (levels.js'teki 'yer' anahtarı);
+// beş dünyanın ilk çizimi scenes.js'te, yeni dünyaların ışık değişiklikleri ve yeni çizimler places2.js'te.
 // Katmanlar 512 mantıksal piksel genişliğinde, kenarlardan kesintisiz tekrarlanır; zemin çizgisi y=214.
 (function (root) {
   'use strict';
   const A = root.BA_ART, SC = root.BA_SCENE;
   const { lin, rng } = A;
-  const { pen, mix, ferry, seagull, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram } = SC;
+  const { pen, mix, ferry, seagull, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart } = SC;
   const { B, C, E, P, rect, archWin, dome, minaret, hillMosque, bridge, camlicaTower, house, hillsY, hills, hillHouses,
-    cloud, glassTower, tree, pine, column, medusaHead, roofTiles, homeTower, lonelyWindow, person } = SC.kit;
+    cloud, glassTower, tree, pine, column, medusaHead, homeTower, lonelyWindow, person } = SC.kit;
   const TAU = Math.PI * 2, W = 512, H = 240;
   const DR = SC.DRAW;   // çizim anahtarı → { sky, far, near }; bölümler levels.js'teki 'yer' ile seçer
 
@@ -152,8 +152,8 @@
     },
   };
 
-  // ================= 2 KADIKÖY =================
-  // 2-2 Balık Pazarı: çarşı sokağı; tentelerin altında balık, turşu ve zeytin tezgâhları, sokağın üstünde ampuller
+  // ================= 4 ÜSKÜDAR (kaynak çizimler; places2.js'te gün batımı hâlleri) =================
+  // Balık Pazarı (4-2 Çarşı'nın kaynağı): çarşı sokağı; tentelerin altında balık, turşu ve zeytin tezgâhları, sokağın üstünde ampuller
   DR.balikPazari = {
     sky: { stops: [[0, '#7cc0ec'], [0.6, '#cfe8f6'], [1, '#fde8c8']] },
     far(g) {
@@ -207,7 +207,7 @@
     },
   };
 
-  // 2-3 Moda Yokuşu: gün batımında Moda; karşıda tarihi yarımada, iskele, ahşap evler, çınarlar
+  // Moda Yokuşu (4-3 Sahil'in kaynağı): gün batımında Moda; karşıda tarihi yarımada, iskele, ahşap evler, çınarlar
   DR.moda = {
     sky: { stops: [[0, '#2c2a6a'], [0.4, '#7a4a8a'], [0.72, '#e8806a'], [1, '#ffc48a']], sun: [196, 170, 14, '#ffd8a0'], stars: 18 },
     far(g) {
@@ -254,8 +254,7 @@
     },
   };
 
-  // ================= 3 VAPUR =================
-  // 3-1 İskele: sabah; saat kuleli iskele binası, yanaşmış vapur, karşıda puslu tarihi yarımada
+  // İskele (4-1'in kaynağı): sabah; saat kuleli iskele binası, yanaşmış vapur, karşıda puslu tarihi yarımada
   DR.iskele = {
     sky: { stops: [[0, '#9ab8e8'], [0.45, '#f4b8a8'], [0.8, '#fcd8b0'], [1, '#fff0d8']], sun: [80, 148, 14, '#fff6d8'] },
     far(g) {
@@ -290,7 +289,7 @@
     },
   };
 
-  // 3-3 Kaptan Köşkü: fırtınalı gece; köpüklü dalgalar, uzakta deniz feneri, yağmur, sallanan fener
+  // Kaptan Köşkü (9-3 Fener'in fırtınalı gökyüzü): fırtınalı gece; köpüklü dalgalar, uzakta deniz feneri, yağmur, sallanan fener
   DR.kaptan = {
     sky: {
       draw(g, vw, vh) {
@@ -441,8 +440,8 @@
     },
   };
 
-  // ================= 5 YEREBATAN =================
-  // 5-2 Medusa: yeşil ışıkla aydınlanan sütunlar; tabanlarda dev Medusa başları, ziyaretçi yolu
+  // ================= 6 YEREBATAN =================
+  // 6-2 Medusa: yeşil ışıkla aydınlanan sütunlar; tabanlarda dev Medusa başları, ziyaretçi yolu
   DR.medusa = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#010c0e'], [0.6, '#042024'], [1, '#08302e']]); } },
     far(g) {
@@ -470,7 +469,7 @@
     },
   };
 
-  // 5-3 Karanlık Su: neredeyse zifiri; sis, birkaç fener, karanlıkta parlayan gözler
+  // 6-3 Karanlık Su: neredeyse zifiri; sis, birkaç fener, karanlıkta parlayan gözler
   DR.karanlikSu = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#000203'], [0.7, '#03080a'], [1, '#061014']]); } },
     far(g) {
@@ -492,143 +491,14 @@
     },
   };
 
-  // ================= 6 GALATA =================
-  // 6-1 Kamondo Merdivenleri: Bankalar Caddesi'nin taş cepheleri, kıvrılan ünlü merdiven, tepede Galata Kulesi
-  DR.kamondo = {
-    sky: { stops: [[0, '#62b2ec'], [0.7, '#cbe7fa'], [1, '#eef8ff']] },
-    far(g) {
-      cloud(g, 60, 40, 1, 'rgba(255,255,255,0.9)'); cloud(g, 330, 56, 0.8, 'rgba(255,255,255,0.85)');
-      galataTower(g, 256, 120, 1.5, { wall: '#d8c8ae', wallD: '#bcac92', roof: '#4e5a70', roofL: '#6a7890', trim: '#a89478', win: '#4a4036' });
-      const r = rng(351);
-      let x = -10;
-      while (x < W) {
-        const w = 70 + r() * 30, h = 100 + r() * 30, col = ['#e8dcc4', '#d8c8a8', '#e2d2b8', '#cfc2aa'][Math.floor(r() * 4)];
-        if (x > 210 && x < 290) { x = 300; continue; }
-        B(g, x, 214 - h, w, h, 0, col);
-        rect(g, x - 3, 214 - h, w + 6, 6, mix(col, '#5a4a3a', 0.25));
-        P(g, [x + w * 0.3, 214 - h, x + w * 0.7, 214 - h, x + w * 0.5, 214 - h - 12], mix(col, '#5a4a3a', 0.15));
-        for (let px = x + 6; px < x + w - 4; px += 12) rect(g, px, 214 - h + 8, 3, h - 8, mix(col, '#ffffff', 0.25));
-        for (let fy = 214 - h + 16; fy < 200; fy += 26) for (let wx = x + 10; wx < x + w - 10; wx += 12) archWin(g, wx, fy, 6, 14, '#5a6a80');
-        x += w + 3;
-      }
-    },
-    near(g) {
-      pen('rgba(40,30,20,0.6)', 0.5);
-      // S biçiminde kıvrılan çift kollu merdiven (taş gövde, sanat nouveau korkuluk)
-      const cx = 256;
-      const flight = (x0, y0, x1, y1) => {
-        const n = 10, pts = [];
-        for (let k = 0; k <= n; k++) { const t = k / n; pts.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t]); }
-        g.beginPath(); g.moveTo(x0, 214);
-        for (let k = 0; k < n; k++) { g.lineTo(pts[k][0], pts[k][1]); g.lineTo(pts[k + 1][0], pts[k][1]); }
-        g.lineTo(x1, y1); g.lineTo(x1, 214); g.closePath(); g.fillStyle = '#e4d8c2'; g.fill(); g.strokeStyle = '#8a7a62'; g.lineWidth = 0.6; g.stroke();
-        g.strokeStyle = '#2a2a30'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(x0, y0 - 12); g.lineTo(x1, y1 - 12); g.stroke();
-        for (let k = 0; k <= n; k++) { const [px, py] = pts[k]; g.beginPath(); g.moveTo(px, py); g.lineTo(px, py - 12); g.stroke(); g.beginPath(); g.arc(px + (x1 - x0) / n / 2, py - 6 + (y1 - y0) / n / 2, 2.2, 0, TAU); g.stroke(); }
-      };
-      flight(cx - 120, 214, cx - 10, 168);
-      flight(cx + 120, 168, cx + 10, 122);
-      B(g, cx - 14, 166, 28, 48, 1, '#d8ccb4'); B(g, cx - 14, 120, 28, 4, 1, '#d8ccb4');
-      flight(cx - 10, 168, cx - 10, 168);
-      rect(g, cx - 14, 120, 4, 48, '#d8ccb4'); rect(g, cx + 10, 120, 4, 94, '#cfc2a8');
-      // fenerler, saksılar, kafe masası
-      for (const lx of [cx - 128, cx + 130]) lamp(g, lx, 214, 40);
-      for (const px of [40, 470]) { B(g, px - 8, 200, 16, 14, 2, '#c87a4a'); for (const [dx, dy] of [[-5, -4], [4, -6], [0, -10]]) C(g, px + dx, 200 + dy, 6, '#4a9a4a'); }
-      E(g, 90, 196, 12, 2.4, '#f2f2ee'); rect(g, 89, 196, 2, 18, '#4a4a54'); B(g, 72, 196, 8, 10, 2, '#4a4a54'); B(g, 102, 196, 8, 10, 2, '#4a4a54');
-      B(g, 86, 191, 3, 5, 0.6, '#ffffff'); P(g, [93, 191, 96, 191, 95.4, 196, 93.6, 196], 'rgba(200,40,20,0.85)');
-    },
-  };
 
-  // 6-3 Çatı Arası: kulenin tepesindeki tavan arası; taş duvar, kemerli pencerelerden gece Haliç, kirişler, Hezarfen'in kanatları
-  DR.catiArasi = {
-    sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#0c0a18'], [1, '#1e1a30']]); } },
-    far(g) {
-      rect(g, 0, 0, W, 216, '#4a4250');
-      for (let y = 0; y < 216; y += 14) for (let x = (y / 14) % 2 ? -16 : 0; x < W; x += 32) { B(g, x + 1, y + 1, 30, 12, 1.5, (x + y) % 3 ? '#544a5a' : '#4e4456'); }
-      for (const wx of [60, 230, 400]) {
-        g.save(); g.beginPath(); g.moveTo(wx, 170); g.lineTo(wx, 90); g.arc(wx + 30, 90, 30, Math.PI, 0); g.lineTo(wx + 60, 170); g.closePath(); g.clip();
-        g.fillStyle = grad(g, 0, 60, 0, 170, [[0, '#0a1036'], [1, '#2a2a6a']]); g.fillRect(wx, 60, 60, 110);
-        const r = rng(wx);
-        for (let i = 0; i < 20; i++) { g.fillStyle = `rgba(255,255,230,${0.3 + r() * 0.6})`; g.fillRect(wx + r() * 60, 64 + r() * 50, 0.7, 0.7); }
-        rect(g, wx, 150, 60, 20, '#141842');
-        for (let i = 0; i < 30; i++) { g.fillStyle = ['#ffd27a', '#fff0c0'][i % 2]; g.fillRect(wx + r() * 60, 152 + r() * 16, 0.8, 0.8); }
-        g.fillStyle = 'rgba(255,214,122,0.25)'; for (let i = 0; i < 6; i++) g.fillRect(wx + r() * 60, 160 + r() * 10, 3, 0.5);
-        g.restore();
-        g.strokeStyle = '#5a3a24'; g.lineWidth = 4; g.beginPath(); g.moveTo(wx, 170); g.lineTo(wx, 90); g.arc(wx + 30, 90, 30, Math.PI, 0); g.lineTo(wx + 60, 170); g.stroke();
-        rect(g, wx + 28.5, 62, 3, 108, '#5a3a24'); rect(g, wx, 118, 60, 3, '#5a3a24'); rect(g, wx - 6, 168, 72, 6, '#6a5a60');
-      }
-    },
-    near(g) {
-      pen('rgba(20,10,4,0.65)', 0.5);
-      // makas kirişler
-      for (let x = 0; x < W; x += 128) {
-        P(g, [x, 0, x + 8, 0, x + 72, 64, x + 64, 64], '#6a4428'); P(g, [x + 128, 0, x + 120, 0, x + 56, 64, x + 64, 64], '#6a4428');
-        rect(g, x + 60, 0, 8, 214, '#5a3a22'); rect(g, x, 60, 128, 7, '#6a4428');
-      }
-      // Hezarfen'in kanatları
-      const wing = (cx, dir) => {
-        g.save(); g.translate(cx, 104); g.scale(dir, 1);
-        g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(40, -18, 70, -4); g.quadraticCurveTo(46, 6, 0, 14); g.closePath(); g.fillStyle = '#e8dcc0'; g.fill(); g.strokeStyle = '#6a4a2a'; g.lineWidth = 0.8; g.stroke();
-        g.strokeStyle = '#8a6a44'; g.lineWidth = 0.6; for (let k = 1; k < 6; k++) { g.beginPath(); g.moveTo(0, 6); g.lineTo(k * 12, -6 + k * 0.6); g.stroke(); }
-        g.restore();
-      };
-      wing(300, 1); wing(300, -1); B(g, 294, 98, 12, 20, 3, '#6a4a2a');
-      // dürbün, sandıklar, fener
-      lin(g, 182, 214, 190, 176, '#4a3a2a', 1.2); lin(g, 198, 214, 190, 176, '#4a3a2a', 1.2); lin(g, 190, 214, 190, 176, '#4a3a2a', 1.2);
-      g.save(); g.translate(190, 174); g.rotate(-0.5); B(g, -4, -3, 26, 6, 2, '#c89040'); B(g, 20, -4, 5, 8, 1.4, '#a87020'); g.restore();
-      for (const [x, w] of [[400, 40], [446, 30]]) { B(g, x, 214 - w * 0.6, w, w * 0.6, 3, '#7a4a28'); rect(g, x, 214 - w * 0.6 + 5, w, 2, '#c89040'); B(g, x + w / 2 - 3, 214 - w * 0.6 + 8, 6, 5, 1, '#c89040'); }
-      lin(g, 110, 67, 110, 92, '#2a1a10', 0.6); glow(g, 110, 100, 30, 'rgb(255,190,110)', 0.5); B(g, 104, 92, 12, 15, 3, '#a86a2a');
-    },
-  };
 
-  // ================= 7 HALİÇ =================
-  // 7-1 Karaköy: karşıda tarihi yarımadanın tepeleri, Galata Köprüsü'nde olta sallayan balıkçılar; önde bankalar, balık pazarı, kayıklar
-  DR.karakoy = {
-    sky: { stops: [[0, '#5eaee8'], [0.7, '#c4e4f8'], [1, '#f0f8ff']], sun: [420, 46, 12, '#fffbe6'] },
-    far(g) {
-      cloud(g, 90, 44, 1, 'rgba(255,255,255,0.9)'); cloud(g, 300, 30, 0.8, 'rgba(255,255,255,0.85)');
-      const hz = { wall: '#c4ccd8', wallD: '#b8c0cc', roof: '#a8b2c2', roofL: '#bcc6d4', trim: '#ccd4de', win: '#9aa4b4' };
-      const base = hillsY(176, 18, 701);
-      hills(g, base, '#b8c4d0'); hillHouses(g, base, ['#d4dce4', '#e0d8cc', '#ccd4dc'], '#b89a8a', 702);
-      // Galata Köprüsü ve balıkçılar
-      rect(g, 0, 172, W, 7, '#8a96a8'); rect(g, 0, 172, W, 1.6, '#a8b2c2'); rect(g, 0, 179, W, 3, '#6a7484');
-      for (let x = 8; x < W; x += 40) { lin(g, x, 172, x, 156, '#5a6474', 0.8); C(g, x, 155, 1.6, '#e8e4d8'); }
-      const r = rng(703);
-      for (let x = 4; x < W; x += 7 + r() * 9) {
-        rect(g, x, 165, 2, 7, ['#3a3a4a', '#5a3a2a', '#2a3a5a'][Math.floor(r() * 3)]); C(g, x + 1, 164, 1.2, '#3a2a20');
-        g.strokeStyle = 'rgba(40,40,50,0.6)'; g.lineWidth = 0.35; g.beginPath(); g.moveTo(x + 1.5, 166); g.quadraticCurveTo(x + 6, 158, x + 9, 162); g.lineTo(x + 9, 188); g.stroke();
-      }
-      seagull(g, 220, 90, 1, '#ffffff'); seagull(g, 244, 102, 0.7, '#ffffff');
-    },
-    near(g) {
-      pen('rgba(40,40,50,0.6)', 0.5);
-      // Bankalar Caddesi'nin taş cepheleri
-      for (const [x, w, h] of [[-4, 70, 120], [68, 64, 104], [134, 58, 128]]) {
-        const col = ['#e8dcc4', '#dccdb0', '#e4d6bc'][(x + 4) % 3];
-        B(g, x, 214 - h, w, h, 0, col); rect(g, x - 2, 214 - h, w + 4, 6, mix(col, '#5a4a3a', 0.2));
-        for (let px = x + 5; px < x + w - 3; px += 10) rect(g, px, 214 - h + 8, 2.4, h - 30, mix(col, '#ffffff', 0.3));
-        for (let fy = 214 - h + 14; fy < 186; fy += 24) for (let wx = x + 8; wx < x + w - 8; wx += 10) archWin(g, wx, fy, 5, 14, '#4a5a72');
-        B(g, x + w / 2 - 7, 196, 14, 18, 7, '#3a3030');
-      }
-      // balık pazarı şemsiyeleri
-      for (const [x, c] of [[204, '#2f6fb0'], [262, '#d2302a'], [318, '#2f6fb0']]) {
-        lin(g, x, 214, x, 168, '#5a5a62', 1);
-        g.beginPath(); g.moveTo(x - 26, 176); g.quadraticCurveTo(x, 156, x + 26, 176); g.closePath(); g.fillStyle = c; g.fill();
-        for (let k = -2; k <= 2; k++) { g.fillStyle = k % 2 ? '#ffffff' : c; g.beginPath(); g.arc(x + k * 10.4, 176, 5.2, 0, Math.PI); g.fill(); }
-        B(g, x - 22, 192, 44, 22, 1, '#7a5a3a'); B(g, x - 20, 186, 40, 7, 2, '#e8f4ff');
-        for (let f = 0; f < 5; f++) E(g, x - 15 + f * 7.5, 189, 3.4, 1.4, f % 2 ? '#ff9a9a' : '#c8d4e2');
-      }
-      // iskeleye bağlı kayıklar: biri ızgaralı, dumanı tütüyor
-      for (const [x, c] of [[372, '#d2302a'], [452, '#2a6ab0']]) {
-        P(g, [x - 30, 204, x + 30, 204, x + 24, 216, x - 24, 216], c);
-        rect(g, x - 30, 202, 60, 3, '#f4c531'); for (let k = 0; k < 6; k++) C(g, x - 25 + k * 10, 210, 1.4, '#f4e4a0');
-        lin(g, x, 202, x, 170, '#5a4a3a', 1);
-      }
-      B(g, 360, 190, 22, 12, 1, '#3a3a40'); for (let k = 0; k < 3; k++) { g.fillStyle = 'rgba(230,230,235,0.5)'; g.beginPath(); g.arc(368 + k * 4, 182 - k * 8, 4 + k * 2, 0, TAU); g.fill(); }
-      for (const bx of [340, 420, 500]) B(g, bx - 3, 206, 6, 8, 2, '#3a3a44');
-    },
-  };
 
-  // 7-2 Haliç Kıyısı: ikindi ışığında Haliç Metro Köprüsü, tepede Süleymaniye; önde eski tersane, vinçler, sandallar
+
+
+
+  // ================= 8 EYÜP (kaynak çizimler; places2.js'te gece yarısı hâlleri) =================
+  // Haliç Kıyısı (8-3 Tepe'nin uzak planı): ikindi ışığında Haliç Metro Köprüsü, tepede Süleymaniye; önde eski tersane, vinçler, sandallar
   DR.halicKiyisi = {
     sky: { stops: [[0, '#7ab4e4'], [0.6, '#f0d8b0'], [1, '#ffe8c8']], sun: [380, 140, 13, '#fff0c8'] },
     far(g) {
@@ -667,7 +537,7 @@
     },
   };
 
-  // 7-3 Eyüp-Balat: gün batımı; Pierre Loti tepesine teleferik, Fener Rum Lisesi'nin kırmızı tuğlası, renk renk Balat evleri
+  // Eyüp-Balat (8-1 ve 8-2'nin kaynağı): gün batımı; Pierre Loti tepesine teleferik, Fener Rum Lisesi'nin kırmızı tuğlası, renk renk Balat evleri
   DR.eyupBalat = {
     sky: { stops: [[0, '#4a3a8a'], [0.45, '#d8708a'], [0.8, '#f8a870'], [1, '#ffd09a']], sun: [90, 160, 16, '#ffe0a8'] },
     far(g) {
@@ -715,8 +585,8 @@
     },
   };
 
-  // ================= 8 KÖPRÜ =================
-  // 8-2 Halatlar: köprünün taşıyıcı halatlarında, bulut hizasında; aşağıda uzak Boğaz, karşıda öbür kule
+  // ================= 7 KÖPRÜ =================
+  // Halatlar (7-2'nin kaynağı): köprünün taşıyıcı halatlarında, bulut hizasında; aşağıda uzak Boğaz, karşıda öbür kule
   DR.halatlar = {
     sky: { stops: [[0, '#5aa6e2'], [0.55, '#b8dcf4'], [0.85, '#f4dcb8'], [1, '#f8e4c4']], sun: [420, 60, 12, '#fff6dc'] },
     far(g) {
@@ -750,7 +620,7 @@
     },
   };
 
-  // 8-3 Tepe: gece köprü kulesinin tepesi; aşağıda iki yakanın ışıkları, kırmızı ikaz lambaları, renkli LED'ler
+  // 7-3 Tepe: gece köprü kulesinin tepesi; aşağıda iki yakanın ışıkları, kırmızı ikaz lambaları, renkli LED'ler
   DR.kopruTepe = {
     sky: { stops: [[0, '#04081c'], [0.6, '#121848'], [1, '#26245a']], moon: [60, 50, 11], stars: 90 },
     far(g) {
@@ -778,83 +648,8 @@
     },
   };
 
-  // ================= 9 ÇATILAR =================
-  // 9-2 Antenler: şafak öncesi mavi saat; anten ormanı, çanak antenler, su depoları, çamaşır ipleri
-  DR.antenler = {
-    sky: { stops: [[0, '#0a1440'], [0.55, '#2a4a8a'], [0.85, '#6a7ab0'], [1, '#e8a07a']], stars: 40 },
-    far(g) {
-      const base = hillsY(200, 16, 381);
-      hills(g, base, '#1c2a5a');
-      hillHouses(g, base, ['#22306a', '#1e2c62'], null, 382, '#ffd27a', 0.4);
-      const lit = { wall: '#2a3466', wallD: '#26305e', roof: '#2e3a72', trim: '#f4d48a', win: '#ffd27a', lit: '#ffd27a', alem: '#f4d48a' };
-      galataTower(g, 400, base(400) + 3, 0.9, { wall: '#2a3466', wallD: '#26305e', roof: '#2e3a72', trim: '#f4d48a', lit: '#ffd27a' });
-    },
-    near(g) {
-      pen('rgba(0,0,20,0.7)', 0.5);
-      const r = rng(383);
-      let x = -4;
-      while (x < W - 8) {
-        const w = 60 + r() * 30, h = 18 + r() * 26;
-        B(g, x, 214 - h, w, h + 30, 0, '#2a3058'); rect(g, x - 2, 214 - h - 3, w + 4, 4, '#3a4070');
-        for (let wy = 214 - h + 8; wy < 210; wy += 10) for (let wx = x + 5; wx < x + w - 6; wx += 10) B(g, wx, wy, 4, 5.4, 0.4, r() < 0.4 ? '#ffd27a' : '#1a1e40');
-        // balık kılçığı antenler
-        for (let k = 0; k < 2 + Math.floor(r() * 3); k++) {
-          const ax = x + 6 + r() * (w - 12), ah = 18 + r() * 24, top = 214 - h - ah;
-          lin(g, ax, 214 - h, ax, top, '#8a90b0', 0.7);
-          for (let j = 0; j < 4; j++) { const ww = 9 - j * 1.6; lin(g, ax - ww / 2, top + 3 + j * 4, ax + ww / 2, top + 3 + j * 4, '#8a90b0', 0.6); }
-        }
-        if (r() < 0.6) { const dx = x + w * 0.7; g.fillStyle = '#c8cce0'; g.beginPath(); g.ellipse(dx, 214 - h - 8, 6, 7, -0.5, 0, TAU); g.fill(); lin(g, dx, 214 - h - 8, dx + 5, 214 - h - 12, '#5a6080', 0.6); rect(g, dx - 1, 214 - h - 3, 2, 3, '#5a6080'); }
-        if (r() < 0.5) { const tx = x + w * 0.3; B(g, tx - 7, 214 - h - 16, 14, 11, 3, '#8a96b8'); lin(g, tx - 5, 214 - h - 5, tx - 5, 214 - h, '#5a6080', 0.8); lin(g, tx + 5, 214 - h - 5, tx + 5, 214 - h, '#5a6080', 0.8); }
-        if (r() < 0.45) {
-          const lx0 = x + 6, lx1 = x + w - 6, ly = 214 - h - 14;
-          lin(g, lx0, 214 - h, lx0, ly, '#5a6080', 0.6); lin(g, lx1, 214 - h, lx1, ly, '#5a6080', 0.6);
-          g.strokeStyle = '#8a90b0'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(lx0, ly); g.quadraticCurveTo((lx0 + lx1) / 2, ly + 5, lx1, ly); g.stroke();
-          for (let k = 0; k < 4; k++) { const cx = lx0 + 8 + k * (lx1 - lx0 - 16) / 3; B(g, cx - 3, ly + 2.4 + Math.sin(k) * 1.4, 6, 7, 0.6, ['#ff8a8a', '#ffffff', '#8ab8ff', '#f4d04a'][k]); }
-        }
-        x += w + 6;
-      }
-    },
-  };
-
-  // 9-3 Saat Kulesi: kulenin içi; arkadan ışıyan saat kadranı, dev pirinç çarklar, çan ve halatlar
-  function gear(g, cx, cy, r, teeth, col, ang) {
-    g.beginPath();
-    for (let i = 0; i < teeth * 2; i++) { const a = (ang || 0) + i * Math.PI / teeth, d = i % 2 ? r : r * 0.84; g.lineTo(cx + Math.cos(a) * d, cy + Math.sin(a) * d); }
-    g.closePath(); g.fillStyle = col; g.fill(); g.strokeStyle = 'rgba(40,20,0,0.6)'; g.lineWidth = 0.6; g.stroke();
-    C(g, cx, cy, r * 0.62, mix(col, '#000000', 0.25)); C(g, cx, cy, r * 0.5, col);
-    for (let k = 0; k < 4; k++) { const a = (ang || 0) + k * Math.PI / 2; lin(g, cx, cy, cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5, mix(col, '#000000', 0.25), r * 0.12); }
-    C(g, cx, cy, r * 0.12, '#3a2a1a');
-  }
-  DR.saatKulesi = {
-    sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#120a04'], [0.6, '#24160a'], [1, '#2e1e0e']]); } },
-    far(g) {
-      rect(g, 0, 0, W, 216, '#3a2818');
-      for (let x = 0; x < W; x += 24) rect(g, x, 0, 1, 216, '#2e1f12');
-      for (const cx of [128, 384]) {
-        // arkadan ışıyan kadran (içeriden bakıldığı için sayılar yerine çentikler)
-        glow(g, cx, 110, 90, 'rgb(255,230,170)', 0.35);
-        C(g, cx, 110, 62, '#f4e6c0'); C(g, cx, 110, 56, '#fff4d8');
-        for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; lin(g, cx + Math.cos(a) * 46, 110 + Math.sin(a) * 46, cx + Math.cos(a) * 54, 110 + Math.sin(a) * 54, '#3a2a1a', k % 3 ? 1.4 : 3); }
-        lin(g, cx, 110, cx - 24, 96, '#2a1a0a', 3); lin(g, cx, 110, cx + 6, 66, '#2a1a0a', 2); C(g, cx, 110, 4, '#2a1a0a');
-        rect(g, cx - 1.5, 48, 3, 124, 'rgba(60,40,20,0.35)'); rect(g, cx - 62, 108.5, 124, 3, 'rgba(60,40,20,0.35)');
-      }
-      gear(g, 256, 60, 34, 16, '#8a6a34', 0.1); gear(g, 300, 98, 20, 10, '#7a5a2a', 0.3); gear(g, 30, 180, 40, 18, '#7a5a2a', 0); gear(g, 500, 170, 30, 14, '#8a6a34', 0.2);
-    },
-    near(g) {
-      pen('rgba(20,10,0,0.65)', 0.5);
-      gear(g, 90, 150, 46, 20, '#c89848', 0.15); gear(g, 156, 118, 26, 12, '#b8883a', 0.4); gear(g, 410, 160, 54, 22, '#c89848', 0.05);
-      // çan, halat ve sarkaç
-      g.fillStyle = '#b8883a'; g.beginPath(); g.moveTo(258, 18); g.quadraticCurveTo(240, 22, 238, 54); g.lineTo(234, 60); g.lineTo(282, 60); g.lineTo(278, 54); g.quadraticCurveTo(276, 22, 258, 18); g.closePath(); g.fill(); g.strokeStyle = '#5a3a14'; g.lineWidth = 0.7; g.stroke();
-      C(g, 258, 62, 4, '#7a5a2a'); rect(g, 254, 0, 8, 18, '#5a3a20');
-      g.strokeStyle = '#c8a878'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(262, 60); g.quadraticCurveTo(270, 140, 266, 214); g.stroke();
-      lin(g, 330, 0, 340, 150, '#8a6a34', 1.4); C(g, 340, 156, 9, '#c89848'); C(g, 337, 153, 3, 'rgba(255,240,200,0.5)');
-      for (const x of [0, 200, 470]) rect(g, x, 0, 12, 214, '#4a3018');
-      rect(g, 0, 40, W, 8, '#4a3018');
-    },
-  };
-
-  // ================= 10 ATAŞEHİR =================
-  // 10-1 Finans Merkezi: gece; gökyüzüne uzanan cam kuleler, cephede yukarı aşağı giden cam asansörler,
+  // ================= 5 ATAŞEHİR =================
+  // 5-1 Finans Merkezi: gece; gökyüzüne uzanan cam kuleler, cephede yukarı aşağı giden cam asansörler,
   // dev LED cephede yükselen grafik, ışık direkli meydan
   DR.finans = {
     sky: { draw(g, vw, vh) {
@@ -927,7 +722,7 @@
     },
   };
 
-  // 10-2 Veri Merkezi: soğuk koridor; iki yanda sunucu kabinleri, tavanda sarı fiber tavaları,
+  // 5-2 Veri Merkezi: soğuk koridor; iki yanda sunucu kabinleri, tavanda sarı fiber tavaları,
   // camla kapatılmış koridorun sonunda mavi ışık, soğutma üniteleri ve yangın söndürme tüpleri
   DR.veri = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#060a14'], [0.6, '#0e1828'], [1, '#16243a']]); } },
@@ -990,7 +785,7 @@
     },
   };
 
-  // 10-3 Kontrol Odası: akıllı şehrin kontrol odası; kavisli ekran duvarında canlı trafik haritası,
+  // 5-3 Kontrol Odası: akıllı şehrin kontrol odası; kavisli ekran duvarında canlı trafik haritası,
   // kamera görüntüleri ve grafikler (bazı ekranlar fidye yazılımının kilidiyle kızıl); önde basamaklı operatör masaları
   DR.kontrol = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#04060e'], [0.6, '#0a1020'], [1, '#121a30']]); } },
@@ -1073,7 +868,7 @@
   };
 
   // ================= 11 ÇAMLICA =================
-  // 10-2 Asansör: kulenin cam asansör boşluğu; çelik kafes, aşağıda gece şehri ve ışıklı köprüler
+  // 11-2 Asansör: kulenin cam asansör boşluğu; çelik kafes, aşağıda gece şehri ve ışıklı köprüler
   DR.asansor = {
     sky: { stops: [[0, '#04061a'], [0.6, '#10164a'], [1, '#22205a']], stars: 70 },
     far(g) {
@@ -1102,7 +897,7 @@
     },
   };
 
-  // 10-3 Yayın Odası: kulenin yayın odası; ekran duvarı (biri mavi ekran), kumanda masaları, YAYINDA lambası
+  // 11-3 Yayın Odası: kulenin yayın odası; ekran duvarı (biri mavi ekran), kumanda masaları, YAYINDA lambası
   DR.yayin = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#03060f'], [0.6, '#081428'], [1, '#0e1c36']]); } },
     far(g) {
@@ -1139,7 +934,7 @@
   };
 
   // ================= 12 ÜMRANİYE =================
-  // 11-1 Çarşı: mahalle sokağı; balkonlu apartmanlar, bakkal, fırın, çay ocağı; uzakta Çamlıca Kulesi
+  // 12-1 Çarşı: mahalle sokağı; balkonlu apartmanlar, bakkal, fırın, çay ocağı; uzakta Çamlıca Kulesi
   function apartment(g, x, by, w, floors, col, r, opt) {
     const fh = 16, h = floors * fh + 18;
     B(g, x, by - h, w, h, 0, col);
@@ -1221,7 +1016,7 @@
     },
   };
 
-  // 11-3 Sanayi: Dudullu sanayisi, akşam; testere dişi çatılar, bacalar; önde kepenkli atölyeler: torna, kaynak, dövme (ocak ve örs)
+  // Sanayi (10. dünyanın ve 12-3 Atölye'nin kaynağı): Dudullu sanayisi, akşam; testere dişi çatılar, bacalar; önde kepenkli atölyeler: torna, kaynak, dövme (ocak ve örs)
   DR.sanayi = {
     sky: { stops: [[0, '#1a1220'], [0.6, '#3a2430'], [1, '#8a4024']], stars: 20 },
     far(g) {
@@ -1269,5 +1064,5 @@
   };
 
   // v2.0 mekânları (places2.js) aynı küçük parçaları kullanır
-  SC.pk = { grad, glow, glowRaw, skyGrad, stars, bulbs, lamp, rain, gear, apartment };
+  SC.pk = { grad, glow, glowRaw, skyGrad, stars, bulbs, lamp, rain, apartment };
 })(window);

@@ -171,34 +171,6 @@
       for (let x = t1 + 3; x < t2; x += 5) { g.fillStyle = pal.leds[0]; g.beginPath(); g.arc(x, cab(x), 0.55, 0, TAU); g.fill(); }
     }
   }
-  // Ortaköy Camii: beyaz barok, büyük kemerli pencereler, iki ince minare
-  function ortakoy(g, cx, by, s, pal) {
-    minaret(g, cx - 21 * s, by, 50 * s, 2.3 * s, pal, 1); minaret(g, cx + 21 * s, by, 50 * s, 2.3 * s, pal, 1);
-    B(g, cx - 32 * s, by - 9 * s, 18 * s, 9 * s, 0, pal.wallD);
-    B(g, cx - 15 * s, by - 25 * s, 30 * s, 25 * s, 0, pal.wall);
-    for (const dx of [-15, 12]) rect(g, cx + dx * s, by - 25 * s, 3 * s, 25 * s, pal.wallD);
-    archWin(g, cx - 9 * s, by - 21 * s, 7 * s, 15 * s, pal.win); archWin(g, cx + 2 * s, by - 21 * s, 7 * s, 15 * s, pal.win);
-    B(g, cx - 16 * s, by - 26.6 * s, 32 * s, 2 * s, 0, pal.trim);
-    B(g, cx - 11 * s, by - 32 * s, 22 * s, 6 * s, 0, pal.wall);
-    windowsRow(g, cx - 9.4 * s, cx + 9.4 * s, by - 31 * s, 2 * s, 4.2 * s, 1.6 * s, pal.win);
-    dome(g, cx, by - 32 * s, 11.5 * s, pal, 0.85);
-  }
-  // Haydarpaşa Garı: uzun taş bina, iki ucunda sivri külahlı kuleler
-  function haydarpasa(g, x, by, s, pal) {
-    const w = 104 * s;
-    B(g, x, by - 26 * s, w, 26 * s, 0, pal.wall);
-    P(g, [x + 2 * s, by - 26 * s, x + w - 2 * s, by - 26 * s, x + w - 8 * s, by - 33 * s, x + 8 * s, by - 33 * s], pal.roof);
-    P(g, [x + w / 2 - 12 * s, by - 26 * s, x + w / 2 + 12 * s, by - 26 * s, x + w / 2, by - 36 * s], pal.wallD);
-    for (let r = 0; r < 2; r++) for (let k = 0; k < 13; k++) archWin(g, x + 14 * s + k * 6 * s, by - 22 * s + r * 10 * s, 2.6 * s, 6 * s, pal.win);
-    for (const tx of [x - 5 * s, x + w - 11 * s]) {
-      B(g, tx, by - 40 * s, 16 * s, 40 * s, 0, pal.wall);
-      rect(g, tx + 10 * s, by - 40 * s, 6 * s, 40 * s, pal.wallD);
-      for (let k = 0; k < 3; k++) archWin(g, tx + 5 * s, by - 34 * s + k * 10 * s, 4 * s, 7 * s, pal.win);
-      B(g, tx - 1 * s, by - 41.6 * s, 18 * s, 2 * s, 0, pal.trim);
-      P(g, [tx - 0.6 * s, by - 41.4 * s, tx + 16.6 * s, by - 41.4 * s, tx + 8 * s, by - 60 * s], pal.roof);
-      lin(g, tx + 8 * s, by - 60 * s, tx + 8 * s, by - 63 * s, pal.roof, 0.5 * s);
-    }
-  }
   // Çamlıca Kulesi: ince gövde, lale biçimli tepe, anten
   function camlicaTower(g, cx, by, s, pal) {
     P(g, [cx - 7 * s, by, cx + 7 * s, by, cx + 3.2 * s, by - 100 * s, cx - 3.2 * s, by - 100 * s], pal.wall);
@@ -217,21 +189,6 @@
     P(g, [cx - 2.4 * s, y0 - 36 * s, cx + 2.4 * s, y0 - 36 * s, cx + 1.6 * s, y0 - 52 * s, cx - 1.6 * s, y0 - 52 * s], pal.wall);
     lin(g, cx, y0 - 52 * s, cx, y0 - 72 * s, pal.wallD, 0.9 * s);
     g.fillStyle = '#ff4a4a'; g.beginPath(); g.arc(cx, y0 - 72 * s, 1.1 * s, 0, TAU); g.fill();
-  }
-  // nostaljik kırmızı tramvay (İstiklal / Moda)
-  function tram(g, x, by, s, pal) {
-    pal = pal || {};
-    const red = pal.red || '#c8202a', cream = pal.cream || '#f6ead0';
-    lin(g, x - 60, by - 29 * s, x + 100, by - 29 * s, pal.wire || '#3a3440', 0.4);
-    for (const wx of [x + 7 * s, x + 31 * s]) { C(g, wx, by - 2 * s, 2.2 * s, '#2a2630'); }
-    B(g, x, by - 19 * s, 38 * s, 15 * s, 3 * s, red);
-    B(g, x + 1 * s, by - 8.6 * s, 36 * s, 2.8 * s, 0.6 * s, cream);
-    for (let k = 0; k < 6; k++) B(g, x + 3 * s + k * 5.5 * s, by - 17 * s, 4.2 * s, 6 * s, 0.6 * s, pal.win || '#2c3e58');
-    if (pal.lit) for (let k = 0; k < 6; k++) rect(g, x + 3.4 * s + k * 5.5 * s, by - 16.6 * s, 3.4 * s, 5.2 * s, pal.lit);
-    B(g, x + 3 * s, by - 21.4 * s, 32 * s, 2.8 * s, 1.2 * s, pal.roof || '#8a1418');
-    g.strokeStyle = '#2a2630'; g.lineWidth = 0.6 * s; g.beginPath(); g.moveTo(x + 14 * s, by - 21.4 * s); g.lineTo(x + 19 * s, by - 26 * s); g.lineTo(x + 24 * s, by - 21.4 * s); g.moveTo(x + 15 * s, by - 28.6 * s); g.lineTo(x + 23 * s, by - 28.6 * s); g.moveTo(x + 19 * s, by - 26 * s); g.lineTo(x + 19 * s, by - 28.6 * s); g.stroke();
-    C(g, x + 37 * s, by - 6 * s, 1 * s, '#ffe9a0');
-    g.fillStyle = cream; g.font = `600 ${3.4 * s}px Fredoka, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TÜNEL', x + 19 * s, by - 5.6 * s);
   }
   // Şehir Hatları vapuru
   function ferry(g, cx, by, s, pal) {
@@ -401,20 +358,14 @@
   }
 
   // ---------- gökyüzü (kaymaz) ----------
-  const SKY = [
-    { stops: [[0, '#5fb4ec'], [0.7, '#bfe6fb'], [1, '#e8f7ff']] },
-    { stops: [[0, '#6c86c8'], [0.45, '#f4a07a'], [0.8, '#ffd4a0'], [1, '#ffe6c4']], sun: [380, 150, 16, '#fff2c2'] },
-    { stops: [[0, '#4aa8ea'], [0.7, '#b8e2fb'], [1, '#e2f5ff']], sun: [70, 40, 12, '#fffbe6'] },
-    { stops: [[0, '#1c0f0a'], [0.6, '#3e2416'], [1, '#5a3420']] },
-    { stops: [[0, '#05090c'], [0.6, '#0e1a1e'], [1, '#14262a']] },
-    { stops: [[0, '#5a4a9a'], [0.4, '#e2706a'], [0.75, '#f9a86a'], [1, '#ffd08f']], sun: [190, 176, 22, '#ffe4a0'] },
-    null, // 7 Haliç: üç bölümü de places.js'te
-    { stops: [[0, '#26245e'], [0.45, '#6a4a9a'], [0.8, '#e2807a'], [1, '#f6a07a']], stars: 30 },
-    { stops: [[0, '#070b26'], [0.6, '#18205a'], [1, '#2c3474']], moon: [196, 46, 14], stars: 90 },
-    null, // 10 Ataşehir: üç bölümü de places.js'te
-    { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
-    null, // 11 Ümraniye: üç bölümü de places.js'te
-  ];
+  // dünyaların ilk çizimlerinin gökyüzü (anahtar: çizim adı; diğer mekânlar places.js ve places2.js'te)
+  const SKY = {
+    maslak: { stops: [[0, '#5fb4ec'], [0.7, '#bfe6fb'], [1, '#e8f7ff']] },
+    carsi: { stops: [[0, '#1c0f0a'], [0.6, '#3e2416'], [1, '#5a3420']] },
+    sarnic: { stops: [[0, '#05090c'], [0.6, '#0e1a1e'], [1, '#14262a']] },
+    kopru: { stops: [[0, '#26245e'], [0.45, '#6a4a9a'], [0.8, '#e2807a'], [1, '#f6a07a']], stars: 30 },
+    camlica: { stops: [[0, '#04061a'], [0.6, '#141a4a'], [1, '#2a2462']], moon: [60, 40, 10], stars: 110 },
+  };
   // mo: o sahnenin ayı (BA_MOON.forScene) ya da null; d.moon: [x, y, r] yalnız yatay yer ve boyut ipucu
   function drawSky(g, d, vw, vh, seed, mo) {
     if (d.draw) d.draw(g, vw, vh);
@@ -488,9 +439,9 @@
   }
 
   // ---------- dünyalar ----------
-  const WORLDS = [
-    // 1 Maslak: cam plazalar; uzakta Boğaz'ın üstünde asma köprü ve tarihi yarımada silueti
-    {
+  const WORLDS = {
+    // Maslak (1-1): cam plazalar; uzakta Boğaz'ın üstünde asma köprü ve tepeler
+    maslak: {
       far(g) {
         pen(null);
         cloud(g, 40, 50, 1.1, 'rgba(255,255,255,0.85)'); cloud(g, 300, 34, 0.8, 'rgba(255,255,255,0.75)'); cloud(g, 430, 70, 1, 'rgba(255,255,255,0.8)');
@@ -512,53 +463,9 @@
         for (let x = 0; x < W; x += 5) { const c = ['#e2483a', '#f4c531', '#ff7aa8', '#ffffff'][Math.floor(x / 5) % 4]; tulip(g, x + 2, 214, c); }
       },
     },
-    // 2 Kadıköy: karşıda tarihi yarımada, önde Haydarpaşa Garı, cumbalı evler, Moda tramvayı
-    {
-      far(g) {
-        pen(null);
-        const base = hillsY(206, 10, 21);
-        hills(g, base, '#c08c94');
-        hillHouses(g, base, ['#c89aa0', '#bc8c96', '#d0a4a8'], null, 22);
-        // Topkapı surları ve servi ağaçları
-        for (let x = 30; x < 92; x += 7) { g.fillStyle = '#a87484'; g.beginPath(); g.ellipse(x, 199, 2.4, 7, 0, 0, TAU); g.fill(); }
-        rect(g, 24, 202, 74, 8, '#b4808e');
-      },
-      near(g) {
-        pen('rgba(50,30,30,0.55)', 0.5);
-        const pal = { wall: '#d8c29a', wallD: '#b8a07a', roof: '#4e5464', trim: '#e8d6b0', win: '#4a5468' };
-        haydarpasa(g, 30, 214, 1.15, pal);
-        const r = rng(5);
-        const cols = ['#e8a87c', '#d97a6a', '#f2d48a', '#9ec8b0', '#c4a6d8', '#f0c0a0'];
-        let x = 178;
-        pen(null); homeTower(g, 430, 196, 0.26, '#d4a08e'); pen('rgba(50,30,30,0.55)', 0.5);
-        while (x < 500) { const w = 16 + r() * 8, h = 28 + r() * 18; house(g, x, 214, w, h, cols[Math.floor(r() * cols.length)], '#a8503a', r, { door: true }); x += w + 1; }
-        lonelyWindow(g, 262, 160, 7, 9, '#5a3a30');
-        tram(g, 300, 214, 1, {});
-        seagull(g, 220, 60, 1, '#ffffff'); seagull(g, 250, 74, 0.8, '#ffffff'); seagull(g, 90, 92, 0.9, '#ffffff');
-      },
-    },
-    // 3 Vapur: Sultanahmet ve Ayasofya silueti, Kız Kulesi, karşıdan geçen vapur
-    {
-      far(g) {
-        pen(null);
-        cloud(g, 160, 40, 1, 'rgba(255,255,255,0.9)'); cloud(g, 380, 56, 0.8, 'rgba(255,255,255,0.8)');
-        const base = hillsY(206, 14, 31);
-        homeTower(g, 404, 196, 0.24, '#9ab2c8');
-        hills(g, base, '#9ab6cc');
-        hillHouses(g, base, ['#c8d2da', '#e2d4c4', '#d4c2b8', '#bccad6'], '#c49a86', 32);
-        const hz = { wall: '#d6c2b2', wallD: '#c4ae9e', roof: '#8c9cae', roofL: '#a8b6c6', trim: '#e2d2c4', win: '#a89488', brick: '#c88e7a' };
-        galataTower(g, 462, base(462) + 3, 0.9, { wall: '#cfc0aa', wallD: '#b8a892', roof: '#6a7a8e', trim: '#bcae98', win: '#8a7c6a' });
-      },
-      near(g) {
-        pen('rgba(30,40,60,0.6)', 0.5);
-        maidensTower(g, 150, 214, 1.5, { wall: '#f4efe4', wallD: '#d6d0c4', roof: '#7e8c9e', roofL: '#9eacbc', trim: '#d8d0c0', win: '#4a6280', rock: '#5e6a72', rockL: '#76828a' });
-        ferry(g, 390, 216, 1.1, {});
-        seagull(g, 250, 70, 1.1, '#ffffff'); seagull(g, 276, 84, 0.8, '#ffffff'); seagull(g, 60, 110, 0.9, '#ffffff'); seagull(g, 470, 60, 1, '#ffffff');
-      },
-    },
-    // 4 Kapalıçarşı (2-1 Kuyumcular): çizgili kemerler; altında kuyumcu vitrinleri, floresan ışık,
+    // Kapalıçarşı (2-1 Kuyumcular): çizgili kemerler; altında kuyumcu vitrinleri, floresan ışık,
     // altın fiyatı panoları, güvenlik kameraları ve öğle kalabalığı
-    {
+    carsi: {
       far(g) {
         pen(null);
         for (let i = 0; i < 8; i++) bazaarArch(g, i * 64, 0.62);
@@ -571,8 +478,8 @@
         crowd(g, 214, 41, ['#3a4a6a', '#8a3a3a', '#2a2a30', '#5a6a4a', '#c8a070', '#4a3a5a']);
       },
     },
-    // 5 Yerebatan: sıra sıra sütunlar, Medusa başı, turuncu ışık, karanlık su
-    {
+    // Yerebatan (6-1): sıra sıra sütunlar, Medusa başı, turuncu ışık, karanlık su
+    sarnic: {
       far(g) {
         pen(null);
         for (let row = 0; row < 2; row++) {
@@ -593,36 +500,8 @@
         }
       },
     },
-    // 6 Galata: Haliç'in karşısında Süleymaniye, önde Galata Kulesi, cumbalı evler, kırmızı tramvay
-    {
-      far(g) {
-        pen(null);
-        const base = hillsY(200, 24, 61);
-        homeTower(g, 470, 186, 0.34, '#9a6482', '#ff6a5a');
-        hills(g, base, '#a26a86');
-        hillHouses(g, base, ['#b47a92', '#a87088', '#c08aa0'], null, 62, '#ffd890', 0.25);
-        rect(g, 0, 208, W, 4, '#8e5a78');
-      },
-      near(g) {
-        pen('rgba(50,20,30,0.6)', 0.5);
-        const r = rng(66);
-        const cols = ['#e8a87c', '#d9786a', '#f2d48a', '#a8c8b0', '#c4a6d8', '#f6c8a8', '#e09a8a'];
-        let x = 0;
-        while (x < W - 10) {
-          const w = 16 + r() * 9, h = 36 + r() * 30;
-          if (x > 150 && x < 232) { x = 232; continue; }
-          house(g, x, 214, w, h, cols[Math.floor(r() * cols.length)], '#a8503a', r, { door: true, lit: '#ffe39a', litP: 0.3 });
-          x += w + 1;
-        }
-        galataTower(g, 191, 214, 2.4, { wall: '#d8c8ae', wallD: '#bcac92', roof: '#4e5a70', roofL: '#6a7890', trim: '#a89478', trimD: '#5a4a3a', win: '#4a4036', lit: '#ffe39a' });
-        tram(g, 330, 214, 1.05, { lit: 'rgba(255,230,150,0.55)' });
-        simitCart(g, 120, 214, 1);
-        lonelyWindow(g, 362, 186, 8, 10, '#5a3a30');
-      },
-    },
-    null, // Haliç
-    // 7 Köprü: alacakaranlıkta Boğaz Köprüsü, önde kıyı evleri
-    {
+    // Köprü: alacakaranlıkta (7-1 bunun gece hâli) Boğaz Köprüsü, önde kıyı evleri
+    kopru: {
       far(g) {
         pen(null);
         const base = hillsY(198, 26, 71);
@@ -640,35 +519,8 @@
         seagull(g, 330, 80, 1, '#f4ecff'); seagull(g, 356, 92, 0.7, '#f4ecff');
       },
     },
-    // 8 Gece çatıları: ay ışığında kiremit çatılar, bacalar, Galata Kulesi
-    {
-      far(g) {
-        pen(null);
-        const base = hillsY(206, 14, 81);
-        homeTower(g, 250, base(250) + 4, 0.52, '#1a2050', '#ff5a4a');
-        hills(g, base, '#1c2250');
-        hillHouses(g, base, ['#222a5a', '#1e2654'], null, 82, '#ffd27a', 0.5);
-        galataTower(g, 470, base(470) + 3, 0.8, { wall: '#3a3a6a', wallD: '#30305e', roof: '#4a4e82', trim: '#f4d48a', lit: '#ffd27a' });
-      },
-      near(g) {
-        pen('rgba(0,0,10,0.7)', 0.5);
-        const r = rng(88);
-        let x = -4;
-        while (x < W - 10) {
-          const w = 34 + r() * 30, h = 14 + r() * 22, by = 214;
-          B(g, x, by - h, w, h + 30, 0, '#2a2448');
-          for (let wy = by - h + 8; wy < by - 4; wy += 10) for (let wx = x + 4; wx < x + w - 6; wx += 9) B(g, wx, wy, 4, 5.4, 0.4, r() < 0.45 ? '#ffd27a' : '#1a1636');
-          roofTiles(g, x - 3, by - h, w + 6, 12, '#a84e34');
-          if (r() < 0.8) { const cx = x + 6 + r() * (w - 14); B(g, cx, by - h - 16, 6, 12, 0.6, '#6a3a2e'); B(g, cx - 1, by - h - 17, 8, 2.4, 0.6, '#4a2a22'); }
-          if (r() < 0.6) { const ax = x + w * 0.7; lin(g, ax, by - h - 6, ax, by - h - 22, '#5a5a70', 0.6); lin(g, ax - 5, by - h - 18, ax + 5, by - h - 18, '#5a5a70', 0.6); lin(g, ax - 3.6, by - h - 14, ax + 3.6, by - h - 14, '#5a5a70', 0.6); }
-          if (r() < 0.35) { E(g, x + w * 0.3, by - h - 8, 4, 4.4, '#c8ccd8', -0.5); }
-          x += w + 4;
-        }
-      },
-    },
-    null, // Ataşehir
-    // 9 Çamlıca: gece ışıkları, LED'li köprü, Kız Kulesi; önde Çamlıca Kulesi ve çamlar
-    {
+    // Çamlıca (11-1): gece ışıkları, LED'li köprü, Kız Kulesi; önde Çamlıca Kulesi ve çamlar
+    camlica: {
       far(g) {
         pen(null);
         rect(g, 0, 176, W, 64, '#141a46');
@@ -689,8 +541,7 @@
         for (let x = 0; x < W; x += 12 + r() * 14) { if (Math.abs(x - 150) < 20) continue; pine(g, x, 216, 0.8 + r() * 0.5); }
       },
     },
-    null, // Ümraniye
-  ];
+  };
   // ---- dünya parçaları ----
   function glassTower(g, x, by, w, h, k) {
     const top = by - h;
@@ -825,20 +676,11 @@
     g.strokeStyle = '#4a3a2c'; g.lineWidth = 0.7; g.beginPath(); g.arc(0, 3.4, 1.6, 0.2, Math.PI - 0.2); g.stroke();
     g.restore();
   }
-  function roofTiles(g, x, y, w, h, col) {
-    P(g, [x, y, x + w, y, x + w - 6, y - h, x + 6, y - h], col);
-    g.save(); g.beginPath(); g.moveTo(x, y); g.lineTo(x + w, y); g.lineTo(x + w - 6, y - h); g.lineTo(x + 6, y - h); g.closePath(); g.clip();
-    g.strokeStyle = mix(col, '#2a0a00', 0.4); g.lineWidth = 0.6;
-    for (let yy = y - h + 3; yy < y; yy += 3) { g.beginPath(); for (let xx = x; xx < x + w; xx += 3) { g.moveTo(xx, yy); g.arc(xx + 1.5, yy, 1.5, Math.PI, 0, true); } g.stroke(); }
-    g.restore();
-  }
 
   // ---------- mekân çizimleri: her bölüm levels.js'teki 'yer' anahtarıyla bir çizim seçer ----------
   // (v2.0'da dünyalar yeniden sıralandı; çizimler adlarıyla durur, yeni dünyalar eskilerini yeniden kullanır)
   const DRAW = {};
-  ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', null, 'kopru', 'catilar', null, 'camlica', null].forEach((k, w) => {
-    if (k) DRAW[k] = { sky: SKY[w], far: WORLDS[w].far, near: WORLDS[w].near };
-  });
+  for (const k in WORLDS) DRAW[k] = { sky: SKY[k], far: WORLDS[k].far, near: WORLDS[k].near };
   function placeDef(p) {
     const L = root.BA_LEVELS && root.BA_LEVELS[p];
     return DRAW[(L && L.yer) || 'maslak'] || DRAW.maslak;
@@ -1047,10 +889,10 @@
     return c;
   }
   root.BA_SCENE = {
-    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, relit, tinted, at, skyOf, LIGHT, emit, h01, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
+    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, relit, tinted, at, skyOf, LIGHT, emit, h01, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart,
     // hikâye sahneleri de aynı parçaları kullanır
-    kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
-      cloud, glassTower, tree, pine, tulip, column, medusaHead, roofTiles, drawSky, person, crowd, jeweller,
+    kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, camlicaTower, house, hillsY, hills, hillHouses,
+      cloud, glassTower, tree, pine, tulip, column, medusaHead, drawSky, person, crowd, jeweller,
       homeTower, lonelyWindow, windowsRow, hex },
   };
 })(window);

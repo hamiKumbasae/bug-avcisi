@@ -339,34 +339,24 @@
   const AMB = {
     sabah: { beds: [['city', 0.06], ['fire', 0.08]], events: [['bird', 2.2], ['forge', 1.35], ['car', 9]] },
     plaza: { beds: [['city', 0.12], ['wind', 0.05]], events: [['step', 4], ['ding', 7], ['car', 6]] },
-    iskele: { beds: [['sea', 0.16], ['city', 0.04]], events: [['gull', 3.5], ['horn', 14], ['keys', 5]] },
-    vapur: { beds: [['sea', 0.2], ['engine', 0.12], ['wind', 0.05]], events: [['gull', 4], ['horn', 16]] },
     // Kapalıçarşı: kepenkler, esnaf konuşmaları, pazarlık, çaycının bardakları, uzaktan tramvay
     carsi: { beds: [['murmur', 0.08]], events: [['talk', 3], ['glass', 5], ['shutter', 10], ['tram', 18], ['step', 6]] },
     han: { beds: [['murmur', 0.04], ['fire', 0.05]], events: [['carve', 5], ['glass', 6], ['talk', 7], ['step', 6]] },
     sarnic: { beds: [['cave', 0.14]], events: [['drip', 1.6]] },
-    galata: { beds: [['wind', 0.12], ['city', 0.05]], events: [['gull', 6], ['horn', 15], ['bird', 9]] },
     kopru: { beds: [['engine', 0.16], ['wind', 0.06]], events: [['car', 3]] },
-    catilar: { beds: [['wind', 0.1], ['city', 0.04]], events: [['keys', 3.5], ['car', 10]] },
     camlica: { beds: [['wind', 0.1]], events: [['bird', 5], ['car', 12]] },
     safak: { beds: [['wind', 0.06], ['sea', 0.05]], events: [['bird', 1.8], ['gull', 7], ['horn', 18]] },
     // bölüm mekânları
     ofis: { beds: [['city', 0.04], ['hum', 0.05]], events: [['keys', 3], ['ding', 9], ['step', 7]] },
     sunucu: { beds: [['hum', 0.16]], events: [['beep', 2.5], ['keys', 9]] },
     pazar: { beds: [['murmur', 0.1], ['city', 0.04]], events: [['gull', 5], ['glass', 6], ['talk', 6], ['step', 4]] },
-    moda: { beds: [['sea', 0.1], ['wind', 0.07]], events: [['gull', 5], ['bird', 6], ['horn', 20]] },
     firtina: { beds: [['sea', 0.28], ['wind', 0.2], ['rain', 0.1]], events: [['thunder', 9], ['horn', 22]] },
     bedesten: { beds: [['cave', 0.08], ['murmur', 0.02]], events: [['step', 8], ['shutter', 16], ['talk', 20]] },
     karanlik: { beds: [['cave', 0.18]], events: [['drip', 3.5]] },
-    kamondo: { beds: [['city', 0.08], ['wind', 0.04]], events: [['step', 3], ['bird', 6], ['gull', 9]] },
-    cati: { beds: [['wind', 0.08], ['cave', 0.05]], events: [['creak', 4], ['bell', 18]] },
     halat: { beds: [['wind', 0.24]], events: [['horn', 18], ['gull', 11]] },
     tepe: { beds: [['wind', 0.18], ['engine', 0.04]], events: [['car', 7]] },
-    saat: { beds: [['cave', 0.06], ['wind', 0.04]], events: [['tick', 4.1], ['creak', 6], ['bell', 20]] },
     asansor: { beds: [['engine', 0.08], ['wind', 0.06]], events: [['ding', 8]] },
     yayin: { beds: [['hum', 0.12]], events: [['beep', 2], ['keys', 6]] },
-    karakoy: { beds: [['sea', 0.14], ['city', 0.08]], events: [['gull', 3], ['horn', 12], ['step', 6]] },
-    halic: { beds: [['sea', 0.08], ['wind', 0.06]], events: [['gull', 6], ['bird', 7], ['bell', 16]] },
     balat: { beds: [['city', 0.04], ['wind', 0.06]], events: [['step', 9], ['bell', 22], ['car', 14]] },
     // Şişli: metrobüs, kalabalık, trafik; plaza lobisi; boşalan ofis
     sisli: { beds: [['city', 0.14], ['murmur', 0.05], ['engine', 0.04]], events: [['car', 2.5], ['bus', 8], ['step', 5]] },
@@ -395,16 +385,13 @@
   const WORLD_AMB = ['plaza', 'carsi', 'sisli', 'uskudar', 'finans', 'sarnic', 'kopru', 'balat', 'sile', 'imes', 'camlica', 'mahalle'];
   // bölümün çizimi ('yer') → şehir sesi; bölüm 'ses' ile değiştirebilir
   const AMB_OF = {
-    maslak: 'plaza', toplanti: 'ofis', sunucu: 'sunucu', kadikoy: 'iskele', balikPazari: 'pazar', moda: 'moda', iskele: 'iskele',
-    vapur: 'vapur', kaptan: 'firtina', carsi: 'carsi', han: 'han', bedesten: 'bedesten', sarnic: 'sarnic', medusa: 'sarnic',
-    karanlikSu: 'karanlik', kamondo: 'kamondo', galata: 'galata', catiArasi: 'cati', karakoy: 'karakoy', halicKiyisi: 'halic',
-    eyupBalat: 'balat', kopru: 'kopru', halatlar: 'halat', kopruTepe: 'tepe', catilar: 'catilar', antenler: 'catilar',
-    saatKulesi: 'saat', finans: 'finans', veri: 'veri', kontrol: 'kontrol', camlica: 'camlica', asansor: 'asansor', yayin: 'yayin',
-    umraniyeCarsi: 'mahalle', yeniPlazalar: 'plazadis', sanayi: 'sanayi',
-    // v2.0 mekânları
-    mecidiyekoy: 'sisli', plazaLobi: 'lobi', mesaiSonu: 'mesai', iskeleAksam: 'uskudar', carsiAksam: 'pazar', sahil: 'uskudar',
-    kopruGece: 'kopru', halatlarGece: 'halat', balatGece: 'balat', teleferik: 'teleferik', tepe: 'eyupTepe', sileYol: 'sile', benzin: 'benzin',
-    fener: 'firtina', imes: 'imes', des: 'des', kadosan: 'kadosan', atolye: 'sanayi',
+    asansor: 'asansor', atolye: 'sanayi', balatGece: 'balat', bedesten: 'bedesten', benzin: 'benzin',
+    camlica: 'camlica', carsi: 'carsi', carsiAksam: 'pazar', des: 'des', fener: 'firtina', finans: 'finans',
+    halatlarGece: 'halat', han: 'han', imes: 'imes', iskeleAksam: 'uskudar', kadosan: 'kadosan', karanlikSu: 'karanlik',
+    kontrol: 'kontrol', kopruGece: 'kopru', kopruTepe: 'tepe', maslak: 'plaza', mecidiyekoy: 'sisli', medusa: 'sarnic',
+    mesaiSonu: 'mesai', plazaLobi: 'lobi', sahil: 'uskudar', sarnic: 'sarnic', sileYol: 'sile', sunucu: 'sunucu',
+    teleferik: 'teleferik', tepe: 'eyupTepe', toplanti: 'ofis', umraniyeCarsi: 'mahalle', veri: 'veri', yayin: 'yayin',
+    yeniPlazalar: 'plazadis',
   };
   const placeAmb = (L) => (L && (L.ses || AMB_OF[L.yer])) || 'plaza';
   function stopAmbient(fade) {
