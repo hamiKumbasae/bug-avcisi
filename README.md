@@ -2,7 +2,7 @@
 
 Bilgisayar mühendisi bir kahramanla İstanbul'da geçen, tarayıcıda çalışan özgün bir platform oyunu.
 Bütün oyun tek bir gün ve gecede geçer: sabah Maslak'ın plazalarında başlar, öğlen Kapalıçarşı'ya iner,
-gün batımında Üsküdar sahilindedir, gece yarısı Eyüp'ün tepesine varır, şafakta Ümraniye'deki atölyesine döner.
+gün batımında Üsküdar sahilindedir, gece yarısı Eyüp'ün tepesine varır, şafakta Ümraniye'ye, evine döner.
 Her bölümün sonundaki **DEPLOY** terminaline ulaş, her dünyanın sonunda patronu yen.
 
 **Oyna:** https://hamikumbasae.github.io/bug-avcisi/
@@ -11,20 +11,26 @@ Kurulum gerekmez: düz HTML, CSS ve JavaScript. Bütün çizimler, müzikler ve 
 
 Çizimler çizgi film tarzında ve vektördür: oyun ekranın gerçek çözünürlüğünde çizildiği için telefonda da
 4K ekranda da pürüzsüz görünür. İstanbul bugün yaşanan bir şehir olarak gösterilir: cam kuleler, ofis katları,
-kuyumcular, hanlar, iskeleler, sanayi siteleri; Kız Kulesi, Boğaz Köprüsü, Şile Feneri, Çamlıca Kulesi,
-metrobüs, Marmaray, tramvay, dolmuş, simitçi ve martılar. Gökyüzündeki ay, oynadığın gün İstanbul'dan nasıl
+kuyumcular, hanlar, iskeleler, sanayi siteleri, mahalle çatıları; Kız Kulesi, Boğaz Köprüsü, Şile Feneri,
+Çamlıca Kulesi, metrobüs, Marmaray, tramvay, dolmuş, simitçi ve martılar. Ağaçlar İstanbul'un ağaçlarıdır:
+caddelerde ve sahilde alacalı gövdeli çınarlar ve pembe-mor erguvanlar, mahallelerde beyaz çiçekli erikler,
+Çamlıca'nın sırtlarında fıstık çamları, Eyüp'te serviler. Gökyüzündeki ay, oynadığın gün İstanbul'dan nasıl
 görünüyorsa öyle çizilir.
 
 ## Hikâye
 
-Oyun yazısız bir hikâye anlatır. Ümraniye'de, kendi atölyesinde gündüz demir döven, gece kod yazan bir mühendis
-büyük şehirde kendine bir yer arar. İçinde bir yas taşır; kimin için olduğu hiçbir yerde söylenmez.
+Oyun yazısız bir hikâye anlatır. Kahraman Ümraniye'de bir binada yaşar: altta demir dövdüğü atölye, üstte gece
+kod yazdığı oda. İki iş, iki dünya; ikisinin arasında kalmıştır. Büyük şehirde kendine bir yer arar.
+İçinde bir yas taşır; kimin için olduğu hiçbir yerde söylenmez.
 
 İstanbul iki katmanlıdır. **Yukarıda** bugünün şehri var: Maslak, Şişli, Ataşehir'in kuleleri, Boğaz Köprüsü,
 Çamlıca. **Aşağıda** eski İstanbul: Kapalıçarşı, Üsküdar, Yerebatan, Eyüp, Şile, sanayi. Kahraman iki katman
 arasında metrobüs, metro, Marmaray, tramvay, dolmuş ve taksiyle gidip gelir. Yukarıda çalışarak kaçar,
-aşağı indikçe yüzleşir. Sonunda iki dünyadan birini seçmez, ikisini birleştirir: gündüz demir dövülen,
-gece kod yazılan atölye.
+aşağı indikçe yüzleşir. Oyun bu ikiliği çözmez: sonunda kahraman aynı binaya döner ve atölyeyle odasının
+arasında, kapının önündeki taburelerden birine oturur. Öbür tabure boş kalır.
+
+Demircilik oyunda az ve yerinde görünür: girişte atölyenin ocağı, Kapalıçarşı'dan sonra ustanın uzattığı keski,
+Yerebatan'ın suyunda örsün başındaki kendi yansıması, Kadosan'daki tek dövmeci ve sondaki atölye.
 
 - **Sahneler:** oyunun başında, her dünyanın sonunda ve en sonda kısa, sessiz sahneler var. Tek kelime yok;
   hikâyeyi ışık, kompozisyon, hareket ve şehir sesleri anlatır. Işık dili Edward Hopper'ın resimlerinden
@@ -36,7 +42,7 @@ gece kod yazılan atölye.
 - **Hatıra parçaları:** her dünyanın 2. bölümünde, yoldan ayrılan yüksek bir köşede bir parça var:
   eski bir kartvizit, keski, eski bir ulaşım kartı, ince belli çay bardağı, anahtar, gözlük, eski bir fotoğraf,
   kurumuş karanfil, deniz kabuğu, demirci çekici, lale, eski bir radyo. Topladıkların kalıcı olarak kaydedilir;
-  son sahnede atölyenin rafında yan yana durur, Bölüm seç ekranında da görünür.
+  oyunun sonunda ve Bölüm seç ekranında yan yana görünür.
 - **Ses:** her bölümün kendi şehir sesi var (kepenkler ve pazarlık, metrobüs, vapur düdüğü ve martılar,
   damlayan su, teleferiğin halatı, gece yolunda tek tük araba, torna ve kaynak).
 
@@ -64,9 +70,9 @@ parçasını toplamak. Her bölümün başındaki İstanbul haritası rotayı, b
 | 7 | Boğaz Köprüsü | yukarı | gece | Ayak · Halatlar · Tepe | DDoS Bulutu |
 | 8 | Eyüp | aşağı | gece yarısı | Balat Yokuşu · Teleferik (kabinlerin üstünde) · Tepe (sessiz) | yok |
 | 9 | Şile | aşağı | gece yarısından sonra | Gece Yolu (orman kenarı) · Benzin İstasyonu · Fener (fırtına) | Sonsuz Döngü |
-| 10 | Sanayi (Dudullu) | yukarı + aşağı | gece yarısından sonra → şafak öncesi | İMES (gece vardiyası) · DES (depo rafları, forkliftler) · Kadosan (dövmeciler, dolaşık kablolar) | Spagetti Kod |
-| 11 | Çamlıca | yukarı | şafak öncesi | Tepe Yolu · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
-| 12 | Ümraniye | ev | şafak → sabah | Çarşı (bakkal, fırın, çay ocağı) · Yeni Plazalar (M5) · Atölye | Teknik Borç |
+| 10 | Sanayi (Dudullu) | yukarı + aşağı | gece yarısından sonra → şafak öncesi | İMES (gece vardiyası: torna, kaynak, CNC) · DES (depo rafları, forkliftler) · Kadosan (tornacı, kalıpçı, tek bir dövmeci, motorcu; dolaşık kablolar) | Spagetti Kod |
+| 11 | Çamlıca | yukarı | şafak öncesi | Tepe Yolu (fıstık çamları) · Asansör (cam boşluk) · Yayın Odası | Mavi Ekran |
+| 12 | Ümraniye | ev | şafak → sabah | Çarşı (şafakta; bakkal, fırın, çay ocağı, erik ağacı) · Yeni Plazalar (M5) · Çatı (apartmanın çatısı: su depoları, güneş panelleri, güvercinlik) | Teknik Borç |
 
 Ana menüdeki **Bölüm seç** ile 36 bölümden istediğine doğrudan başlayabilirsin.
 
@@ -130,7 +136,7 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
   | 9-1 Gece Yolu | dolmuş, gece | Üsküdar → Şile |
   | 10-1 İMES | minibüs, gece | Şile → Dudullu |
   | 11-1 Tepe Yolu | sarı taksi, gece | Çamlıca → Kısıklı |
-  | 12-1 Çarşı | turkuaz minibüs | Ümraniye → Kadıköy |
+  | 12-1 Çarşı | turkuaz minibüs, şafakta Çamlıca'dan iniş | Kısıklı → Ümraniye |
   | 12-2 Yeni Plazalar | metro (M5) | Ümraniye → Çarşı |
 
   Her aracın kendi sesi var: metronun kapı "ding-dong"u, metrobüsün hava fren tıslaması, minibüsün kornası,
@@ -156,9 +162,11 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 - `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, patronlar, hatıra parçaları, karolar.
 - `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı), başlık ekranı, ay çizimi ve ışık sistemi:
   bir çizimin başka saatteki hâli (akşamüstü sarısı, gece laciverdi; lamba haleleri ve pencereler yeniden yanar).
+  İstanbul ağaçları da burada: `cinar`, `erguvan`, `erik`, `fistikCami` (her biri kendi tohumuyla, renkleri değiştirilebilir).
 - `src/places.js`: bölüm mekânları (gökdelenin içi, sunucu odası, han, bedesten, sarnıç, fırtına, Ataşehir...).
 - `src/places2.js`: v2.0 mekânları: eski çizimlerin başka ışıktaki hâlleri ve yeni çizimler (plaza lobisi,
-  Eyüp'ün teleferiği ve tepesi, Şile yolu, benzin istasyonu, Şile Feneri, DES, Kadosan, atölye).
+  Eyüp'ün teleferiği ve tepesi, Şile yolu, benzin istasyonu, Şile Feneri, DES, Kadosan'ın atölye sırası,
+  Ümraniye'nin şafağı ve çatıları).
 - `src/rides.js`: bonus binişleri: metrobüs, tramvay, minibüs, taksi ve metro çizimleri, duraklar, sokak arka planları.
 - `src/story.js`: yazısız hikâye sahneleri (giriş, 11 ara sahne, son).
 - `src/audio.js`: sentezlenmiş efektler, şehir sesleri ve her dünyanın özgün çiptün müziği.

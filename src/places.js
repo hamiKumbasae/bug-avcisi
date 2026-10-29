@@ -7,7 +7,7 @@
   const { lin, rng } = A;
   const { pen, mix, ferry, seagull, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart } = SC;
   const { B, C, E, P, rect, archWin, dome, minaret, hillMosque, bridge, camlicaTower, house, hillsY, hills, hillHouses,
-    cloud, glassTower, tree, pine, column, medusaHead, homeTower, lonelyWindow, person } = SC.kit;
+    cloud, glassTower, tree, pine, cinar, erguvan, erik, fistikCami, column, medusaHead, homeTower, lonelyWindow, person } = SC.kit;
   const TAU = Math.PI * 2, W = 512, H = 240;
   const DR = SC.DRAW;   // çizim anahtarı → { sky, far, near }; bölümler levels.js'teki 'yer' ile seçer
 
@@ -239,12 +239,9 @@
         house(g, x, hy(x + w) + 2, w, h, cols[Math.floor(r() * cols.length)], '#6a3a3a', r, { door: true, lit: '#ffd88a', litP: 0.55, win: '#3a3456' });
         x += w + 2;
       }
-      // çınarlar
-      for (const tx of [30, 236]) {
-        rect(g, tx - 3, 150, 6, 64, '#5a4a3a');
-        for (const [dx, dy, rr] of [[0, -22, 22], [-16, -10, 16], [16, -8, 17], [-6, -38, 15], [10, -34, 14]]) C(g, tx + dx, 150 + dy, rr, '#3a3a5a');
-        for (const [dx, dy, rr] of [[-8, -30, 6], [10, -18, 5]]) C(g, tx + dx, 150 + dy, rr, 'rgba(255,170,120,0.25)');
-      }
+      // sahilin çınarları (gün batımında koyulaşmış yapraklar, alacalı gövde) ve aralarında bir erguvan
+      for (const tx of [30, 236]) cinar(g, tx, 214, 1.85, { leaf: ['#34403e', '#42524a', '#566a58'], bark: '#8a7e6a', spots: ['#c8bca4', '#6e6a52', '#a8a08a'], glow: 'rgba(255,170,120,0.28)' });
+      erguvan(g, 132, 214, 0.95, { flower: ['#8a2a64', '#a8407e', '#c45e98', '#e08ab8'] });
       // sahil: korkuluk, çay bahçesi ampulleri, fenerler
       for (let x = 60; x < 214; x += 10) rect(g, x, 200, 1.4, 14, '#2a2440');
       rect(g, 60, 199, 154, 2, '#2a2440');
@@ -565,9 +562,18 @@
       const hy = (x) => 214 - Math.max(0, Math.min(1, x / 420)) * 22;
       g.beginPath(); g.moveTo(0, 240); for (let x = 0; x <= W; x += 4) g.lineTo(x, Math.min(214, hy(x))); g.lineTo(W, 240); g.closePath(); g.fillStyle = '#7a6460'; g.fill();
       g.strokeStyle = 'rgba(40,20,20,0.35)'; g.lineWidth = 0.5; for (let x = 6; x < W; x += 12) { g.beginPath(); g.moveTo(x, hy(x) + 3); g.lineTo(x, 214); g.stroke(); }
-      let x = 0;
+      let x = 0, garden = false;
       const xs = [];
       while (x < W - 10) {
+        // altıncı evden sonra alçak duvarlı küçük bir bahçe ve içinde çiçek açmış bir erik
+        if (xs.length === 6 && !garden) {
+          garden = true;
+          const gw = 34, gy = hy(x + gw / 2) + 1;
+          erik(g, x + gw / 2, gy, 1.05);
+          B(g, x, gy - 9, gw, 9 + 214 - gy, 1, '#b8a48a'); for (let k = 0; k < 4; k++) rect(g, x + 2 + k * 8.6, gy - 9, 0.6, 9, 'rgba(60,40,30,0.35)');
+          x += gw + 1;
+          continue;
+        }
         const w = 22 + r() * 10, h = 36 + r() * 24, by = hy(x + w) + 2;
         house(g, x, by, w, h, cols[Math.floor(r() * cols.length)], '#6a2a2a', r, { door: true, lit: '#ffe39a', litP: 0.35, win: '#2a3456', cumba: '#f4ecdc' });
         xs.push([x, w, by - h]);
@@ -979,6 +985,8 @@
       }
       for (const lx of [124, 380]) lamp(g, lx, 214, 40);
       simitCart(g, 250, 214, 0.9);
+      // iki apartmanın arasında mahallenin erik ağacı (kenardan kesintisiz)
+      for (const ex of [508, -4]) erik(g, ex, 214, 1.15);
     },
   };
 
@@ -1009,14 +1017,15 @@
       g.fillStyle = '#ffffff'; g.font = '600 12px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('</> deploy', 180, 120);
       rect(g, 132, 136, 96, 4, 'rgba(255,255,255,0.3)'); rect(g, 132, 136, 64, 4, '#7cff6a');
       rect(g, 176, 160, 8, 54, '#2a2e3a');
-      // genç ağaçlar, banklar, bisiklet park yeri
-      for (const tx of [100, 262, 420, 490]) { rect(g, tx - 1.4, 190, 2.8, 24, '#6a4a2a'); C(g, tx, 184, 9, '#3f8a4a'); C(g, tx - 5, 188, 6, '#3a7a42'); }
+      // genç erguvanlar ve erikler, banklar, bisiklet park yeri
+      for (const [tx, k] of [[100, 0], [262, 1], [420, 0], [490, 1]]) { if (k) erik(g, tx, 214, 0.78); else erguvan(g, tx, 214, 0.82); }
       B(g, 200, 204, 34, 3, 1, '#8a6a4a'); rect(g, 203, 207, 2, 7, '#3a3e48'); rect(g, 229, 207, 2, 7, '#3a3e48');
       for (let k = 0; k < 4; k++) { g.strokeStyle = '#9aa0aa'; g.lineWidth = 1; g.beginPath(); g.arc(440 + k * 10, 210, 4, Math.PI, 0); g.stroke(); }
     },
   };
 
-  // Sanayi (10. dünyanın ve 12-3 Atölye'nin kaynağı): Dudullu sanayisi, akşam; testere dişi çatılar, bacalar; önde kepenkli atölyeler: torna, kaynak, dövme (ocak ve örs)
+  // Sanayi (10-1 İMES'in ve Kadosan'ın arka planının kaynağı): Dudullu sanayisi, akşam; testere dişi çatılar, bacalar;
+  // önde kepenkli atölyeler: torna, kaynak, CNC, boya
   DR.sanayi = {
     sky: { stops: [[0, '#1a1220'], [0.6, '#3a2430'], [1, '#8a4024']], stars: 20 },
     far(g) {
@@ -1038,7 +1047,7 @@
     },
     near(g) {
       pen('rgba(10,5,0,0.65)', 0.5);
-      const shops = [['TORNA', '#2a6ab0'], ['KAYNAK', '#c8a02a'], ['DÖVME', '#c8402a'], ['BOYA', '#3a8a5a']];
+      const shops = [['TORNA', '#2a6ab0'], ['KAYNAK', '#c8a02a'], ['CNC', '#5a4a9a'], ['BOYA', '#3a8a5a']];
       for (let i = 0; i < 4; i++) {
         const x = 2 + i * 128, w = 120, k = shops[i][0];
         B(g, x, 120, w, 94, 0, '#5a5658'); rect(g, x - 2, 116, w + 4, 6, '#3a3638');
@@ -1049,11 +1058,13 @@
         rect(g, x + 12, 132, w - 24, 30, '#7a7a80'); for (let y = 134; y < 162; y += 3) rect(g, x + 12, y, w - 24, 0.8, '#5a5a62');
         if (k === 'TORNA') { B(g, x + 30, 184, 60, 18, 2, '#4a5a6a'); C(g, x + 40, 186, 6, '#3a4a5a'); rect(g, x + 46, 184, 30, 4, '#c8ccd4'); }
         if (k === 'KAYNAK') { lin(g, x + 60, 214, x + 60, 186, '#2a2a30', 2); C(g, x + 64, 190, 3, '#ffffff'); glow(g, x + 64, 190, 22, 'rgb(170,220,255)', 0.8); for (let s2 = 0; s2 < 8; s2++) { const a = s2 * 0.8; lin(g, x + 64, 190, x + 64 + Math.cos(a) * 8, 190 + Math.sin(a) * 6 + 4, '#ffd060', 0.6); } }
-        if (k === 'DÖVME') {
-          // ocak, örs, asılı aletler: kahramanın atölyesi
-          B(g, x + 20, 176, 30, 38, 3, '#3a2a24'); glow(g, x + 35, 190, 24, 'rgb(255,140,40)', 0.9); E(g, x + 35, 190, 9, 5, '#ffcc4a');
-          P(g, [x + 64, 196, x + 96, 196, x + 92, 202, x + 70, 202], '#3a3a42'); rect(g, x + 76, 202, 10, 12, '#3a3a42'); P(g, [x + 96, 196, x + 104, 197, x + 96, 199], '#3a3a42');
-          for (let t2 = 0; t2 < 4; t2++) { lin(g, x + 60 + t2 * 10, 140, x + 60 + t2 * 10, 156, '#3a3a42', 1); B(g, x + 57 + t2 * 10, 156, 6, 4, 1, '#5a5a62'); }
+        if (k === 'CNC') {
+          // CNC tezgâhı: kapalı gövde, camın ardında soğutma sıvısıyla ışıyan iş mili, yanda kumanda ekranı; önde işlenmiş parçalar
+          B(g, x + 18, 166, 66, 48, 3, '#c8ccd4'); rect(g, x + 18, 166, 66, 6, '#5a4a9a');
+          B(g, x + 24, 176, 38, 26, 2, '#1e2a3a'); glow(g, x + 43, 192, 20, 'rgb(150,220,255)', 0.7);
+          rect(g, x + 42, 178, 2, 10, '#c8ccd4'); E(g, x + 43, 194, 7, 2, '#8ad8ff');
+          B(g, x + 68, 176, 12, 16, 1, '#2a2e3a'); for (let l = 0; l < 4; l++) rect(g, x + 70, 179 + l * 3, 6 + (l % 2) * 2, 1, '#7cff9a');
+          for (let p2 = 0; p2 < 4; p2++) B(g, x + 88 + (p2 % 2) * 7, 206 - Math.floor(p2 / 2) * 6, 6, 6, 1, '#9aa0aa');
         }
         if (k === 'BOYA') { for (let b2 = 0; b2 < 3; b2++) B(g, x + 26 + b2 * 22, 192, 16, 22, 2, ['#3a6ad8', '#d2302a', '#3aa86a'][b2]); }
       }

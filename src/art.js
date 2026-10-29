@@ -638,10 +638,10 @@
   const METRO = 9;
   // mekân çizimi ('yer') → karo teması ve su rengi (yoksa false); bölüm 'zemin' / 'su' ile değiştirebilir
   const TILE_OF = {
-    asansor: 8, atolye: 17, balatGece: 5, bedesten: 13, benzin: 16, camlica: 8, carsi: 3, carsiAksam: 1, des: 17,
+    asansor: 8, balatGece: 5, bedesten: 13, benzin: 16, camlica: 8, carsi: 3, carsiAksam: 1, cati: 7, des: 17,
     fener: 4, finans: 18, halatlarGece: 14, han: 3, imes: 17, iskeleAksam: 12, kadosan: 17, karanlikSu: 4, kontrol: 20,
     kopruGece: 6, kopruTepe: 14, maslak: 0, mecidiyekoy: 0, medusa: 4, mesaiSonu: 10, plazaLobi: 10, sahil: 1,
-    sarnic: 4, sileYol: 6, sunucu: 11, teleferik: 5, tepe: 5, toplanti: 10, umraniyeCarsi: 16, veri: 19, yayin: 8,
+    sarnic: 4, sileYol: 6, sunucu: 11, teleferik: 5, tepe: 5, toplanti: 10, umraniyeCarsi: 16, umraniyeSafak: 16, veri: 19, yayin: 8,
     yeniPlazalar: 0,
   };
   const WATER_OF = {

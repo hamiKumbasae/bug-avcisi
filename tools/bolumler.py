@@ -71,8 +71,8 @@ WORLDS = [
      'saat': ['safakOncesi', 'safakOncesi', 'safakOncesi'], 'yer': ['camlica', 'asansor', 'yayin'],
      'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası']},
     {'name': 'Ümraniye', 'sub': 'Ev', 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç', 'seed': 10, 'dpos': 10, 'gun': 1,
-     'saat': ['safak', 'sabah', 'sabah'], 'yer': ['umraniyeCarsi', 'yeniPlazalar', 'atolye'],
-     'sections': ['Çarşı', 'Yeni Plazalar', 'Atölye']},
+     'saat': ['safak', 'sabah', 'sabah'], 'yer': ['umraniyeSafak', 'yeniPlazalar', 'cati'],
+     'sections': ['Çarşı', 'Yeni Plazalar', 'Çatı']},
 ]
 DSPAN = 32   # zorluk ölçeği: ilk 11 dünyanın 33 bölümü (0 → 1)
 
@@ -157,8 +157,8 @@ PLACES = [
         {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge'], 'vert': ['climb', 'climb']},
         {'parts': ['spikes', 'loop', 'tunnel', 'moving', 'pillars', 'blocks', 'gap', 'flat'], 'ceil': 2},
     ],
-    [  # Ümraniye: şafakta çarşı, sabah yeni plazalar ve metro, kendi atölyesi
-        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'ride': ride('minibus', '', '#1fb5ad', 'ÜMRANİYE', 'KADIKÖY'), 'vert': ['descent', 'climb']},
+    [  # Ümraniye: şafakta çarşı (Çamlıca'dan inen dolmuş), sabah yeni plazalar ve metro, kendi apartmanının çatısı
+        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'ride': ride('minibus', '', '#1fb5ad', 'KISIKLI', 'ÜMRANİYE'), 'vert': ['descent', 'climb']},
         {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'ride': ride('metro', 'M5', '#8a4fae', 'ÜMRANİYE', 'ÇARŞI'), 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group']},
     ],

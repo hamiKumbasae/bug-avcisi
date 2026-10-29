@@ -337,7 +337,8 @@
   }
   // ad: { katmanlar: [[tür, ses]], olaylar: [[tür, ortalama aralık sn]] }
   const AMB = {
-    sabah: { beds: [['city', 0.06], ['fire', 0.08]], events: [['bird', 2.2], ['forge', 1.35], ['car', 9]] },
+    // giriş: şafakta Ümraniye; atölyenin ocağı sessizce yanar
+    sabah: { beds: [['city', 0.06], ['fire', 0.05]], events: [['bird', 2.2], ['car', 9]] },
     plaza: { beds: [['city', 0.12], ['wind', 0.05]], events: [['step', 4], ['ding', 7], ['car', 6]] },
     // Kapalıçarşı: kepenkler, esnaf konuşmaları, pazarlık, çaycının bardakları, uzaktan tramvay
     carsi: { beds: [['murmur', 0.08]], events: [['talk', 3], ['glass', 5], ['shutter', 10], ['tram', 18], ['step', 6]] },
@@ -373,10 +374,12 @@
     // Sanayi: torna, kaynak, kepenk, uzak otoyol uğultusu
     imes: { beds: [['city', 0.05], ['hum', 0.05]], events: [['lathe', 6], ['weld', 8], ['shutter', 15]] },
     des: { beds: [['hum', 0.08], ['city', 0.03]], events: [['beep', 7], ['creak', 9]] },
-    kadosan: { beds: [['fire', 0.1], ['city', 0.04]], events: [['forge', 2.2], ['creak', 8]] },
+    // Kadosan: tornacı, kalıpçı, motorcu; sıranın ortasındaki tek dövmeciden ara sıra bir çekiç sesi
+    kadosan: { beds: [['hum', 0.05], ['city', 0.04], ['fire', 0.02]], events: [['lathe', 7], ['weld', 10], ['forge', 12], ['creak', 8], ['shutter', 16]] },
     mahalle: { beds: [['city', 0.1], ['murmur', 0.05]], events: [['bird', 5], ['car', 6], ['step', 5], ['ding', 14]] },
     plazadis: { beds: [['city', 0.12], ['engine', 0.05], ['wind', 0.04]], events: [['car', 3], ['ding', 12]] },
-    sanayi: { beds: [['fire', 0.08], ['hum', 0.06], ['city', 0.04]], events: [['forge', 2.6], ['carve', 5], ['creak', 7]] },
+    // Ümraniye'de çatılar: rüzgâr, aşağıdan şehrin sabahı, kuşlar
+    cati: { beds: [['city', 0.08], ['wind', 0.09]], events: [['bird', 3], ['car', 8], ['gull', 15]] },
     // Ataşehir: gece finans meydanı, veri merkezinin soğutma uğultusu, kontrol odasının bip'leri
     finans: { beds: [['city', 0.09], ['wind', 0.05], ['hum', 0.03]], events: [['car', 5], ['ding', 11], ['step', 7]] },
     veri: { beds: [['hum', 0.2], ['wind', 0.03]], events: [['beep', 1.8], ['keys', 11]] },
@@ -385,12 +388,12 @@
   const WORLD_AMB = ['plaza', 'carsi', 'sisli', 'uskudar', 'finans', 'sarnic', 'kopru', 'balat', 'sile', 'imes', 'camlica', 'mahalle'];
   // bölümün çizimi ('yer') → şehir sesi; bölüm 'ses' ile değiştirebilir
   const AMB_OF = {
-    asansor: 'asansor', atolye: 'sanayi', balatGece: 'balat', bedesten: 'bedesten', benzin: 'benzin',
-    camlica: 'camlica', carsi: 'carsi', carsiAksam: 'pazar', des: 'des', fener: 'firtina', finans: 'finans',
+    asansor: 'asansor', balatGece: 'balat', bedesten: 'bedesten', benzin: 'benzin',
+    camlica: 'camlica', carsi: 'carsi', carsiAksam: 'pazar', cati: 'cati', des: 'des', fener: 'firtina', finans: 'finans',
     halatlarGece: 'halat', han: 'han', imes: 'imes', iskeleAksam: 'uskudar', kadosan: 'kadosan', karanlikSu: 'karanlik',
     kontrol: 'kontrol', kopruGece: 'kopru', kopruTepe: 'tepe', maslak: 'plaza', mecidiyekoy: 'sisli', medusa: 'sarnic',
     mesaiSonu: 'mesai', plazaLobi: 'lobi', sahil: 'uskudar', sarnic: 'sarnic', sileYol: 'sile', sunucu: 'sunucu',
-    teleferik: 'teleferik', tepe: 'eyupTepe', toplanti: 'ofis', umraniyeCarsi: 'mahalle', veri: 'veri', yayin: 'yayin',
+    teleferik: 'teleferik', tepe: 'eyupTepe', toplanti: 'ofis', umraniyeCarsi: 'mahalle', umraniyeSafak: 'mahalle', veri: 'veri', yayin: 'yayin',
     yeniPlazalar: 'plazadis',
   };
   const placeAmb = (L) => (L && (L.ses || AMB_OF[L.yer])) || 'plaza';
