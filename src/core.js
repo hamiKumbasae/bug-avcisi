@@ -605,7 +605,9 @@
         const x = ln.dir > 0 ? ln.x0 : ln.x1 - w;
         // oyuncunun dibinde araç belirmez (şeridin ucunda bekleyen ezilmesin)
         const pp = G.player, near = pp && !pp.dead && pp.x + pp.w > x - 2 && pp.x < x + w + 2 && pp.y + pp.h > ln.y - h - 1;
-        if (!near && !G.cars.some((c) => c.lane === ln && Math.abs(c.x - x) < w + 1.5)) {
+        // duraklı şerit: duraktaki dolmuş kalkmadan yenisi gelmez
+        const waiting = ln.durak !== null && G.cars.some((c) => c.lane === ln && !c.left);
+        if (!near && !waiting && !G.cars.some((c) => c.lane === ln && Math.abs(c.x - x) < w + 1.5)) {
           ln.t = 0; ln.n++;
           const c = { lane: ln, kind, x, w, h, v: ln.v, hue: (ln.n * 67) % 360 };
           c.plat = { kind: 'car', x, y: ln.y - h, w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, car: c, a: 0, b: 0 };
@@ -638,8 +640,10 @@
       c.plat.x = c.x; c.plat.dx = c.x - ox; c.plat.dy = 0;
       // gövde: hızla gelen araç çarpar; duran araçtan yana itilir; çatısına basılır
       const body = { x: c.x + 0.1, y: ln.y - c.h + 0.3, w: c.w - 0.2, h: c.h - 0.3 };
+      // durağa yanaşan dolmuş yavaş yavaş yanaşır: çarpmaz, önüne alıp iter
+      const gentle = ln.durak !== null && c.kind === 'dolmus' && !c.left;
       if (!p.dead && p.plat !== c.plat && overlap(p, body)) {
-        if (c.v > 1.2 && p.inv <= 0 && p.star <= 0) { hurt(G); if (!p.dead) { p.vx = d * 8; p.vy = -9; p.onGround = false; } ev(G, 'honk'); }
+        if (c.v > 1.2 && !gentle && p.inv <= 0 && p.star <= 0) { hurt(G); if (!p.dead) { p.vx = d * 8; p.vy = -9; p.onGround = false; } ev(G, 'honk'); }
         else p.x = p.x + p.w / 2 < c.x + c.w / 2 ? c.x - p.w - 0.02 : c.x + c.w + 0.02;
       }
       for (const e of G.ents) if (!e.dead && !e.harmless && c.v > 1.2 && overlap(e, body)) { killEnemy(G, e, true, 200); ev(G, 'honk'); }

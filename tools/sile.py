@@ -47,8 +47,9 @@ def bolum_9_1(room):
         lamp(x)
 
     # ---- TERS KÖŞE: dolmuş dolmadan kalkmaz: durakta bekler, tavanına binince kalkar, çukurların üstünden götürür
+    #      (kaçırırsan arkasından yenisi gelir)
     c.put(105, FL - 1, 'Q')
-    yol(110, 158, 1, every=60, t0=59.9, v=6, kinds=['dolmus'], durak=126)
+    yol(110, 158, 1, every=4, t0=3.9, v=6, kinds=['dolmus'], durak=126)
     c.row(FL - 1, range(128, 150), '^')
     c.row(8, range(130, 149, 3), 'b')
     for x in (122, 138, 154):

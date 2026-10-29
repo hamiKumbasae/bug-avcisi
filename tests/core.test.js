@@ -1407,6 +1407,25 @@ const mkBug = (x, y, vx) => ({ kind: 'bug', x, y: y + 0.125, w: 0.875, h: 0.875,
   run(G, () => { p.inv = 99; return {}; }, 1.5);
   ok(c.left && c.x + c.w > 15, 'tavanına binilince kalktı');
 }
+// kaçırılan dolmuşun arkasından yenisi gelir; durağa yanaşan dolmuş oyuncuya çarpmaz, iter
+{
+  const i = custom(['..P.........................', '#'.repeat(28), '#'.repeat(28)], { hand: true, objs: [{ k: 'yol', x0: 2, x1: 27, y: 12, dir: 1, every: 3, t0: 2.9, v: 5, kinds: ['dolmus'], durak: 14 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  run(G, () => { p.x = 25; return {}; }, 5);
+  ok(G.cars.length === 1, 'duraktaki dolmuş kalkmadan yenisi gelmez');
+  const c = G.cars[0];
+  place(G, c.x + 1, c.plat.y); p.onGround = true; p.plat = c.plat;
+  run(G, () => ({}), 0.7);
+  ok(c.left, 'binilen dolmuş kalktı');
+  c.x = 40;   // kalkan dolmuş yoldan çıksın
+  place(G, 11, 12); p.plat = null;
+  const pw = G.S.power, lives = G.S.lives;
+  let hit = false;
+  run(G, () => { if (G.S.power !== pw || G.S.lives !== lives || p.dead) hit = true; return {}; }, 4);
+  const n = G.cars.find((q) => q !== c && !q.left);
+  ok(n && Math.abs(n.x + n.w - 14) < 0.3, 'kalkan dolmuşun arkasından yenisi durağa geldi');
+  ok(!hit && p.x >= 13.9, 'yanaşan dolmuş çarpmadı, oyuncuyu önüne alıp itti');
+}
 
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
 {
