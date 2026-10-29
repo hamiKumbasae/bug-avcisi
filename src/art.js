@@ -51,6 +51,7 @@
     g.strokeStyle = K; g.lineWidth = w + LW * 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
     g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
   }
+  function rect(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
   function lin(g, x1, y1, x2, y2, col, w) { g.strokeStyle = col; g.lineWidth = w || LW; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
   function grad(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; }
   function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -1335,59 +1336,86 @@
     s = s || 1; t = t || 0;
     g.save(); g.translate(cx, cy); g.scale(s, s);
     switch (PIECES[i]) {
-      case 'cam':
-        poly(g, [-4, 6, -6, -2, 0, -7, 6, -3, 4, 6], grad(g, -6, -7, 6, 6, [[0, '#d8f2ff'], [0.5, '#7ac0e8'], [1, '#3a7ab0']]), K, 0.8);
-        poly(g, [-3, 3, -4, -1, -1, -4], 'rgba(255,255,255,0.7)', null);
-        break;
-      case 'tuy':
-        g.save(); g.rotate(-0.6);
-        g.beginPath(); g.moveTo(0, -8); g.quadraticCurveTo(5, -3, 3, 6); g.lineTo(0, 7); g.lineTo(-3, 6); g.quadraticCurveTo(-5, -3, 0, -8); g.closePath();
-        fs(g, grad(g, -4, -8, 4, 7, [[0, '#ffffff'], [0.7, '#e2e6ee'], [1, '#8a909c']]), K, 0.8);
-        g.strokeStyle = 'rgba(120,128,140,0.7)'; g.lineWidth = 0.4;
-        for (let k = -5; k < 5; k += 2) { g.beginPath(); g.moveTo(0, k); g.lineTo(3, k - 2); g.moveTo(0, k); g.lineTo(-3, k - 2); g.stroke(); }
-        lin(g, 0, -7, 0, 10, '#6a707c', 0.7);
+      case 'kartvizit':
+        // eski bir kartvizit: sararmış kâğıt, kıvrık köşe, köşesinde küçük bir örs (yazısız)
+        g.save(); g.rotate(-0.18);
+        box(g, -7.5, -5, 15, 10, 0.8, grad(g, -7, -5, 7, 5, [[0, '#f8f0dc'], [1, '#dccaa4']]), K, 0.8);
+        poly(g, [4.4, -5, 7.5, -5, 7.5, -1.9], '#c4b08a', K, 0.5);
+        lin(g, -5.6, -1.8, 0.8, -1.8, '#5a4a3a', 0.9); lin(g, -5.6, 0.6, -1, 0.6, '#9a8a72', 0.6); lin(g, -5.6, 2.6, 0, 2.6, '#9a8a72', 0.6);
+        poly(g, [2.6, 2.2, 6.2, 2.2, 6.8, 1.6, 6.8, 2.8, 5.6, 3, 5.4, 3.8, 3.6, 3.8, 3.4, 3], '#5a4a3a', null);
         g.restore();
         break;
-      case 'can':
-        g.beginPath(); g.moveTo(-6, 4); g.quadraticCurveTo(-5.4, -5.4, 0, -5.6); g.quadraticCurveTo(5.4, -5.4, 6, 4); g.closePath();
-        fs(g, grad(g, -6, 0, 6, 0, [[0, '#b8862e'], [0.4, '#f4cc5a'], [1, '#9a6a1e']]), K, 0.8);
-        box(g, -7, 3.4, 14, 2.4, 1, '#c8962e', K, 0.7); circle(g, 0, 6.6, 1.5, '#7a5418', K, 0.6);
-        g.strokeStyle = K; g.lineWidth = 0.8; g.beginPath(); g.arc(0, -6.6, 1.6, Math.PI, 0); g.stroke();
+      case 'keski':
+        // keski: ahşap sap, pirinç bilezik, çelik ağız (Han'daki ustanın uzattığı)
+        g.save(); g.rotate(0.7);
+        box(g, -1.7, -9, 3.4, 7.6, 1.3, grad(g, -1.7, 0, 1.7, 0, [[0, '#c88a4a'], [1, '#8a5a2a']]), K, 0.7);
+        box(g, -2, -1.8, 4, 1.7, 0.4, '#d8b050', K, 0.5);
+        poly(g, [-1.1, -0.1, 1.1, -0.1, 1.2, 6.6, 0, 9, -1.2, 6.6], grad(g, -1, 0, 1, 0, [[0, '#e8ecf2'], [1, '#8a909c']]), K, 0.7);
+        g.restore();
         break;
-      case 'nazar':
-        circle(g, 0, 0, 6.6, '#1e5ad8', K, 0.8); circle(g, 0, 0, 4.4, '#ffffff', null); circle(g, 0, 0, 2.8, '#7ac8ff', null); circle(g, 0, 0, 1.4, '#10122a', null);
-        circle(g, -2.6, -3, 1, 'rgba(255,255,255,0.8)', null);
+      case 'istanbulkart':
+        // eski bir ulaşım kartı: yıpranmış köşeler, temassız dalgalar (marka yok)
+        g.save(); g.rotate(0.12);
+        box(g, -7.5, -5, 15, 10, 1.6, grad(g, -7, -5, 7, 5, [[0, '#4ab0d8'], [1, '#1e6a9a']]), K, 0.8);
+        g.save(); rr(g, -7.5, -5, 15, 10, 1.6); g.clip();
+        g.fillStyle = 'rgba(255,255,255,0.85)'; g.beginPath(); g.moveTo(-8, 2); g.quadraticCurveTo(-1, -2, 8, 1.6); g.lineTo(8, 3.4); g.quadraticCurveTo(-1, 0, -8, 4); g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(-6, -4); g.lineTo(-2, -1.4); g.moveTo(3, 4); g.lineTo(6.6, 2.2); g.stroke();
+        g.restore();
+        g.strokeStyle = '#ffffff'; g.lineWidth = 0.6;
+        for (const r of [1.2, 2.2, 3.2]) { g.beginPath(); g.arc(3.4, -1.6, r, -0.7, 0.7); g.stroke(); }
+        g.restore();
         break;
-      case 'damla':
-        g.beginPath(); g.moveTo(0, -7); g.bezierCurveTo(4, -2, 5.6, 1, 5.6, 2.6); g.arc(0, 2.6, 5.6, 0, Math.PI); g.bezierCurveTo(-5.6, 1, -4, -2, 0, -7); g.closePath();
-        fs(g, grad(g, 0, -7, 0, 8, [[0, '#8af0e8'], [1, '#1a8a96']]), K, 0.8);
-        ellipse(g, -2, 1.6, 1.2, 2.2, 'rgba(255,255,255,0.7)', null, 0, 0.3);
+      case 'cay':
+        // ince belli çay bardağı, tabağıyla; buharı tüter
+        ellipse(g, 0, 6.4, 6.4, 1.6, '#f4f2ee', K, 0.7);
+        poly(g, [-3, 6, 3, 6, 1.8, 0.6, 3.4, -5.4, -3.4, -5.4, -1.8, 0.6], grad(g, 0, -5, 0, 6, [[0, 'rgba(210,90,40,0.95)'], [1, 'rgba(150,40,18,0.95)']]), K, 0.7);
+        rect(g, -3.3, -5.6, 6.6, 1.1, 'rgba(255,255,255,0.65)');
+        g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(-2.4, -3.6, 0.7, 2.6);
+        g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.5;
+        for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(-0.8 + k * 1.6, -6.4); g.quadraticCurveTo(-2 + k * 2 + Math.sin(t * 2.4 + k) * 1.4, -8.6, 0 + Math.sin(t * 1.8 + k * 2) * 1.2, -11); g.stroke(); }
         break;
-      case 'kule':
-        poly(g, [-4, 7, 4, 7, 3.4, -2, -3.4, -2], '#d8c8ae', K, 0.8);
-        box(g, -4.4, -3.4, 8.8, 1.8, 0.4, '#a89478', K, 0.5);
-        poly(g, [-3.8, -3.4, 3.8, -3.4, 0, -10], '#4e5a70', K, 0.8);
-        for (const y of [0, 3.6]) box(g, -1, y, 2, 2.4, 1, '#4a4036', null);
+      case 'gozluk':
+        // eski gözlük: ince metal çerçeve, katlanmış saplar
+        g.strokeStyle = '#8a6a3a'; g.lineWidth = 0.8;
+        g.beginPath(); g.moveTo(-6.4, -1.4); g.lineTo(-8, 4.6); g.moveTo(6.4, -1.4); g.lineTo(8, 4.6); g.stroke();
+        for (const x of [-4, 4]) circle(g, x, 0, 3.6, 'rgba(210,236,255,0.55)', K, 0.7);
+        for (const x of [-4, 4]) { g.strokeStyle = '#c8a050'; g.lineWidth = 0.6; g.beginPath(); g.arc(x, 0, 3.6, 0, Math.PI * 2); g.stroke(); }
+        g.strokeStyle = '#c8a050'; g.lineWidth = 0.8; g.beginPath(); g.arc(0, 0.4, 1.4, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+        for (const x of [-5.2, 2.8]) { g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 0.6; g.beginPath(); g.arc(x + 0.4, -0.6, 1.6, Math.PI * 1.1, Math.PI * 1.5); g.stroke(); }
         break;
-      case 'kopru':
-        g.strokeStyle = '#e8ecf2'; g.lineWidth = 1; g.beginPath(); g.moveTo(-7, 0); g.quadraticCurveTo(-4.6, -1, -4.4, -7); g.quadraticCurveTo(0, 1, 4.4, -7); g.quadraticCurveTo(4.6, -1, 7, 0); g.stroke();
-        for (const x of [-4.4, 4.4]) box(g, x - 0.9, -8, 1.8, 13, 0.4, '#c8ccd6', K, 0.6);
-        box(g, -8, 1, 16, 2, 0.6, '#9aa0ac', K, 0.6);
+      case 'fotograf':
+        // eski bir fotoğraf: beyaz kenar, soluk renkte bir kıyı ve iki kişi
+        g.save(); g.rotate(-0.12);
+        box(g, -6.5, -7.5, 13, 15, 0.5, '#f4eedc', K, 0.8);
+        rect(g, -5, -6, 10, 9, '#c8ae84'); rect(g, -5, -6, 10, 4.4, '#dcc8a0'); rect(g, -5, -1.6, 10, 0.6, '#a88e66');
+        circle(g, 2.8, -4, 1.1, '#f0e2c0', null);
+        for (const [x, h] of [[-2.2, 5], [0.4, 3.2]]) { rect(g, x - 0.6, 3 - h + 1.4, 1.2, h - 1.4, '#6a5038'); circle(g, x, 3 - h + 0.8, 0.8, '#6a5038', null); }
+        g.restore();
         break;
-      case 'anten':
-        // çatıdaki eski televizyon anteni
-        lin(g, 0, 8, 0, -8, '#8a909c', 1.4);
-        for (const [y, w] of [[-6, 7], [-2, 9], [2, 7]]) lin(g, -w / 2, y, w / 2, y, '#b8bec8', 1.1);
-        lin(g, -3, 8, 3, 8, '#5a606c', 1.6);
+      case 'karanfil':
+        // kurumuş karanfil: eğik sap, solmuş kırmızı, kıvrık yapraklar
+        g.strokeStyle = '#7a7a4a'; g.lineWidth = 1; g.beginPath(); g.moveTo(-1, 8.6); g.quadraticCurveTo(-2, 2, 1.4, -2.6); g.stroke();
+        ellipse(g, -3, 4, 1, 2.8, '#8a8a5a', K, 0.4, 0.8);
+        ellipse(g, 2, -3.6, 2.2, 1.6, '#8a5a3a', K, 0.5, 0.4);
+        g.beginPath(); g.moveTo(-1.6, -4); g.lineTo(-3, -7.4); g.lineTo(-1, -6); g.lineTo(0, -8.6); g.lineTo(1.4, -6.4); g.lineTo(3.4, -8.4); g.lineTo(3.6, -5.6); g.lineTo(6, -6.6); g.lineTo(5, -3.6); g.closePath();
+        fs(g, grad(g, 0, -8, 0, -3, [[0, '#a84a4a'], [1, '#6a2a2e']]), K, 0.7);
         break;
-      case 'sepet':
-        // Balat'ta pencereden ipe bağlı sarkıtılan hasır sepet
-        lin(g, -3, -8, 0, -3, '#c8a878', 0.6); lin(g, 3, -8, 0, -3, '#c8a878', 0.6); lin(g, 0, -10, 0, -8, '#c8a878', 0.6);
-        g.beginPath(); g.moveTo(-6, -2); g.lineTo(6, -2); g.lineTo(4.4, 6); g.lineTo(-4.4, 6); g.closePath(); fs(g, '#c8904a', K, 0.8);
-        g.strokeStyle = '#8a5a26'; g.lineWidth = 0.6; for (let k = -1; k < 6; k += 2) { g.beginPath(); g.moveTo(-6 + k * 0.1, k); g.lineTo(6 - k * 0.1, k); g.stroke(); }
-        for (let k = -4; k <= 4; k += 2) { g.beginPath(); g.moveTo(k, -2); g.lineTo(k * 0.8, 6); g.stroke(); }
-        g.beginPath(); g.ellipse(0, -2, 6, 1.4, 0, 0, Math.PI * 2); fs(g, '#e0b070', K, 0.6);
-        circle(g, -2, -3.4, 1.8, '#c47a2c', null); circle(g, -2, -3.4, 0.7, '#e0b070', null);
+      case 'kabuk':
+        // deniz kabuğu: yelpaze, ince kaburgalar
+        g.beginPath(); g.moveTo(0, 6.4); g.lineTo(-6.6, -1.6); g.quadraticCurveTo(-5, -7.4, 0, -7.6); g.quadraticCurveTo(5, -7.4, 6.6, -1.6); g.closePath();
+        fs(g, grad(g, 0, -7, 0, 6, [[0, '#fbe6d6'], [1, '#e2a890']]), K, 0.8);
+        g.strokeStyle = 'rgba(160,96,80,0.6)'; g.lineWidth = 0.45;
+        for (let k = -4; k <= 4; k++) { g.beginPath(); g.moveTo(0, 6); g.lineTo(k * 1.45, -7 + Math.abs(k) * 0.55); g.stroke(); }
+        box(g, -2.2, 5.2, 4.4, 2.2, 0.6, '#e8b8a0', K, 0.5);
+        break;
+      case 'radyo':
+        // eski bir radyo: ahşap kasa, kumaş hoparlör, ibreli kadran, iki düğme
+        box(g, -8, -5.6, 16, 11.2, 2.2, grad(g, 0, -6, 0, 6, [[0, '#a8703a'], [1, '#6a4422']]), K, 0.8);
+        box(g, -6.6, -3.8, 7.2, 7.6, 1.2, '#e8d8b0', K, 0.5);
+        g.strokeStyle = 'rgba(140,110,70,0.7)'; g.lineWidth = 0.4; for (let y = -3; y < 3.6; y += 1.2) { g.beginPath(); g.moveTo(-6.2, y); g.lineTo(0.2, y); g.stroke(); }
+        box(g, 1.6, -3.8, 5, 3.2, 0.6, '#f4e8c8', K, 0.5); lin(g, 3.4, -3.4, 4.4, -1, '#c8302a', 0.4);
+        circle(g, 2.8, 2, 1.2, '#3a2a1a', K, 0.4); circle(g, 5.6, 2, 1.2, '#3a2a1a', K, 0.4);
+        lin(g, -6, -5.6, -2, -9, '#5a5e68', 0.6);
         break;
       case 'cekic':
         // demirci çekici: ahşap sap, dövme demir baş
