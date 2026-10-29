@@ -562,8 +562,17 @@
     if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
     const cam = Math.round(G.cam * TS * S) / S, camY = Math.round(G.camY * TS * S) / S / TS;
     const pcx = Math.max(0, Math.min(G.W - 1, Math.floor(G.player.x + G.player.w / 2)));
-    if (G.area === 'room') rideBack(G, cam);
-    else backdrop(pl, cam, 0, G.base0 - camY, G.camHi[pcx] + 12.2 - camY, G.H - 1.6 - camY);
+    if (G.area === 'room') {
+      if (app.mapShift > 0) {
+        // harita çıkarma kipi: binişin üstündeki bant boş gökyüzü (ya da yer altında toprak)
+        const rd = G.L.ride;
+        if (G.room.under) { ctx.fillStyle = '#151820'; ctx.fillRect(0, 0, VW, VH); }
+        else {
+          const sky = rd && rd.scene ? RD.scene(rd.scene, VW, VH).sky : SC.sky(G.place, VW, VH);
+          ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(sky, 0, 0, sky.width, 1, 0, 0, canvas.width, canvas.height); ctx.setTransform(S, 0, 0, S, 0, 0);
+        }
+      } else rideBack(G, cam);
+    } else backdrop(pl, cam, 0, G.base0 - camY, G.camHi[pcx] + 12.2 - camY, G.H - 1.6 - camY);
     const ox = -cam + sx, oy = TOP + sy - camY * TS;
     // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
     const x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
@@ -583,7 +592,7 @@
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
         const i = ty * G.W + tx, t = G.grid[i];
-        if (!t) continue;
+        if (!t || (G.room && tx >= G.room.x0 && ty < G.room.y0)) continue; // binişin üstündeki görünmez tavan
         const px = tx * TS, py = ty * TS + (bumpOff.get(i) || 0);
         const tw = G.room && tx >= G.room.x0 ? RD.tiles(G.L.ride) : theme; // bonus odası: peron ya da kaldırım
         if (t === 1) put(ART.tile(tw, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
