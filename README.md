@@ -61,7 +61,7 @@ noktası ve gülümseten küçük anlar var. Süre 300'den 430 saniyeye çıkar.
 | 6 Yerebatan | zıpladıkça itilen sandallar ve akıntılar, Medusa'nın bakışı (bug taşa döner, basamak olur), yükselen su ve pompalar |
 | 7 Köprü | yan rüzgâr ve kirişlerin korunağı, halat makaraları ve fırlatan tampon, rüzgârla sallanan bakım sepetleri |
 | 8 Eyüp | yükseğe sektiren çamaşır ipleri, teleferik ve direk kolları, sessiz tepe |
-| 9 Şile | farların aydınlattığı yol (araç tavanında yolculuk), oto yıkama fırçaları ve köpük baloncukları, fener ışığında beliren basamaklar |
+| 9 Şile | farların aydınlattığı yol (araç tavanında yolculuk; dolmuş durakta binilene dek bekler), oto yıkama fırçaları ve köpük baloncukları, fener ışığında beliren basamaklar |
 | 10 Sanayi | yürüyen bantlar ve yığılan koliler, hidrolik presler, kızgın demir, sıçratan şahmerdan |
 | 11 Çamlıca | sisle beliren cam teraslar, dolap asansörler, fırlatan yayın dalgaları |
 | 12 Ümraniye | şafakla açılan kepenkler ve tezgâhlar, vinç kancaları, önceki dünyaların düzenekleriyle eve giden yol |
