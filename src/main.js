@@ -191,6 +191,7 @@
   window.__ba = { app, BA, start: (stage) => startRun(stage || 0), render: () => render(), story: (id, then) => playStory(id, then || toTitle) };
 
   function startRun(stage, prologue) {
+    acc = 0;   // yeni koşu: birikmiş adım süresi sıfırlanır (kayıtların tekrarı belirlenimci kalsın)
     app.S = BA.newRun();
     app.S.stage = stage;
     if (prologue && ST.has('giris')) playStory('giris', toIntro); else toIntro();
