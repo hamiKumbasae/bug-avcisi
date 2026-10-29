@@ -793,7 +793,7 @@
   // arkada: bank ve bardak, toplantı masası, fan hava sütunları, sıcak kabinlerin üstündeki sıcak hava
   function drawHandBack(G) {
     for (const sc of G.scales) if (onScreen(G, sc.A.x - 2, sc.B.x - sc.A.x + 6)) HD.drawScale(ctx, sc);
-    for (const ln of G.lanes) if (onScreen(G, ln.x0, ln.x1 - ln.x0)) { HD.drawRoad(ctx, ln); if (ln.light) HD.drawLight(ctx, ln, BA.greenNow(G, ln.light), app.t); }
+    for (const ln of G.lanes) if (onScreen(G, ln.x0, ln.x1 - ln.x0)) { HD.drawRoad(ctx, ln); if (ln.light) HD.drawLight(ctx, ln, BA.greenNow(G, ln.light), app.t); if (ln.durak !== null && ln.durak !== undefined) HD.drawStop(ctx, ln); }
     for (const L of G.lifts) if (onScreen(G, L.x - 1, 4)) HD.drawShaft(ctx, L, app.t);
     for (const l of G.lamps) if (onScreen(G, l.x - 1, 3)) (l.flash ? HD.drawCopier : HD.drawLamp)(ctx, l);
     for (const d of G.doors2) if (onScreen(G, d.x, d.w)) HD.drawRevolving(ctx, d);

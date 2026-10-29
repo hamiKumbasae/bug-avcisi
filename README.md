@@ -46,9 +46,25 @@ gece kod yazılan atölye.
 ışığı, zemini, şehir sesi ve bölüm tipi vardır (dış mekânda koşu ve bloklar; iç mekânda tavanlı dar koridorlar;
 patron bölümlerinde kale gibi tuzaklar). Eyüp dışındaki her dünyanın 3. bölümünün sonunda bir patron var (11 patron).
 
-Bölümler Super Mario Bros. ölçüsünde: 1. dünyada ~210 blok ve 14 düşman (Mario 1-1: ~200 blok, 17 düşman),
-ilerledikçe uzayıp kalabalıklaşır; son dünyada ~330 blok ve 20 düşman. Patron bölümlerinde arenadan önce
-150-230 blokluk bir kale yolu var. Süre 300'den 430 saniyeye çıkar.
+Bölümlerin hepsi elle tasarlandı. Her dünyanın kendine özgü düzenekleri var; her bölüm aynı sırayla kurulur:
+düzeneği **tanıt** (güvenli bir yerde göster), **geliştir** (zorlaştır), **ters köşe** (düzeneği beklenmedik bir
+şekilde kullan), **sına** (hepsini bir arada iste). Her bölümde üç **altın simit**, bir gizli yol, en az iki kayıt
+noktası ve gülümseten küçük anlar var. Süre 300'den 430 saniyeye çıkar.
+
+| Dünya | Düzenekler |
+|---|---|
+| 1 Maslak | kartlı cam kapılar, soğutma fanları, sıcak kabinler, simitçi tezgâhının tentesi, uyuyan ve kaçan bug'lar |
+| 2 Kapalıçarşı | kuyumcu terazileri (yüksekten düşünce sapan olur), çürük tahtalar, tepsisine binilen çaycı, kepenkler |
+| 3 Şişli | yaya ışığında sıkışan trafik (tavanlar köprü olur), kata giden asansörler, döner kapı, sensörlü lambalar |
+| 4 Üsküdar | vapurlar, binince giden kayıklar, simit kapan martılar, tenteler ve yuvarlanan karpuzlar, dalgalar ve sallar |
+| 5 Ataşehir | yanıp sönen borsa panoları, canlı grafik, lazer alarmı (kapılar iner, yangın kapakları köprü olur), şalterler, elektrikli ızgaralar |
+| 6 Yerebatan | zıpladıkça itilen sandallar ve akıntılar, Medusa'nın bakışı (bug taşa döner, basamak olur), yükselen su ve pompalar |
+| 7 Köprü | yan rüzgâr ve kirişlerin korunağı, halat makaraları ve fırlatan tampon, rüzgârla sallanan bakım sepetleri |
+| 8 Eyüp | yükseğe sektiren çamaşır ipleri, teleferik ve direk kolları, sessiz tepe |
+| 9 Şile | farların aydınlattığı yol (araç tavanında yolculuk), oto yıkama fırçaları ve köpük baloncukları, fener ışığında beliren basamaklar |
+| 10 Sanayi | yürüyen bantlar ve yığılan koliler, hidrolik presler, kızgın demir, sıçratan şahmerdan |
+| 11 Çamlıca | sisle beliren cam teraslar, dolap asansörler, fırlatan yayın dalgaları |
+| 12 Ümraniye | şafakla açılan kepenkler ve tezgâhlar, vinç kancaları, önceki dünyaların düzenekleriyle eve giden yol |
 
 **Amaç:** Maslak'tan başlayıp şehri bir gün ve gecede geçerek Ümraniye'ye, eve varmak; yol boyunca 12 hatıra
 parçasını toplamak. Her bölümün başındaki İstanbul haritası rotayı, bulunduğun semti ve topladığın parçaları gösterir.
@@ -70,7 +86,7 @@ parçasını toplamak. Her bölümün başındaki İstanbul haritası rotayı, b
 
 Ana menüdeki **Bölüm seç** ile 36 bölümden istediğine doğrudan başlayabilirsin.
 
-Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam edersin. Oyun bitince
+Her bölümde birkaç **commit noktası** var: ölürsen en son geçtiğinden devam edersin. Oyun bitince
 "Devam et" ile o dünyanın başından yeniden başlarsın; ulaştığın en ileri dünya menüde kayıtlı kalır.
 
 ## Kontroller

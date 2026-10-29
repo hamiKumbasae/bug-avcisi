@@ -1396,6 +1396,18 @@ const mkBug = (x, y, vx) => ({ kind: 'bug', x, y: y + 0.125, w: 0.875, h: 0.875,
   ok(top === 4 && hk.plat.x === 16 && p.plat === hk.plat, 'vinç kirişi kaldırdı, taşıdı, indirdi; üstündekini götürdü');
 }
 
+// ---------- dolmuş durakta bekler, tavanına binilince kalkar ----------
+{
+  const i = custom(['..P.........................', '#'.repeat(28), '#'.repeat(28)], { hand: true, objs: [{ k: 'yol', x0: 2, x1: 27, y: 12, dir: 1, every: 9, t0: 8.9, v: 5, kinds: ['dolmus'], durak: 14 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  run(G, () => { p.x = 25; p.inv = 99; return {}; }, 5);
+  const c = G.cars[0];
+  ok(c && Math.abs(c.x + c.w - 14) < 0.3 && c.v < 0.05, 'dolmuş durakta durdu, bekliyor');
+  place(G, c.x + 1, c.plat.y); p.onGround = true; p.plat = c.plat;
+  run(G, () => { p.inv = 99; return {}; }, 1.5);
+  ok(c.left && c.x + c.w > 15, 'tavanına binilince kalktı');
+}
+
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
 {
   for (let k = 0; k < NL; k++) {

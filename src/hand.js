@@ -1277,6 +1277,14 @@
     for (let k = 4; k < w - 2; k += 8) circle(g, x + k, y + 4.4, 0.7, '#5a2a2a', null);
   }
 
+  // dolmuş durağı tabelası
+  function drawStop(g, ln) {
+    const x = (ln.durak + (ln.dir > 0 ? 0.5 : -0.5)) * 16, y = ln.y * 16;
+    lin(g, x, y, x, y - 40, K, 2); lin(g, x, y, x, y - 40, '#9aa2ae', 1);
+    box(g, x - 9, y - 50, 18, 12, 2, '#f4c531', K, 0.8);
+    g.fillStyle = '#1a1a1a'; g.font = 'bold 7px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('D', x, y - 43.5); g.textAlign = 'left';
+  }
+
   root.BA_HAND = {
     glass, planter, turnstile, panel, rack, fanBase, drawFan, drawAir, drawHeat, drawCart, drawDoor, drawReader, coffee,
     drawTable, drawCup, drawGold, goldSlot, drawMoodBug, drawThief, drawPrince, darkTile,
@@ -1287,6 +1295,6 @@
     drawColumn, drawPool, drawCurrent, drawSandal, drawMedusa, stoneBug, drawNest, drawFlood, drawPump,
     drawWind, drawCable, drawTrolley, drawSwing, drawRope, drawLine, drawCabin3, drawPylon,
     drawBrush, drawFoamGun, drawBubble, drawBeacon, drawBelt, crate, drawPress, drawIron, drawForge,
-    drawFrost, drawFog, drawPaterShaft, drawPater, drawEmitter, drawCrane, drawHook,
+    drawFrost, drawFog, drawPaterShaft, drawPater, drawEmitter, drawCrane, drawHook, drawStop,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

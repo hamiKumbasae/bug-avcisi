@@ -186,7 +186,7 @@ def bolum_7_3():
     # ---- SINA: sepet zinciri, rüzgâr, bug'lar
     c.put(118, FL - 1, 'Q')
     gap(122, 166)
-    sepet(129, len=8, amp=0.6, per=3.2)
+    sepet(129, len=8.5, amp=0.74, per=3.4)
     c.rect(136, 9, 137, Hm - 1, '=')
     c.put(136, 8, 'e')
     sepet(144, len=7, amp=0.7, per=3, wind=True)

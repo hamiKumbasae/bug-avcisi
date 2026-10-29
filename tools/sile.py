@@ -29,7 +29,7 @@ def bolum_9_1(room):
         lamp(x)
 
     # ---- TANIT: karşıdan gelen araçlar; farları yaklaştığını gösterir. üstünden atla ya da durakta bekle
-    yol(19, 63, -1, every=3.6, v=4.5, kinds=['taksi', 'taksi', 'dolmus'])
+    yol(19, 59, -1, every=3.6, v=4.5, kinds=['taksi', 'taksi', 'dolmus'])
     c.row(9, range(30, 34), '-')
     c.row(9, range(46, 50), '-')
     c.row(7, range(30, 34), 'b')
@@ -38,7 +38,7 @@ def bolum_9_1(room):
         lamp(x)
 
     # ---- GELİŞTİR: arkadan gelen araçlar; çivili çukurların üstünden bir aracın tavanında geç
-    yol(64, 99, 1, every=2.2, v=6, kinds=['dolmus', 'taksi', 'dolmus'])
+    yol(66, 99, 1, every=2.2, v=6, kinds=['dolmus', 'taksi', 'dolmus'])
     c.row(9, range(70, 74), '-')
     c.row(FL - 1, range(80, 94), '^')
     c.put(87, 6, 'g')                            # altın 1: çukurların üstünde, tavandan zıplayınca
@@ -46,10 +46,9 @@ def bolum_9_1(room):
     for x in (70, 100, 112):
         lamp(x)
 
-    # ---- TERS KÖŞE: dolmuş durakta bekler; tavanına bin, çukurların üstünden götürsün, sonraki durakta in
+    # ---- TERS KÖŞE: dolmuş dolmadan kalkmaz: durakta bekler, tavanına binince kalkar, çukurların üstünden götürür
     c.put(118, FL - 1, 'Q')
-    yol(116, 158, 1, every=5, v=6, kinds=['dolmus'], light={'x': 124, 'w': 1, 'per': 7, 'green': 3})
-    c.row(8, range(119, 123), '-')
+    yol(116, 158, 1, every=5, v=6, kinds=['dolmus'], durak=126)
     c.row(FL - 1, range(128, 150), '^')
     c.row(8, range(130, 149, 3), 'b')
     for x in (122, 138, 154):

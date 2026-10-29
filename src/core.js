@@ -379,8 +379,9 @@
       G.plats.push(n.tray); G.npcs.push(n);
     } else if (o.k === 'yol') {
       // trafik şeridi: araçlar x0'dan x1'e akar; yaya ışığı yeşilken çizginin önünde durur
+      // durak: dolmuş orada durur, tavanına biri binene dek bekler (dolmadan kalkmaz)
       G.lanes.push({ x0: o.x0, x1: o.x1, y: o.y, dir: o.dir || 1, every: o.every || 2.8, t: o.t0 || 0, light: o.light || null,
-        kinds: o.kinds || ['taksi', 'dolmus'], v: o.v || 5, n: 0 });
+        kinds: o.kinds || ['taksi', 'dolmus'], v: o.v || 5, n: 0, durak: o.durak === undefined ? null : o.durak });
     } else if (o.k === 'kibar') {
       G.spawns.push({ kind: 'bug', x: o.x, y: o.y, done: false, polite: true });   // kırmızıda bekleyen kibar bug
     } else if (o.k === 'asansor') {
@@ -602,7 +603,9 @@
       if (ln.t >= ln.every) {
         const kind = ln.kinds[ln.n % ln.kinds.length], [w, h] = CAR[kind];
         const x = ln.dir > 0 ? ln.x0 : ln.x1 - w;
-        if (!G.cars.some((c) => c.lane === ln && Math.abs(c.x - x) < w + 1.5)) {
+        // oyuncunun dibinde araç belirmez (şeridin ucunda bekleyen ezilmesin)
+        const pp = G.player, near = pp && !pp.dead && pp.x + pp.w > x - 2 && pp.x < x + w + 2 && pp.y + pp.h > ln.y - h - 1;
+        if (!near && !G.cars.some((c) => c.lane === ln && Math.abs(c.x - x) < w + 1.5)) {
           ln.t = 0; ln.n++;
           const c = { lane: ln, kind, x, w, h, v: ln.v, hue: (ln.n * 67) % 360 };
           c.plat = { kind: 'car', x, y: ln.y - h, w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, car: c, a: 0, b: 0 };
@@ -618,6 +621,11 @@
       if (l && greenNow(G, l)) {
         const line = d > 0 ? l.x - 0.3 : l.x + l.w + 0.3, dist = (line - front) * d;
         if (dist > -0.2) want = Math.min(want, Math.max(0, dist * 3));
+      }
+      if (ln.durak !== null && c.kind === 'dolmus' && !c.left) {
+        const dist = (ln.durak - front) * d;
+        if (dist > -0.2) want = Math.min(want, Math.max(0, dist * 3));
+        if (p.plat === c.plat && p.onGround) { c.board = (c.board || 0) + dt; if (c.board > 0.5) { c.left = true; ev(G, 'honk'); } }
       }
       for (const o of G.cars) {
         if (o === c || o.lane !== ln) continue;
