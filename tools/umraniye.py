@@ -164,9 +164,9 @@ def bolum_12_3():
     c.put(37, 5, 'g')                            # altın 1
     # çamaşır ipi
     c.obj('ip', x0=46, x1=51, y=10)
-    c.rect(54, 5, 58, FL - 1, '=')
-    c.row(4, range(54, 59), 'b')
-    stairs_down(c, 59, 7, 5, FL)
+    c.rect(53, 6, 57, FL - 1, '=')
+    c.row(5, range(53, 58), 'b')
+    stairs_down(c, 58, 5, 6, FL)
     # yürüyen bant ve pres
     c.obj('bant', x0=68, x1=84, y=FL, v=-2.5)
     c.obj('pres', x=74, w=2, top=4, bot=FL - 1, per=2.8)
