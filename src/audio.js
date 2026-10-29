@@ -117,6 +117,30 @@
       case 'sizzle': noise(t, 0.35, 0.16, 7000, B, true); osc('square', 220, t, 0.12, 0.05, B, 0.5); break;
       case 'gold': seq([84, 88, 91, 96, 91, 96], 0.06, 'triangle', 0.22, 0.12); for (const [f, v] of [[2093, 0.03], [3136, 0.015]]) osc('sine', f, t + 0.35, 0.8, v, B, 1, 0.003); break;
       case 'roar': osc('sawtooth', 70, t, 0.8, 0.14, B, 0.6); noise(t, 0.6, 0.18, 600, B); break;
+      // v2.1 el yapımı dünyalar: kepenk, ezilme, sapan, çürük tahta, çay, korna, asansör, döner kapı, lamba, fotokopi,
+      // vapur düdüğü, motor, karpuz, martı, dalga, alarm, şalter
+      case 'shutter': for (let i = 0; i < 10; i++) noise(t + i * 0.03, 0.025, 0.09 * (1 - i / 12), 1600, B, true); osc('triangle', 90, t + 0.3, 0.12, 0.2, B, 0.6); break;
+      case 'shutterup': for (let i = 0; i < 10; i++) noise(t + i * 0.035, 0.025, 0.07 * (1 - i / 12), 2200, B, true); break;
+      case 'crush': osc('triangle', 80, t, 0.22, 0.3, B, 0.5); noise(t, 0.18, 0.25, 900, B); break;
+      case 'fling': osc('pulse', 300, t, 0.3, 0.09, B, 3.4); break;
+      case 'creak': osc('sawtooth', 110, t, 0.3, 0.05, B, 1.4, 0.05); break;
+      case 'crack': noise(t, 0.12, 0.28, 1500, B); osc('triangle', 130, t, 0.1, 0.15, B, 0.6); break;
+      case 'serve': osc('sine', 2600, t, 0.12, 0.05, B); osc('sine', 3300, t + 0.08, 0.14, 0.04, B); seq([79, 84, 88], 0.06, 'triangle', 0.18, 0.1); break;
+      case 'honk': for (const d of [0, 0.16]) { osc('square', 392, t + d, 0.12, 0.05, B); osc('square', 494, t + d, 0.12, 0.04, B); } break;
+      case 'lift': osc('sine', 220, t, 0.5, 0.05, B, 1.3, 0.1); break;
+      case 'ding': osc('sine', 1318, t, 0.4, 0.06, B); osc('sine', 988, t + 0.15, 0.6, 0.06, B); break;
+      case 'whoosh': noise(t, 0.35, 0.12, 2400, B, true); break;
+      case 'lampon': osc('square', 1800, t, 0.03, 0.04, B); noise(t + 0.02, 0.05, 0.05, 6000, B, true); break;
+      case 'copy': noise(t, 0.4, 0.06, 3000, B, true); osc('sine', 600, t, 0.4, 0.02, B, 1.2); break;
+      case 'horn': osc('sawtooth', 147, t, 0.8, 0.05, B, 1, 0.1); osc('sine', 98, t, 0.9, 0.12, B, 1, 0.1); break;
+      case 'motor': for (let i = 0; i < 6; i++) noise(t + i * 0.07, 0.05, 0.1, 500, B); break;
+      case 'roll': osc('triangle', 110, t, 0.25, 0.14, B, 0.8); noise(t, 0.2, 0.06, 400, B); break;
+      case 'steal': osc('sawtooth', 1200, t, 0.16, 0.05, B, 0.7); seq([84, 79], 0.06, 'pulse', 0.06); break;
+      case 'wave': noise(t, 0.9, 0.12, 900, B); break;
+      case 'splash': noise(t, 0.3, 0.2, 1400, B); osc('sine', 300, t, 0.15, 0.06, B, 0.5); break;
+      case 'alarm': for (let i = 0; i < 6; i++) osc('square', i % 2 ? 660 : 880, t + i * 0.16, 0.15, 0.05, B); break;
+      case 'powerup': osc('sawtooth', 60, t, 0.5, 0.08, B, 2.2, 0.05); osc('square', 1600, t + 0.05, 0.05, 0.03, B); break;
+      case 'powerdown': osc('sawtooth', 160, t, 0.5, 0.08, B, 0.35); noise(t, 0.08, 0.1, 3000, B, true); break;
       case 'select': seq([72, 79], 0.05, 'pulse', 0.08); break;
       case 'move': osc('pulse', 880, t, 0.04, 0.05, B); break;
       case 'pause': seq([72, 79], 0.07, 'triangle', 0.2); break;

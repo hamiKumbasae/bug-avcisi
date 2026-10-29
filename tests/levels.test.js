@@ -29,6 +29,12 @@ function analyse(idx, revealHidden) {
   // kartlı kapılar açık sayılır (okuyucu hep yolun üstünde); fanlar çalışıyor sayılır
   for (let i = 0; i < G.grid.length; i++) if (G.grid[i] === T.DOOR) G.grid[i] = T.DOOROPEN;
   BA.updateFans(G, 0);
+  // borsa panoları yanık sayılır; yatay alarm kapakları (yangın kapağı) kapalı, dikey kapılar açık sayılır
+  for (const b of G.boards) for (let x = b.x0; x <= b.x1; x++) G.grid[b.y * W + x] = T.PANO;
+  for (const g of G.agates) {
+    const bridge = !g.inv && g.x1 - g.x0 > g.y1 - g.y0;
+    for (let y = g.y0; y <= g.y1; y++) for (let x = g.x0; x <= g.x1; x++) G.grid[y * W + x] = bridge ? T.GATE : T.EMPTY;
+  }
   const isHot = (x, y) => BA.tile(G, x, y) === T.HOT;
   // patron arenası için duvarı da ekle (gerçekte kilitlendiğinde gelir; geçiş denetimi için önemsiz)
   // hareketli platformları menzilleri boyunca sabit say
@@ -43,6 +49,14 @@ function analyse(idx, revealHidden) {
       // terazi kefesi: tepede, dengede ve dipte durabilir; üstündekini aralarında taşır
       const ys = [p.base - p.sc.r, p.base, p.base + p.sc.r].map((y) => ({ x: p.x, y, w: p.w, h: 0.5, dy: 0 }));
       statics.push(...ys); rides.push([ys[0], ys[1]], [ys[1], ys[2]], [ys[0], ys[2]]);
+    } else if (p.kind === 'boat') {
+      // vapur ve kayık: iki iskele arasındaki yolu boyunca (üst güverte de)
+      const b = p.boat, off = p.upper ? 3 : 0;
+      statics.push({ x: b.a + off, y: p.y, w: b.b - b.a + p.w, h: 0.5, dy: 0 });
+    } else if (p.kind === 'float') {
+      // sal: suyla alçalıp yükselir
+      const td = G.tides.reduce((m, d) => (!m || Math.abs((d.x0 + d.x1) / 2 - p.x) < Math.abs((m.x0 + m.x1) / 2 - p.x) ? d : m), null);
+      if (td) { const a = { x: p.x, y: td.lo - p.off, w: p.w, h: 0.5, dy: 0 }, z = { x: p.x, y: td.hi - p.off, w: p.w, h: 0.5, dy: 0 }; statics.push(a, z); rides.push([a, z]); }
     } else if (p.kind === 'tray') {
       // çaycının tepsisi: yürüdüğü yol boyunca
       statics.push({ x: p.npc.x0 - 0.6, y: p.y, w: p.npc.x1 - p.npc.x0 + p.w, h: 0.5, dy: 0 });
@@ -133,7 +147,7 @@ function analyse(idx, revealHidden) {
         for (let ty = Math.floor(b.y - 0.06); ty <= Math.floor(b.y + b.h + 0.06 - 1e-9); ty++) for (let tx = Math.floor(b.x - 0.06); tx <= Math.floor(b.x + b.w + 0.06 - 1e-9); tx++) if (isHot(tx, ty)) hitSpike = true;
       }
       // simitçi tezgâhı: inen seker
-      if (r.down && BA.cartUnder(G, b) >= 0) { vy = -BA.CART_V; bounce = true; left = true; continue; }
+      if (r.down && BA.cartUnder(G, b) >= 0) { vy = -BA.CART_V; bounce = true; left = true; tmax = (tmax || 3) + 1.6; continue; }
       if (r.down) {
         if (left) return hitSpike ? null : findSeg(b);
         if (hitSpike) return null;

@@ -26,9 +26,9 @@
   // kapağı, yerdeki soğutma fanı, sıcak (dokununca yakar) ve soğumuş kabin, cam cephe, saksı, turnike, simitçi tezgâhı.
   const T = { EMPTY: 0, GROUND: 1, SOLID: 2, ONEWAY: 3, BLOCK: 4, USED: 5, CRACK: 6, SPIKE: 7, WALL: 8, HIDDEN: 9, MULTI: 10,
     DOOR: 11, DOOROPEN: 12, PANEL: 13, FAN: 14, HOT: 15, COOL: 16, GLASS: 17, PLANTER: 18, TURN: 19, CART: 20,
-    CRUMBLE: 21, SHUTTER: 22 };
+    CRUMBLE: 21, SHUTTER: 22, PANO: 23, GATE: 24, ZAP: 25, LEVER: 26, STONE: 27, PUMP: 28 };
   const SOLID = [false, true, true, false, true, true, true, false, true, false, true,
-    true, false, true, true, true, true, true, true, true, true, true, true];
+    true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true];
   // fan: üstündeki hava sütununda yukarı iter (sütun en çok 10 karo, katı karoda biter; tepesine yakın zayıflar)
   // f fanları 4 saniyede bir 2,4 saniye çalışır; patronun ikinci evresinde bütün fanlar kısa kısa çalışır
   const FAN = { lift: 90, grav: 30, cap: 6.5, reach: 10, period: 4, on: 2.4, pPeriod: 1.7, pOn: 0.95 };
@@ -102,6 +102,8 @@
       scales: [], npcs: [], crumb: new Map(), shutters: [],
       lanes: [], cars: [], lifts: [], doors2: [], lamps: [],
       boats: [], spawners: [], tides: [],
+      boards: [], lasers: [], agates: [], vents: [], alarm: 0, alarmCD: 0, levers: [], zaps: [], zapAt: new Map(), power: {},
+      sandals: [], currents: [], pools: [], medusas: [], stones: [], nests: [], floods: [], pumps: [],
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -194,6 +196,8 @@
     }
     // haritanın dışında tanımlanan nesneler: teraziler, çaycı, kepenkler
     for (const o of L.objs || []) addObj(G, o);
+    if (G.boards.length) updateBoards(G);
+    for (const g of G.agates) if (g.inv) { g.k = 1; g.solid = true; for (let y = g.y0; y <= g.y1; y++) for (let x = g.x0; x <= g.x1; x++) G.grid[y * W + x] = T.GATE; }
     // karanlık arka planlı bölgeler (tavan arası, taban altı): yalnız çizim içindir
     if (L.dark) {
       G.dark = new Uint8Array(W * MH);
@@ -407,6 +411,63 @@
       G.tides.push({ x0: o.x0, x1: o.x1, lo: o.lo, hi: o.hi, per: o.per || 6, high: o.high || 1.6, ph: o.ph || 0, y: o.lo });
     } else if (o.k === 'kiris') {
       G.decor.push({ k: 'kiris', x: o.x0, x1: o.x1, y: o.y });   // galerinin korkuluk kirişi: yalnız süs, üstünde durulmaz
+    } else if (o.k === 'pano') {
+      // borsa panosu: belli aralıkla yanar (üstüne basılır), söner (boşluk); sönmeden önce kırmızı yanıp söner
+      G.boards.push({ x0: o.x0, x1: o.x1 === undefined ? o.x0 + 1 : o.x1, y: o.y, per: o.per || 3, on: o.on || 1.8, ph: o.ph || 0, lit: false, warn: false, sym: o.sym || 0 });
+    } else if (o.k === 'grafik') {
+      // canlı borsa grafiği: yan yana çubuklar dalga gibi inip kalkar; dalga sağa akar
+      const w = o.w || 2;
+      for (let k = 0; k < o.n; k++) G.plats.push({ kind: 'chart', x: o.x + k * w, y: o.y, w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0,
+        a: o.y - o.amp, b: o.y, per: o.per || 4, ph: (o.ph || 0) - k * (o.lag === undefined ? 0.1 : o.lag), bot: o.bot || 12, k });
+    } else if (o.k === 'lazer') {
+      // güvenlik lazeri: dikey (x, y0..y1) ya da yatay (x0..x1, y); per verilirse yanıp söner (on sn yanık).
+      // ya/yb verilirse tarayıcı: yatay ışın ikisi arasında inip kalkar. Değen alarmı çaldırır
+      const vert = o.x !== undefined;
+      G.lasers.push({ vert, x0: vert ? o.x : o.x0, x1: vert ? o.x : o.x1, y0: vert ? o.y0 : o.y, y1: vert ? o.y1 : o.y, y: vert ? 0 : o.y + 0.5,
+        per: o.per || 0, on: o.on || 0, ph: o.ph || 0, ya: o.ya, yb: o.yb, active: true });
+    } else if (o.k === 'alarmkapi') {
+      // alarm kapısı: alarm çalınca iner (katı), susunca kalkar. inv: tersine, alarmda açılan yangın çıkışı
+      G.agates.push({ x0: o.x0 === undefined ? o.x : o.x0, x1: o.x1 === undefined ? o.x : o.x1, y0: o.y0, y1: o.y1, inv: !!o.inv, solid: false, k: 0 });
+    } else if (o.k === 'menfez') {
+      G.vents.push({ x: o.x, y: o.y, kids: [], open: 0 });   // havalandırma menfezi: alarmda içinden bug düşer
+    } else if (o.k === 'salter') {
+      // şalter: üstüne basınca (ya da alttan vurunca) kolu iner, gruptaki elektrik kesilir/gelir
+      const grp = o.grp || 'a';
+      G.levers.push({ x: o.x, y: o.y, grp, t: -9 }); G.grid[o.y * G.W + o.x] = T.LEVER;
+      if (o.on !== undefined || !(grp in G.power)) G.power[grp] = o.on !== false;
+    } else if (o.k === 'izgara') {
+      // elektrikli ızgara: gruba elektrik varken üstüne basanı çarpar (bug'ları da)
+      const grp = o.grp || 'a';
+      for (let x = o.x0; x <= o.x1; x++) { G.grid[o.y * G.W + x] = T.ZAP; G.zapAt.set(o.y * G.W + x, grp); }
+      G.zaps.push({ x0: o.x0, x1: o.x1, y: o.y, grp });
+      if (!(grp in G.power)) G.power[grp] = true;
+    } else if (o.k === 'ray') {
+      // elektrikli raylı platform: yalnız grubunda elektrik varken gider (yatay: x0..x1, dikey: y0..y1)
+      const grp = o.grp || 'a', h = o.y0 === undefined;
+      G.plats.push({ kind: h ? 'h' : 'v', rail: true, grp, x: h ? o.x0 : o.x, y: h ? o.y : o.y1, w: o.w || 3, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0,
+        a: h ? o.x0 : o.y0, b: h ? o.x1 : o.y1, sp: o.v || 2.2, dir: h ? 1 : -1, pause: 0.4, hold: 0 });
+      if (!(grp in G.power)) G.power[grp] = true;
+    } else if (o.k === 'sandal') {
+      // sandal: suda yüzer; içine her inişte (zıplayıp düşünce) oyuncunun baktığı yana itilir, su yavaşlatır.
+      // sütun dibine ya da iskeleye çarpınca durur
+      const b = { x: o.x, y: o.y, w: o.w || 3, vx: 0, x0: o.x0, x1: o.x1, bump: 0 };
+      b.deck = { kind: 'sandal', x: b.x, y: b.y, w: b.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, boat: b, a: 0, b: 0 };
+      G.plats.push(b.deck); G.sandals.push(b);
+    } else if (o.k === 'akinti') {
+      G.currents.push({ x0: o.x0, x1: o.x1, v: o.v });   // su akıntısı: içindeki sandalları sürükler
+    } else if (o.k === 'su') {
+      G.pools.push({ x0: o.x0, x1: o.x1, y: o.y });       // sarnıç suyu (çizim): içinde sazanlar yüzer
+    } else if (o.k === 'medusa') {
+      // Medusa başı: gözleri belli aralıkla açılır; bakışının yolundaki bug taşa döner (blok olur), oyuncu bir an taş kesilir.
+      // dir: bakış yönü (l, r, d); w: bakışın eni (karo)
+      G.medusas.push({ x: o.x, y: o.y, dir: o.dir || 'l', len: o.len || 8, w: o.w || 2, per: o.per || 4, open: o.open || 2, ph: o.ph || 0, on: false, warn: false });
+    } else if (o.k === 'yuva') {
+      G.nests.push({ x: o.x, y: o.y, every: o.every || 4, t: o.t0 || 0, kids: [], max: o.max || 2 });   // duvar çatlağı: arada bir bug çıkar
+    } else if (o.k === 'taskin') {
+      // taşkın: oyuncu yaklaşınca su yavaş yavaş yükselir (y azalır); pompaya basınca iner
+      G.floods.push({ x0: o.x0, x1: o.x1, y: o.y, lo: o.y, hi: o.hi, rate: o.rate || 0.2, target: null, near: o.near || 4 });
+    } else if (o.k === 'pompa') {
+      G.pumps.push({ x: o.x, y: o.y, drop: o.drop || 4, t: -9, uses: o.uses || 1 }); G.grid[o.y * G.W + o.x] = T.PUMP;
     } else if (o.k === 'kepenk') {
       // dükkân kepengi: belli aralıkla iner (katı), bir süre kapalı kalır, kalkar
       G.shutters.push({ x: o.x, y0: o.y0, y1: o.y1, ph: o.ph || 0, per: o.per || 4, open: o.open || 2, k: 1, solid: false });
@@ -577,7 +638,7 @@
       if (s.t >= s.every) {
         s.t = 0;
         const e = makeEnemy(G, 'karpuz', s.x, s.y);
-        e.vx = s.dir * s.v; e.w = 0.9; e.h = 0.9; G.ents.push(e); ev(G, 'roll');
+        e.vx = s.dir * s.v; e.w = 0.9; e.h = 0.9; e.y = s.y + 1 - e.h - 0.001; G.ents.push(e); ev(G, 'roll');
       }
     }
   }
@@ -631,6 +692,194 @@
       for (let y = s.y0; y <= s.y1; y++) setTile(G, s.x, y, want ? T.SHUTTER : T.EMPTY);
       if (s.x > G.cam - 2 && s.x < G.cam + VW + 2) ev(G, want ? 'shutter' : 'shutterup');
     }
+  }
+  // ---------------- Ataşehir: borsa panoları, lazer alarmı, şalterler ----------------
+  const ALARM = 4.5;
+  function boardPhase(G, b) { return (((G.t / b.per + b.ph) % 1) + 1) % 1 * b.per; }
+  function updateBoards(G) {
+    for (const b of G.boards) {
+      const ph = boardPhase(G, b), want = ph < b.on;
+      b.warn = want && ph > b.on - 0.7;
+      if (want === b.lit) continue;
+      const box = { x: b.x0, y: b.y, w: b.x1 - b.x0 + 1, h: 1 };
+      if (want) {
+        // yanarken içinde oyuncu varsa onu kapatmaz (geçince yanar); bug'ı üstüne çıkarır
+        if (G.player && !G.player.dead && overlap(G.player, box)) continue;
+        for (const e of G.ents) if (!e.dead && overlap(e, box)) e.y = b.y - e.h;
+      }
+      b.lit = want;
+      for (let x = b.x0; x <= b.x1; x++) setTile(G, x, b.y, want ? T.PANO : T.EMPTY);
+    }
+  }
+  function chartY(G, pl) { return pl.b - (pl.b - pl.a) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (G.t / pl.per + pl.ph))); }
+  function laserOn(G, l) { if (!l.per) return true; return (((G.t / l.per + l.ph) % 1) + 1) % 1 * l.per < l.on; }
+  function laserBox(l) {
+    return l.vert ? { x: l.x0 + 0.4, y: l.y0, w: 0.2, h: l.y1 - l.y0 + 1 } : { x: l.x0, y: l.y - 0.08, w: l.x1 - l.x0 + 1, h: 0.16 };
+  }
+  function updateLasers(G, dt) {
+    if (G.alarm > 0) { G.alarm = Math.max(0, G.alarm - dt); if (!G.alarm) G.alarmCD = 0.8; }
+    else G.alarmCD = Math.max(0, G.alarmCD - dt);
+    const p = G.player;
+    for (const l of G.lasers) {
+      if (l.ya !== undefined) {   // tarayıcı: üçgen dalgayla ya ↔ yb
+        const u = (((G.t / l.per + l.ph) % 1) + 1) % 1, f = u < 0.5 ? u * 2 : 2 - u * 2;
+        l.y = l.ya + (l.yb - l.ya) * f + 0.5; l.active = true;
+      } else l.active = laserOn(G, l);
+      if (!l.active || G.alarm > 0 || G.alarmCD > 0) continue;
+      const box = laserBox(l);
+      let who = null;
+      if (!p.dead && overlap(p, box)) who = p;
+      else for (const e of G.ents) if (!e.dead && !e.harmless && !e.tripped && e.kind !== 'boss' && overlap(e, box)) { who = e; e.tripped = true; break; }
+      if (who) soundAlarm(G, l);
+    }
+    updateGates(G, dt);
+    for (const v of G.vents) v.open = Math.max(0, v.open - dt);
+  }
+  function soundAlarm(G, l) {
+    G.alarm = ALARM; G.alarmX = l.x0; ev(G, 'alarm');
+    // ekrandaki menfezlerden birer bug düşer (her menfezden aynı anda en çok iki)
+    for (const v of G.vents) {
+      if (v.x < G.cam - 1 || v.x > G.cam + VW + 1) continue;
+      v.kids = v.kids.filter((e) => !e.dead && G.ents.includes(e));
+      if (v.kids.length >= 2) continue;
+      const e = makeEnemy(G, 'bug', v.x, v.y + 1);
+      e.vx = G.player.x < v.x ? -2 : 2; e.vy = 2; G.ents.push(e); v.kids.push(e); v.open = 0.6;
+    }
+  }
+  function updateGates(G, dt) {
+    const p = G.player;
+    for (const g of G.agates) {
+      const want = (G.alarm > 0) !== g.inv;
+      g.k = approach(g.k, want ? 1 : 0, dt / 0.22);
+      if (want === g.solid) continue;
+      g.solid = want;
+      if (want) {
+        const box = { x: g.x0, y: g.y0, w: g.x1 - g.x0 + 1, h: g.y1 - g.y0 + 1 };
+        if (!p.dead && overlap(p, box)) {
+          if (box.w > box.h) { p.y = g.y0 - p.h; p.vy = Math.min(p.vy, 0); }   // yatay kapak: üstüne çıkar
+          else p.x = p.x + p.w / 2 < g.x0 + box.w / 2 ? g.x0 - p.w - 0.01 : g.x1 + 1.01;
+        }
+        for (const e of G.ents) if (!e.dead && !e.harmless && e.kind !== 'boss' && overlap(e, box)) { killEnemy(G, e, true, 200); ev(G, 'crush'); }
+      }
+      for (let y = g.y0; y <= g.y1; y++) for (let x = g.x0; x <= g.x1; x++) setTile(G, x, y, want ? T.GATE : T.EMPTY);
+    }
+  }
+  function zapUnder(G, b) {
+    const ty = Math.floor(b.y + b.h + 0.02);
+    for (let tx = Math.floor(b.x + 0.001); tx <= Math.floor(b.x + b.w - 0.001); tx++) {
+      const grp = G.zapAt.get(ty * G.W + tx);
+      if (grp !== undefined && G.power[grp]) return tx;
+    }
+    return -1;
+  }
+  function flipLever(G, tx, ty) {
+    const lv = G.levers.find((l) => l.x === tx && l.y === ty);
+    if (!lv || G.t - lv.t < 0.3) return;
+    lv.t = G.t; G.power[lv.grp] = !G.power[lv.grp];
+    ev(G, G.power[lv.grp] ? 'powerup' : 'powerdown');
+  }
+  // ---------------- Yerebatan: sandal, Medusa, taşkın ----------------
+  function updateSandal(G, b, dt) {
+    let cur = 0;
+    for (const c of G.currents) if (b.x + b.w / 2 > c.x0 && b.x + b.w / 2 < c.x1) cur += c.v;
+    b.vx += (cur - b.vx) * (1 - Math.exp(-0.9 * dt));
+    let nx = b.x + b.vx * dt;
+    if (nx < b.x0) { nx = b.x0; b.vx = Math.abs(b.vx) * 0.15; }
+    if (nx > b.x1) { nx = b.x1; b.vx = -Math.abs(b.vx) * 0.15; }
+    // önündeki sütun dibi (su hizasındaki katı karo)
+    const ty = Math.floor(b.y - 0.3);
+    if (b.vx > 0) { const tx = Math.floor(nx + b.w - 0.001); if (solid(G, tx, ty)) { nx = tx - b.w; if (b.vx > 1) { ev(G, 'thunk'); b.bump = 0.25; } b.vx = -b.vx * 0.15; } }
+    else if (b.vx < 0) { const tx = Math.floor(nx + 0.001); if (solid(G, tx, ty)) { nx = tx + 1; if (b.vx < -1) { ev(G, 'thunk'); b.bump = 0.25; } b.vx = -b.vx * 0.15; } }
+    b.x = nx; b.bump = Math.max(0, b.bump - dt);
+  }
+  function gazeBox(G, m) {
+    // bakış katı karoya kadar uzanır
+    const band = (k) => { for (let j = 0; j < m.w; j++) if (m.dir === 'd' ? solid(G, m.x + j, m.y + k) : solid(G, m.dir === 'l' ? m.x - k : m.x + k, m.y + j)) return true; return false; };
+    let n = 1;
+    while (n <= m.len && !band(n)) n++;
+    n -= 1;
+    if (m.dir === 'l') return { x: m.x - n, y: m.y, w: n, h: m.w };
+    if (m.dir === 'r') return { x: m.x + 1, y: m.y, w: n, h: m.w };
+    return { x: m.x, y: m.y + 1, w: m.w, h: n };
+  }
+  function updateMedusas(G, dt) {
+    const p = G.player;
+    for (const m of G.medusas) {
+      const ph = (((G.t / m.per + m.ph) % 1) + 1) % 1 * m.per;
+      const was = m.on;
+      m.on = ph < m.open; m.warn = !m.on && ph > m.per - 0.7;
+      if (m.on && !was && Math.abs(m.x - p.x) < 14) ev(G, 'gaze');
+      if (!m.on) continue;
+      const box = gazeBox(G, m);
+      m.box = box;
+      if (!box.w || !box.h) continue;
+      for (const e of G.ents) if (!e.dead && !e.harmless && e.kind !== 'boss' && !e.minion && overlap(e, box)) petrify(G, e);
+      if (!p.dead && !(p.stone > 0) && !(p.stoneCD > 0) && p.star <= 0 && overlap(p, box)) { p.stone = 1.1; p.vx = 0; ev(G, 'stone'); }
+    }
+  }
+  // taşa dönen bug: düşer, inince karoya oturur (basılan, katı blok)
+  function petrify(G, e) {
+    e.dead = true; e.deadT = 9; e.flip = false;
+    addScore(G, 100, e.x + e.w / 2, e.y);
+    G.stones.push({ x: e.x, y: e.y, vy: Math.max(0, e.vy), kind: e.kind, face: e.vx > 0 ? 1 : -1 });
+    G.fx.push({ k: 'stonepuff', x: e.x + e.w / 2, y: e.y + e.h / 2, t: 0 });
+    ev(G, 'stone');
+  }
+  function updateStones(G, dt) {
+    G.stones = G.stones.filter((s) => {
+      s.vy = Math.min(PH.maxFall, s.vy + PH.gFall * dt);
+      const ny = s.y + s.vy * dt, cx = Math.floor(s.x + 0.44), by = Math.floor(ny + 0.875);
+      if (by >= G.H) return false;   // suya düştü
+      if (solid(G, cx, by) || tile(G, cx, by) === T.ONEWAY) {
+        // oturduğu karonun üstü: taş blok
+        const ty = by - 1;
+        if (ty < 0) return false;
+        const p = G.player, box = { x: cx, y: ty, w: 1, h: 1 };
+        if (!p.dead && overlap(p, box)) p.y = ty - p.h;
+        for (const e of G.ents) if (!e.dead && overlap(e, box)) e.y = ty - e.h;
+        if (tile(G, cx, ty) === T.EMPTY) { setTile(G, cx, ty, T.STONE); G.stoneLook = G.stoneLook || new Map(); G.stoneLook.set(ty * G.W + cx, s.kind); }
+        ev(G, 'thud');
+        return false;
+      }
+      s.y = ny;
+      return true;
+    });
+  }
+  function updateNests(G, dt) {
+    for (const n of G.nests) {
+      if (n.x < G.cam - 2 || n.x > G.cam + VW + 2) continue;
+      n.kids = n.kids.filter((e) => !e.dead && G.ents.includes(e));
+      n.t += dt;
+      if (n.t < n.every || n.kids.length >= n.max) continue;
+      n.t = 0;
+      const e = makeEnemy(G, 'bug', n.x, n.y);
+      e.vx = G.player.x < n.x ? -2 : 2; G.ents.push(e); n.kids.push(e);
+      G.fx.push({ k: 'dust', x: n.x + 0.5, y: n.y + 1, vx: e.vx * 0.5, t: 0 });
+    }
+  }
+  function updateFloods(G, dt) {
+    const p = G.player;
+    for (const d of G.floods) {
+      if (d.target !== null) {
+        // pompa: su iner
+        d.y = Math.min(d.target, d.y + 3 * dt);
+        if (d.y >= d.target) d.target = null;
+      } else if (p.x + p.w > d.x0 - d.near && p.x < d.x1 + d.near) d.y = Math.max(d.hi, d.y - d.rate * dt);
+      const inX = (b) => b.x + b.w > d.x0 && b.x < d.x1;
+      if (!p.dead && inX(p) && p.y + p.h > d.y + 0.35 && p.inv <= 0 && p.star <= 0) {
+        hurt(G); if (!p.dead) { p.vy = -14; p.onGround = false; p.plat = null; } ev(G, 'splash');
+      }
+      for (const e of G.ents) if (!e.dead && !e.harmless && e.kind !== 'boss' && inX(e) && e.y + e.h > d.y + 0.3) { killEnemy(G, e, true, 100); ev(G, 'splash'); }
+    }
+  }
+  function pressPump(G, tx, ty) {
+    const pm = G.pumps.find((q) => q.x === tx && q.y === ty);
+    if (!pm || pm.uses <= 0 || G.t - pm.t < 0.4) return;
+    pm.t = G.t; pm.uses--;
+    let best = null;
+    for (const d of G.floods) if (!best || Math.abs((d.x0 + d.x1) / 2 - tx) < Math.abs((best.x0 + best.x1) / 2 - tx)) best = d;
+    if (best) best.target = Math.min(best.lo, best.y + pm.drop);
+    ev(G, 'pump');
   }
   // çürük tahtalar: oyuncu basınca yarım saniye sonra çöker, beş saniye sonra yerine gelir
   function updateCrumbles(G, dt) {
@@ -756,7 +1005,9 @@
       ev(G, 'bump');
       return;
     }
-    if (t === T.PANEL) { openPanel(G, tx, ty); bumpAbove(G, tx, ty); return; }   // asma tavan / taban kapağı
+    if (t === T.PANEL) { openPanel(G, tx, ty); bumpAbove(G, tx, ty); return; }
+    if (t === T.LEVER) { flipLever(G, tx, ty); G.bumps.push({ tx, ty, t: 0 }); return; }
+    if (t === T.PUMP) { pressPump(G, tx, ty); G.bumps.push({ tx, ty, t: 0 }); return; }   // asma tavan / taban kapağı
     if (t === T.HIDDEN) {
       setTile(G, tx, ty, T.BLOCK);
       ev(G, 'secret');
@@ -1000,6 +1251,7 @@
     e.onGround = r.down;
     e.plat = r.down ? r.plat : null;
     if (r.down || r.up) e.vy = 0;
+    if (G.zaps.length && e.onGround && zapUnder(G, e) >= 0) { G.fx.push({ k: 'zap', x: e.x + e.w / 2, y: e.y + e.h, t: 0 }); killEnemy(G, e, true, 200); ev(G, 'zap'); return; }
     if (edgeTurn && e.onGround) {
       const fx = e.vx > 0 ? e.x + e.w + 0.05 : e.x - 0.05;
       const fy = Math.floor(e.y + e.h + 0.1);
@@ -1130,6 +1382,14 @@
       p.x = a + (b - a) * k;
       if (k >= 1) { p.spin = null; p.vx = sp.dir * 4; }
       return;
+    }
+    // Medusa'nın bakışı: taş kesilen oyuncu bir an kıpırdayamaz; sonra kısa süre bakıştan etkilenmez
+    p.stoneCD = Math.max(0, (p.stoneCD || 0) - dt);
+    if (p.stone > 0) {
+      p.stone = Math.max(0, p.stone - dt);
+      if (!p.stone) p.stoneCD = 1.2;
+      inp = { left: false, right: false, down: false, jump: false, run: false };
+      if (p.onGround) p.vx = 0;
     }
     const onTrain = p.plat && p.plat.train ? p.plat : null;
     const jumpPressed = inp.jump && !G.prev.jump;
@@ -1285,6 +1545,15 @@
         const i = ty * G.W + tx;
         if (tile(G, tx, ty) === T.CRUMBLE && !G.crumb.has(i)) { G.crumb.set(i, { x: tx, y: ty, t: 0, gone: false }); ev(G, 'creak'); }
       }
+      // sandala inmek: baktığın yana itilir
+      if (!wasGround && r.plat && r.plat.kind === 'sandal') {
+        const b = r.plat.boat; b.vx = clamp(b.vx + p.face * 2.6, -4.6, 4.6);
+        G.fx.push({ k: 'ripple', x: b.x + b.w / 2, y: b.y + 0.4, t: 0 }); ev(G, 'splash');
+      }
+      // pompanın düğmesine inmek: su iner
+      if (!wasGround && G.pumps.length) for (let tx = Math.floor(p.x + 0.001); tx <= Math.floor(p.x + p.w - 0.001); tx++) if (tile(G, tx, ty) === T.PUMP) { pressPump(G, tx, ty); break; }
+      // şalterin koluna inmek: elektriği keser ya da verir
+      if (!wasGround && G.levers.length) for (let tx = Math.floor(p.x + 0.001); tx <= Math.floor(p.x + p.w - 0.001); tx++) if (tile(G, tx, ty) === T.LEVER) { flipLever(G, tx, ty); break; }
       // yüksekten terazi kefesine düşmek: sapan; çaycının tepsisine ilk binişte çay ikramı
       if (r.plat && r.plat.kind === 'pan' && fallV > 10) r.plat.sc.snap = 0.4;
       if (r.plat && r.plat.kind === 'tray' && !r.plat.npc.served) { r.plat.npc.served = true; powerUp(G, 'cay', { x: p.x, y: p.y - 0.5, w: 1, h: 1 }); ev(G, 'serve'); }
@@ -1311,6 +1580,16 @@
       for (let ty = Math.max(0, y0); ty <= Math.min(G.H - 1, y1); ty++) for (let tx = x0; tx <= x1; tx++) {
         const i = ty * G.W + tx;
         if (G.coins[i]) { G.coins[i] = 0; addSimit(G, 1); G.fx.push({ k: 'spark', x: tx + 0.5, y: ty + 0.5, t: 0 }); }
+      }
+    }
+    // elektrikli ızgara: elektrik varken üstüne basanı çarpar, havaya sıçratır
+    if (G.zaps.length && !p.dead && p.onGround && p.star <= 0 && p.inv <= 0) {
+      const zx = zapUnder(G, p);
+      if (zx >= 0) {
+        hurt(G);
+        if (!p.dead) { p.vy = -11; p.onGround = false; p.plat = null; }
+        G.fx.push({ k: 'zap', x: p.x + p.w / 2, y: p.y + p.h, t: 0 });
+        ev(G, 'zap');
       }
     }
     // sıcak kabin: hangi yandan değilirse değilsin yakar ve geri iter
@@ -1819,6 +2098,8 @@
       }
       if (f.k === 'steam') { f.y -= 1.2 * dt; return f.t < 0.9; }
       if (f.k === 'goldpop') return f.t < 0.8;
+      if (f.k === 'ripple') return f.t < 0.8;
+      if (f.k === 'stonepuff') return f.t < 0.6;
       return f.t < 0.35;
     });
     if (born.length) G.fx.push(...born);
@@ -1890,6 +2171,12 @@
         const b = pl.boat;
         if (!pl.upper) updateBoat(G, b, dt);
         pl.x = b.x + (pl.upper ? 3 : 0);
+      } else if (pl.kind === 'chart') {
+        pl.y = chartY(G, pl);
+      } else if (pl.kind === 'sandal') {
+        updateSandal(G, pl.boat, dt); pl.x = pl.boat.x;
+      } else if (pl.rail && !G.power[pl.grp]) {
+        // elektrik yok: raylı platform yerinde durur
       } else if (pl.kind === 'lift') {
         updateLift(G, pl.lift, dt);
       } else if (pl.kind === 'tray') {
@@ -1927,6 +2214,12 @@
     if (G.lamps.length) updateLamps(G, dt);
     if (G.spawners.length) updateSpawners(G, dt);
     if (G.tides.length) updateTides(G);
+    if (G.boards.length) updateBoards(G);
+    if (G.lasers.length || G.agates.length) updateLasers(G, dt);
+    if (G.medusas.length) updateMedusas(G, dt);
+    if (G.stones.length) updateStones(G, dt);
+    if (G.nests.length) updateNests(G, dt);
+    if (G.floods.length) updateFloods(G, dt);
 
     updatePlayer(G, inp, dt);
     G.prev.jump = inp.jump; G.prev.run = inp.run;
@@ -2108,5 +2401,6 @@
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
     levels, moveX, moveY, runUpSpeed, jumpSpeed,
     FAN, CART_V, fanAt, fanVy, cartUnder, updateFans, updateShutters, CAR, greenNow,
+    updateBoards, chartY, laserBox, zapUnder, gazeBox,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

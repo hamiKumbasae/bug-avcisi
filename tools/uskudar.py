@@ -175,6 +175,7 @@ def bolum_4_3():
     kaya(147); kaya(157, 10)
     c.obj('sal', x=151, y=12.6, w=2)
     c.obj('sal', x=161, y=12.6, w=2)
+    c.put(152, 5, 'g')                           # altın 3: yüksek suda salın tepesinde
     c.put(153, FL - 1, 'e'); c.put(163, FL - 1, 'e')
     kaya(168)
     c.put(171, FL - 1, 'Q')

@@ -886,6 +886,169 @@ const place = (G, x, y) => { const p = G.player; p.x = x + (1 - p.w) / 2; p.y = 
   ok(flashes === 2, `fotokopi 5 sn'de iki kez çaktı (${flashes})`);
 }
 
+// ================= Üsküdar: vapur, kayık, martılar, tente, karpuz, dalga, sal =================
+// ---------- vapur iskelede bekler, karşıya geçer, üstündekini taşır; kayık yalnız binilince gider ----------
+{
+  const map = ['..P.......................', '#####..............#######', '#####..............#######'];
+  const i = custom(map, { hand: true, objs: [{ k: 'vapur', x0: 5, x1: 9, y: 12, w: 10, wait: 1, v: 3 }] });
+  const ik = custom(map, { hand: true, objs: [{ k: 'vapur', x0: 5, x1: 15, y: 12, w: 4, kayik: true, v: 3 }] });
+  const G = BA.loadStage(BA.newRun(), i), f = G.boats[0], k = BA.loadStage(BA.newRun(), ik).boats[0], p = G.player;
+  ok(f.deck && f.roof && !k.roof, 'vapurun alt ve üst güvertesi, kayığın tek güvertesi var');
+  place(G, 6, 12); p.onGround = true; p.plat = f.deck; p.inv = 99;
+  run(G, NONE, 3.5);
+  ok(f.x === 9 && p.plat === f.deck && p.x > 9, `vapur karşı iskeleye taşıdı (${f.x.toFixed(1)})`);
+  const G2 = BA.loadStage(BA.newRun(), ik), k2 = G2.boats[0];
+  run(G2, NONE, 2);
+  ok(k2.x === 5, 'boş kayık iskelede bekliyor');
+  place(G2, 5.6, 12); G2.player.onGround = true; G2.player.plat = k2.deck; G2.player.inv = 99;
+  run(G2, NONE, 5);
+  ok(k2.x === 15, `binilince karşıya gitti (${k2.x.toFixed(1)})`);
+  place(G2, 21, 12); G2.player.onGround = true;
+  run(G2, NONE, 9);
+  ok(k2.x === 5, 'boş kalınca kendi iskelesine döndü');
+}
+// ---------- vapur martısı dalınca simit kapar; kaçarken ezilince geri verir ----------
+{
+  const i = custom(['..P.................', '#'.repeat(20), '#'.repeat(20)], { hand: true, objs: [{ k: 'martilar', x0: 4, x1: 18, n: 1, y: 5 }] });
+  const S = BA.newRun(); S.simit = 20;
+  const G = BA.loadStage(S, i), p = G.player;
+  run(G, NONE, 0.1);
+  const m = G.ents.find((e) => e.kind === 'hirsiz');
+  ok(m && m.chase, 'martı oyuncunun peşinde');
+  run(G, () => ({}), 5, () => m.state === 'flee');
+  ok(m.state === 'flee' && m.carry === 5 && S.simit === 15, `dalıp beş simit kaptı (${S.simit})`);
+  p.x = m.x; p.y = m.y + 0.1 - p.h; p.vy = 6;
+  run(G, NONE, 0.05);
+  ok(m.state === 'bonk' && S.simit >= 21, `ezilen martı simitleri geri verdi (${S.simit})`);
+}
+// ---------- tente sektirir ama simit vermez; karpuz yuvarlanır, duvarda patlar, önündeki bug'ı devirir ----------
+{
+  const i = custom(['..P.........', '............', '............', '......kkk...', '############', '############'], { hand: true, tente: true });
+  const S = BA.newRun(), G = BA.loadStage(S, i), p = G.player;
+  place(G, 6.6, 6); p.y = 6; p.vy = 4;
+  let minY = 99;
+  run(G, NONE, 1.2, (g) => { minY = Math.min(minY, g.player.y); return false; });
+  ok(minY < 5 && S.simit === 0, `tente sektirdi, simit yok (${minY.toFixed(1)})`);
+  const j = custom(['..P..................=', '#'.repeat(22), '#'.repeat(22)], { hand: true, objs: [{ k: 'kasa', x: 17, y: 11, every: 0.5, dir: 1 }] });
+  const G2 = BA.loadStage(BA.newRun(), j);
+  run(G2, () => { G2.player.x = 1; return {}; }, 0.6);
+  const kp = G2.ents.find((e) => e.kind === 'karpuz');
+  ok(kp && kp.vx > 0, 'kasadan karpuz yuvarlandı');
+  run(G2, () => { G2.player.x = 1; return {}; }, 1.5, () => kp.dead);
+  ok(kp.dead && G2.fx.some((f) => f.k === 'splat'), 'karpuz duvara çarpıp patladı');
+  const G3 = BA.loadStage(BA.newRun(), custom(['..P.................', '#'.repeat(20), '#'.repeat(20)], { hand: true, objs: [{ k: 'kasa', x: 4, y: 11, every: 0.3, dir: 1 }] }));
+  G3.ents.push({ kind: 'bug', x: 9, y: 11.125, w: 0.875, h: 0.875, vx: -2, vy: 0, t: 0, dead: false, deadT: 0, flip: false, onGround: true, minion: false, st: 0 });
+  run(G3, () => { G3.player.x = 1; G3.player.inv = 99; return {}; }, 2, () => G3.ents[0].dead);
+  ok(G3.ents[0].dead, 'karpuz önündeki bug\'ı devirdi');
+}
+// ---------- dalga: su yükselince kumsaldakini yakar ve fırlatır; sal suyla kalkar ----------
+{
+  const i = custom(['..P.................', '#'.repeat(20), '#'.repeat(20)], { hand: true, objs: [{ k: 'dalga', x0: 6, x1: 16, lo: 12.8, hi: 9.5, per: 6, high: 2 }, { k: 'sal', x: 12, y: 12.6, w: 3 }] });
+  const S = BA.newRun(); S.power = 1;
+  const G = BA.loadStage(S, i), p = G.player, sal = G.plats.find((q) => q.kind === 'float');
+  p.h = BA.BIG_H; place(G, 8, 12); p.onGround = true; p.h = BA.BIG_H; p.y = 12 - p.h;
+  run(G, NONE, 1);
+  ok(S.power === 1 && Math.abs(sal.y - 12.6) < 0.01, 'alçak suda kumsal güvenli, sal yerde');
+  run(G, NONE, 3.5);
+  ok(S.power === 0 && Math.abs(sal.y - 9.3) < 0.05, `yükselen su yaktı, sal kalktı (${sal.y.toFixed(2)})`);
+}
+
+// ================= Ataşehir: borsa panosu, grafik, lazer alarmı, alarm kapısı, şalter, ızgara, raylı platform =================
+// ---------- pano yanıkken basılır, sönünce düşülür; içindeyken yanmaz ----------
+{
+  const i = custom(['..P..................', '#####.........#######', '#####.........#######'], { hand: true, objs: [{ k: 'pano', x0: 6, x1: 9, y: 12, per: 3, on: 1.5 }] });
+  const G = BA.loadStage(BA.newRun(), i), b = G.boards[0];
+  ok(b.lit && BA.tile(G, 7, 12) === BA.T.PANO, 'pano başta yanık, katı');
+  place(G, 7, 12); G.player.onGround = true;
+  run(G, NONE, 0.9);
+  ok(b.warn && G.player.onGround, 'sönmeden önce uyarıyor, üstünde durulur');
+  run(G, NONE, 0.6, () => !b.lit);
+  run(G, NONE, 0.5);
+  ok(!b.lit && G.player.y > 11.5, 'sönünce oyuncu düştü');
+  const G2 = BA.loadStage(BA.newRun(), i), b2 = G2.boards[0];
+  run(G2, NONE, 1.6);
+  G2.player.x = 7; G2.player.y = 11.6; G2.player.vy = 0; G2.player.inv = 99;
+  run(G2, () => { G2.player.y = 11.6; G2.player.vy = 0; return {}; }, 1.6);
+  ok(!b2.lit, 'içinde oyuncu varken pano yanmadı');
+}
+// ---------- grafik çubukları dalga gibi inip kalkar; üstündekini taşır ----------
+{
+  const i = custom(['..P..................', '###.............#####', '###.............#####'], { hand: true, objs: [{ k: 'grafik', x: 4, y: 11, amp: 5, n: 4, per: 4, lag: 0.1 }] });
+  const G = BA.loadStage(BA.newRun(), i), bars = G.plats.filter((q) => q.kind === 'chart');
+  ok(bars.length === 4 && Math.abs(bars[0].y - 11) < 0.01, 'dört çubuk, ilki dipte');
+  place(G, 4.2, 11); G.player.onGround = true; G.player.plat = bars[0];
+  let top = 99;
+  run(G, NONE, 2, () => { top = Math.min(top, G.player.y + G.player.h); return false; });
+  ok(top < 6.2 && G.player.plat === bars[0], `çubuk oyuncuyu tepeye taşıdı (${top.toFixed(2)})`);
+  ok(bars[1].y > bars[0].y + 0.01 || bars[1].y < bars[0].y - 0.01, 'komşu çubuk ötekinden geride (dalga)');
+}
+// ---------- lazer alarmı: değince kapı iner, menfezden bug düşer; alarm susunca kapı kalkar ----------
+{
+  const i = custom(['..P..................', '#'.repeat(21), '#'.repeat(21)], { hand: true, objs: [{ k: 'lazer', x: 6, y0: 8, y1: 11 }, { k: 'alarmkapi', x: 14, y0: 8, y1: 11 }, { k: 'menfez', x: 10, y: 5 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  ok(G.alarm === 0 && BA.tile(G, 14, 10) === BA.T.EMPTY, 'başta alarm yok, kapı açık');
+  run(G, { right: true }, 1.5, () => G.alarm > 0);
+  ok(G.alarm > 0 && BA.tile(G, 14, 10) === BA.T.GATE, 'lazere değince alarm çaldı, kapı indi');
+  ok(G.ents.some((e) => e.kind === 'bug'), 'menfezden bug düştü');
+  run(G, () => { p.inv = 99; return {}; }, 5);
+  ok(G.alarm === 0 && BA.tile(G, 14, 10) === BA.T.EMPTY, 'alarm sustu, kapı kalktı');
+}
+// ---------- yanıp sönen lazer: sönükken geçilir ----------
+{
+  const i = custom(['..P..................', '#'.repeat(21), '#'.repeat(21)], { hand: true, objs: [{ k: 'lazer', x: 6, y0: 8, y1: 11, per: 3, on: 1 }] });
+  const G = BA.loadStage(BA.newRun(), i);
+  run(G, NONE, 1.2);
+  run(G, { right: true, run: true }, 1.2);
+  ok(G.alarm === 0 && G.player.x > 8, 'sönük lazerin içinden alarmsız geçildi');
+}
+// ---------- inen alarm kapısı altındaki bug'ı ezer; yerdeki lazere takılan bug kendi alarmını çaldırır ----------
+{
+  const i = custom(['..P..................', '#'.repeat(21), '#'.repeat(21)], { hand: true, objs: [{ k: 'lazer', x0: 10, x1: 10, y: 11 }, { k: 'alarmkapi', x: 10, y0: 6, y1: 11 }] });
+  const G = BA.loadStage(BA.newRun(), i);
+  G.ents.push({ kind: 'bug', x: 13, y: 11.125, w: 0.875, h: 0.875, vx: -2, vy: 0, t: 0, dead: false, deadT: 0, flip: false, onGround: true, minion: false, st: 0 });
+  run(G, NONE, 2.5, () => G.ents[0].dead);
+  ok(G.alarm > 0 && G.ents[0].dead, 'bug lazere takıldı, inen kapı onu ezdi');
+}
+// ---------- yangın kapağı: yalnız alarmda kapanır (köprü olur); alarm biterken üstündeki düşer ----------
+{
+  const i = custom(['..P..................', '#######......########', '#######......########'], { hand: true, objs: [{ k: 'lazer', x: 5, y0: 9, y1: 11 }, { k: 'alarmkapi', x0: 7, x1: 12, y0: 12, y1: 12 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  ok(BA.tile(G, 9, 12) === BA.T.EMPTY, 'kapak açık: kuyu boş');
+  run(G, { right: true }, 3, () => p.x > 14);
+  ok(p.x > 14 && !p.dead, 'lazere değince kapak kapandı, kuyunun üstünden geçildi');
+}
+// ---------- şalter: üstüne basınca elektrik kesilir; ızgara elektrikliyken çarpar, bug'ları da ----------
+{
+  const i = custom(['..P..................', '#'.repeat(21), '#'.repeat(21)], { hand: true, objs: [{ k: 'salter', x: 5, y: 11, grp: 'a', on: true }, { k: 'izgara', x0: 8, x1: 14, y: 12, grp: 'a' }] });
+  const S = BA.newRun(); S.power = 1;
+  let G = BA.loadStage(S, i);
+  ok(G.power.a === true && BA.tile(G, 5, 11) === BA.T.LEVER, 'şalter yerinde, elektrik var');
+  G.ents.push({ kind: 'bug', x: 12, y: 11.125, w: 0.875, h: 0.875, vx: -2, vy: 0, t: 0, dead: false, deadT: 0, flip: false, onGround: true, minion: false, st: 0 });
+  run(G, NONE, 0.3);
+  ok(G.ents[0].dead, 'elektrikli ızgaradaki bug çarpıldı');
+  place(G, 9, 12); G.player.onGround = true;
+  run(G, NONE, 0.2);
+  ok(S.power === 0, 'ızgaraya basan oyuncu çarpıldı (küçüldü)');
+  S.power = 1; G = BA.loadStage(S, i);
+  place(G, 5, 9); G.player.onGround = false;
+  run(G, NONE, 0.6);
+  ok(G.power.a === false, 'şaltere inince elektrik kesildi');
+  run(G, { right: true }, 2);
+  ok(S.power === 1 && G.player.x > 12, 'elektriksiz ızgarada yüründü');
+}
+// ---------- raylı platform yalnız elektrik varken gider; şalter alttan vurulunca da döner ----------
+{
+  const i = custom(['.....=...............', '.....................', '..P..................', '#'.repeat(21), '#'.repeat(21)], { hand: true, objs: [{ k: 'salter', x: 5, y: 9, grp: 'b', on: false }, { k: 'ray', x0: 10, x1: 16, y: 10, w: 3, grp: 'b' }] });
+  const G = BA.loadStage(BA.newRun(), i), rail = G.plats.find((q) => q.rail);
+  run(G, NONE, 1);
+  ok(rail.x === 10, 'elektriksiz raylı platform durdu');
+  place(G, 5, 12); G.player.onGround = true;
+  run(G, { jump: true }, 0.4);
+  ok(G.power.b === true, 'şaltere alttan vurunca elektrik geldi');
+  run(G, NONE, 1);
+  ok(rail.x > 10.5, 'elektrikle platform yürüdü');
+}
+
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
 {
   for (let k = 0; k < NL; k++) {
