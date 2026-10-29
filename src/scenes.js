@@ -769,13 +769,6 @@
   }
 
   // ---------- metro hattı: iki istasyon ve aradaki tünel (88 karo, kamerayla kayar) ----------
-  // dünya → [istasyon, hat, hat rengi]; NEXT: trenin gittiği sonraki istasyon
-  const STATIONS = {
-    0: ['İTÜ-AYAZAĞA', 'M2', '#2fa84f'], 1: ['KADIKÖY', 'M4', '#e5427f'], 3: ['VEZNECİLER', 'M2', '#2fa84f'],
-    5: ['ŞİŞHANE', 'M2', '#2fa84f'], 6: ['HALİÇ', 'M2', '#2fa84f'], 9: ['KISIKLI', 'M5', '#8a4fae'], 10: ['ÜMRANİYE', 'M5', '#8a4fae'],
-  };
-  const NEXT = { 0: 'SANAYİ MAHALLESİ', 1: 'AYRILIK ÇEŞMESİ', 3: 'HALİÇ', 5: 'TAKSİM', 6: 'VEZNECİLER', 9: 'BULGURLU', 10: 'ÇARŞI' };
-  const station = (w) => { const s = STATIONS[w] || ['METRO', 'M', '#2fa84f']; return [s[0], s[1], s[2], NEXT[w] || s[0]]; };
   // ekran pikseli (240'lık tuvalde): duvarın altı, rayın üstü (tekerlerin bastığı yer)
   const WALL_BOT = 206, RAIL_TOP = 218;
   // raylar ve hendek: her şeridin altına
@@ -884,11 +877,12 @@
     }, bgScale());
   }
   const lineCache = A.cache();
-  function metroLine(w, vh) {
-    const k = w + ':' + vh;
+  // rd: bölümün biniş bilgisi (hat, renk, a → b istasyonları)
+  function metroLine(rd, vh) {
+    const k = rd.line + rd.a + ':' + vh;
     let P = lineCache.get(k);
     if (P) return P;
-    const [name, ln, col, next] = station(w);
+    const name = rd.a, ln = rd.line, col = rd.col, next = rd.b;
     P = {
       hall: A.mk(128, vh, (g) => hallStrip(g, 128, vh, col), bgScale()),
       tunnel: A.mk(128, vh, (g) => tunnelStrip(g, 128, vh), bgScale()),
@@ -951,7 +945,7 @@
   }
 
   root.BA_SCENE = {
-    W, H, layers, sky, title, metroLine, station, SKY, pen, BASE_AT, PLACES, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
+    W, H, layers, sky, title, metroLine, SKY, pen, BASE_AT, PLACES, ferry, seagull, cat, mix, galataTower, maidensTower, blueMosque, hagiaSophia, flag, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,

@@ -13,8 +13,9 @@ Harita işaretleri (14 satır):
   K  komut bloğu (simit)   U  komut bloğu (güç)   S  komut bloğu (kahve)   L  komut bloğu (disket = can)
   C  çatlak blok (kırılır)   ^  kısa devre (diken)   b  simit
   M  yatay hareketli platform   N  dikey hareketli platform   o  döngü (dönen kıvılcım)
-  e  bug   s  spam   v  virüs   m  martı   j  raylardan sıçrayan bug (metro hattı)
-  T  metro treni (10 karo; tavanına binilir)
+  e  bug   s  spam   v  virüs   m  martı   j  raylardan sıçrayan bug
+  T  bonus binişinin aracı (metro, metrobüs, tramvay, minibüs, taksi, füniküler; tavanına binilir)
+  Y  füniküler varış noktası (aracın eğik rayda vardığı sol üst köşe)
   P  başlangıç   G  DEPLOY noktası   A  arena girişi   B  patron
   h  hatıra parçası (her dünyanın 2. bölümünde bir tane, iki ince platformla çıkılan köşede)
   X  gizli blok (görünmez; alttan vurulunca disket = can çıkar)
@@ -56,17 +57,32 @@ WORLDS = [
      'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi']},
 ]
 
-# Her bölüm ayrı bir mekân: parça karışımı (bölümün tipi), tavan (iç mekân) ve metro girişi.
+# Bonus binişleri: bölümün semtine göre araç. tür → (genişlik karo, hız karo/sn, tavan satırı)
+RIDE_KIND = {'metro': (10, 4.5, 9), 'metrobus': (11, 5.0, 9), 'tram': (10, 3.9, 9), 'minibus': (6, 4.4, 10),
+             'taxi': (5, 5.4, 11), 'funicular': (8, 3.0, 10)}
+
+
+def ride(kind, line, col, a, b, scene=None, night=False):
+    w, v, roof = RIDE_KIND[kind]
+    d = {'type': kind, 'line': line, 'col': col, 'a': a, 'b': b, 'w': w, 'v': v}
+    if scene:
+        d['scene'] = scene      # bölümün arka planı sokağa uymuyorsa binişin kendi sahnesi
+    if night:
+        d['night'] = True       # gece: sokak parçaları karartılır
+    return d
+
+
+# Her bölüm ayrı bir mekân: parça karışımı (bölümün tipi), tavan (iç mekân) ve bonus binişi.
 # Dış mekân bölümleri koşu ve bloklar; iç mekânlar tavanlı ve dar; patron bölümleri kale gibi tuzaklı.
 PLACES = [
     [  # Maslak
-        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group'], 'ride': ride('metrobus', '34', '#c8102e', 'ZİNCİRLİKUYU', 'MECİDİYEKÖY'), 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'blocks', 'blocks', 'pillars', 'stairs', 'vertical', 'group', 'gap'], 'ceil': 2, 'vert': ['climb', 'climb']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'blocks', 'gap', 'tunnel', 'group'], 'ceil': 2},
     ],
     [  # Kadıköy
-        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'metro': True, 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'ride': ride('metro', 'M4', '#e5427f', 'KADIKÖY', 'AYRILIK ÇEŞMESİ'), 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'ride': ride('minibus', '', '#1fb5ad', 'KADIKÖY', 'BOSTANCI'), 'vert': ['climb', 'descent']},
         {'parts': ['slope', 'slope', 'step', 'stairs', 'gap', 'bridge', 'flat', 'pillars']},
     ],
     [  # Vapur
@@ -75,7 +91,7 @@ PLACES = [
         {'parts': ['moving', 'moving', 'gap', 'blockgap', 'bridge', 'pillars', 'loop', 'flat']},
     ],
     [  # Kapalıçarşı
-        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'ride': ride('tram', 'T1', '#2a6fc4', 'BEYAZIT', 'ÇEMBERLİTAŞ', scene='divanyolu'), 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'pillars', 'group', 'stairs', 'blockgap'], 'ceil': 2, 'vert': ['descent', 'climb']},
         {'parts': ['spikes', 'loop', 'pillars', 'gap', 'blocks', 'tunnel', 'group', 'flat'], 'ceil': 2},
     ],
@@ -85,13 +101,13 @@ PLACES = [
         {'parts': ['tunnel', 'spikes', 'loop', 'loop', 'gap', 'pillars', 'moving', 'group'], 'ceil': 2},
     ],
     [  # Galata
-        {'parts': ['stairs', 'stairs', 'step', 'step', 'slope', 'blocks', 'group', 'gap'], 'metro': True, 'vert': ['climb', 'climb']},
-        {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['stairs', 'stairs', 'step', 'step', 'slope', 'blocks', 'group', 'gap'], 'ride': ride('funicular', 'F2', '#c43a2e', 'KARAKÖY', 'BEYOĞLU'), 'vert': ['climb', 'climb']},
+        {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'ride': ride('metro', 'M2', '#2fa84f', 'ŞİŞHANE', 'TAKSİM'), 'vert': ['climb', 'descent']},
         {'parts': ['pillars', 'loop', 'spikes', 'blocks', 'gap', 'stairs', 'group', 'flat'], 'ceil': 2},
     ],
     [  # Haliç: Karaköy'den Eyüp-Balat'a
         {'parts': ['flat', 'blocks', 'gap', 'bridge', 'group', 'blockgap', 'step', 'moving'], 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'bridge', 'gap', 'moving', 'blocks', 'pillars', 'group', 'stairs'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'bridge', 'gap', 'moving', 'blocks', 'pillars', 'group', 'stairs'], 'ride': ride('metro', 'M2', '#2fa84f', 'HALİÇ', 'VEZNECİLER'), 'vert': ['climb', 'descent']},
         {'parts': ['slope', 'slope', 'stairs', 'step', 'blocks', 'gap', 'spikes', 'loop', 'group']},
     ],
     [  # Köprü
@@ -105,64 +121,84 @@ PLACES = [
         {'parts': ['loop', 'loop', 'moving', 'vertical', 'spikes', 'pillars', 'blocks', 'flat'], 'ceil': 2},
     ],
     [  # Çamlıca
-        {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'metro': True, 'vert': ['climb', 'climb']},
+        {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'ride': ride('taxi', '', '#f2c21b', 'ÇAMLICA', 'KISIKLI', night=True), 'vert': ['climb', 'climb']},
         {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge'], 'vert': ['climb', 'climb']},
         {'parts': ['spikes', 'loop', 'tunnel', 'moving', 'pillars', 'blocks', 'gap', 'flat'], 'ceil': 2},
     ],
     [  # Ümraniye: çarşı ve mahalle, yeni plazalar ve metro, Dudullu sanayisi
-        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'metro': True, 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'metro': True, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'ride': ride('minibus', '', '#1fb5ad', 'ÜMRANİYE', 'KADIKÖY'), 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'ride': ride('metro', 'M5', '#8a4fae', 'ÜMRANİYE', 'ÇARŞI'), 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group']},
     ],
 ]
 
 
 
-# metro hattı (88 × 14): iki istasyon arasında tünel. Peronda bekleyen trenin tavanına binilir,
-# tren tüneli geçip öbür istasyonda durur; raylara düşen oyuncu ölmez, metrodan çıkar (Mario'daki bulut odası gibi).
+# bonus binişi (88 × 14): iki durak arasında kolay, düşmansız, simit dolu bir yolculuk.
+# Durakta bekleyen aracın tavanına binilir; araç öbür durakta durur. Metro ve füniküler yer altında (tavanlı),
+# metrobüs, tramvay, minibüs ve taksi caddede (açık hava). Füniküler eğik rayda 4 satır yukarı tırmanır.
+# Raylara/yola düşen oyuncu ölmez, binişten çıkar (Mario'daki bulut odası gibi).
 ROOM_W = 88
-TRAIN_W = 10
 
 
-def make_room(r):
+def make_room(r, rd):
+    kind = rd['type']
+    w, v, R = RIDE_KIND[kind]
     W = ROOM_W
     g = [['.'] * W for _ in range(H)]
-    for x in range(W):
-        g[0][x] = g[1][x] = '='
-    for y in range(H):
-        g[y][0] = g[y][W - 1] = '='
-    A1, B0 = 9, 79            # A peronu 1..9, raylar 10..78, B peronu 79..86 (peron zemini tren tavanı hizasında)
-    for x in range(1, W - 1):
-        if x <= A1 or x >= B0:
-            for y in range(9, 14):
+    under = kind in ('metro', 'funicular')
+    if under:
+        for x in range(W):
+            g[0][x] = g[1][x] = '='
+        for y in range(H):
+            g[y][0] = g[y][W - 1] = '='
+    A1, B0 = 9, 79
+    RA, RB = R, (R - 4 if kind == 'funicular' else R)   # A ve B duraklarının üst satırı
+    for x in range(0 if not under else 1, W if not under else W - 1):
+        if x <= A1:
+            for y in range(RA, H):
                 g[y][x] = '#'
-    g[8][A1 + 1] = 'T'        # tren: tavanı 9. satırda, 10 karo; B peronuna kadar gider
-    # A peronu: simitler ve bloklar
+        elif x >= B0:
+            for y in range(RB, H):
+                g[y][x] = '#'
+    g[RA - 1][A1 + 1] = 'T'
+    if kind == 'funicular':
+        g[RB - 1][B0 - w] = 'Y'           # varışta aracın sol üst köşesi
+    top = 3 if under else 1               # tavanın altı
+    def roof(cx):                         # aracın o sütundan geçerken tavan satırı
+        k = min(1, max(0, (cx - (A1 + 1) - w / 2) / max(1, B0 - w - (A1 + 1))))
+        return round(RA + (RB - RA) * k)
+    def put(x, y, ch):
+        if 0 < x < W - 1 and top <= y < H and g[y][x] == '.':
+            g[y][x] = ch
+    # A durağı: simitler ve bloklar
     for x in range(2, 9):
-        g[7][x] = 'b'
+        put(x, RA - 2, 'b')
     for x, ch in zip(range(3, 8), 'CKZKC'):
-        g[4][x] = ch
-    # tünel: trenin üstünde simit yayları ya da bloklar
-    x = 21
-    while x < B0 - 14:
-        if r.random() < 0.6:
-            for i, dy in enumerate([6, 5, 4, 4, 5, 6]):
-                g[dy][x + i] = 'b'
-        else:
+        put(x, RA - 4, ch)
+    # yol boyunca: önce güç bloğu, sonra simit yayları ve simitli bloklar
+    x, first = 21, True
+    while x < B0 - 12:
+        base = roof(x + 3)
+        if first or r.random() < 0.35:
+            # bloklar tavandan 4 satır yukarıda: alttan vurulur, üstüne de çıkılır (laptop orada durur)
             for i in range(3):
-                g[4][x + 1 + i] = 'K' if i == 1 else 'C'
-            g[3][x + 2] = 'b'
+                put(x + 1 + i, base - 4, ('U' if first else 'K') if i == 1 else 'C')
+            put(x + 2, base - 6, 'b')
+            for i in range(5):
+                put(x + i, base - 2, 'b')
+            first = False
+        else:
+            for i, dy in enumerate([3, 4, 5, 5, 4, 3]):
+                put(x + i, base - dy, 'b')
+            if r.random() < 0.5:
+                put(x + 2, base - 7, 'b'); put(x + 3, base - 7, 'b')
         x += 8
-    # uçan spamler ve raylardan sıçrayan bug'lar
-    for sx in (35, 57):
-        g[r.randint(4, 6)][sx] = 's'
-    for jx in (29, 44, 51, 64):
-        g[12][jx] = 'j'
-    # B peronu: simitler, gizli disket ve çıkış merdiveni
+    # B durağı: simitler, gizli disket ve çıkış
     for x in range(80, 85):
-        g[7][x] = 'b'
-    g[4][82] = 'X'
-    g[8][W - 3] = 'O'
+        put(x, RB - 2, 'b')
+    put(82, RB - 4, 'X')
+    g[RB - 1][W - 3] = 'O'
     return [''.join(row) for row in g]
 
 
@@ -708,7 +744,8 @@ def make(world, sec, r):
     last = None
     first_power = True
     checkpoint = False
-    metro = PL.get('metro', False) and not boss
+    rd = PL.get('ride') if not boss else None
+    metro = bool(rd)
     metro_x = None
     secret_at = None if boss else int(target * r.uniform(0.25, 0.42))
     vert = [] if boss else list(PL.get('vert', []))
@@ -771,8 +808,8 @@ def make(world, sec, r):
         lv.finale()
         lv.wall()
     room = lv.x if metro else None
-    rows, vcam = lv.assemble(make_room(r) if metro else None)
-    return rows, room, vcam
+    rows, vcam = lv.assemble(make_room(r, rd) if metro else None)
+    return rows, room, vcam, rd
 
 
 def main():
@@ -781,13 +818,14 @@ def main():
         W = WORLDS[w]
         for s in range(3):
             r = random.Random(w * 1000 + s * 37 + 11)
-            rows, room, vcam = make(w, s, r)
+            rows, room, vcam, rd = make(w, s, r)
             lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
                   'time': (300 if s < 2 else 330) + 50 * round(2 * (w * 3 + s) / (len(WORLDS) * 3 - 1)), 'map': rows}
             if room is not None:
                 lv['room'] = room
                 lv['roomW'] = ROOM_W
+                lv['ride'] = rd
             if len(rows) > H:
                 lv['vcam'] = vcam
             levels.append(lv)

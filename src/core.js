@@ -85,7 +85,9 @@
       prev: { jump: false, run: false },
       multi: new Map(), area: 'main', mainW: L.room || W, room: null, metroIn: null, metroOut: null, warp: null,
     };
-    if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false };
+    if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
+      // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
+      under: !L.ride || L.ride.type === 'metro' || L.ride.type === 'funicular' };
     // dikey kamera aralıkları: her sütunda kameranın üst satırı [lo, hi] arasında kalır (düz bölümlerde 0)
     const vc = L.vcam || [[0, MH - VHT, MH - VHT]];
     for (let k = 0; k < vc.length; k++) {
@@ -113,7 +115,8 @@
             G.spawns.push({ kind: { e: 'bug', s: 'spam', v: 'virus', m: 'marti', j: 'leap' }[ch], x, y, done: false }); break;
           case 'o': G.bars.push({ cx: x + 0.5, cy: y + 0.5, a: (x * 1.7) % 6.28, sp: (x % 2 ? 1 : -1) * (1.9 + 0.1 * G.world), n: 5 }); break;
           case 'M': G.plats.push({ kind: 'h', x, y: y + 1, w: 3, h: 0.5, tx: x, ty: y + 1, dx: 0, dy: 0 }); break;
-          case 'T': G.plats.push({ kind: 'h', train: true, x, y: y + 1, w: TRAIN_W, h: 0.5, tx: x, ty: y + 1, dx: 0, dy: 0, v: 0, state: 'wait', wt: 0 }); break;
+          case 'T': G.plats.push({ kind: 'h', train: true, x, y: y + 1, w: (L.ride && L.ride.w) || TRAIN_W, h: 0.5, tx: x, ty: y + 1, dx: 0, dy: 0, v: 0, state: 'wait', wt: 0 }); break;
+          case 'Y': G.rideEnd = { x, y: y + 1 }; break;
           case 'N': G.plats.push({ kind: 'v', x, y, w: 2, h: 0.5, tx: x, ty: y, dx: 0, dy: 0 }); break;
           case 'P': start = { x, y }; break;
           case 'G': G.goal = { x, y: y - 1, w: 1, h: 2, active: !L.boss, t: 0 }; break;
@@ -129,7 +132,10 @@
       if (p.kind === 'h') {
         let k = 0;
         while (p.x + k < W && !SOLID[G.grid[p.y * W + p.x + k]] && G.grid[p.y * W + p.x + k] !== T.ONEWAY) k++;
-        p.a = p.x; p.b = p.x + Math.max(0, k - p.w); p.sp = p.train ? TRAIN_V : 2.2; p.dir = 1;
+        p.a = p.x; p.b = p.x + Math.max(0, k - p.w); p.sp = p.train ? (L.ride && L.ride.v) || TRAIN_V : 2.2; p.dir = 1;
+        // füniküler: eğik rayda varış noktasına (sol üst köşe) kadar
+        p.ya = p.yb = p.y;
+        if (p.train && G.rideEnd) { p.b = G.rideEnd.x; p.yb = G.rideEnd.y; }
       } else {
         p.a = p.y; p.b = p.y + 4; p.sp = 1.6; p.dir = 1;
       }
@@ -402,11 +408,14 @@
     w.t += dt;
     p.vx = 0; p.vy = 0; p.walkT += dt * 3;
     if (w.kind === 'in') {
-      if (w.t < 0.6) p.y += 2.3 * dt; // merdivenden aşağı
+      if (w.t < 0.6 && G.room.under) p.y += 2.3 * dt; // merdivenden aşağı (sokakta durakta bekler)
       if (!w.moved && w.t >= 0.85) {
         w.moved = true; G.area = 'room'; w.clip = null;
-        p.x = G.room.x0 + 2.1; p.y = G.room.y0 + 2.05; p.onGround = false; p.plat = null; p.carry = 0;
-        for (const pl of G.plats) if (pl.train) { pl.x = pl.a; pl.v = 0; pl.state = 'wait'; pl.wt = 0; }
+        p.x = G.room.x0 + 2.1; p.y = G.room.y0 + 2.05; p.onGround = false; p.plat = null; p.carry = 0; p.carryT = null;
+        for (const pl of G.plats) if (pl.train) {
+          pl.x = pl.a; pl.y = pl.ya; pl.v = 0; pl.state = 'wait'; pl.wt = 0;
+          if (!G.room.under) { p.y = pl.ya - p.h; p.onGround = true; } // sokakta durağın üstünde başla
+        }
         G.cam = G.room.x0; G.camY = G.room.y0; G.room.used = true;
       }
       if (w.t >= 1.1) G.warp = null;
@@ -418,8 +427,9 @@
       if (!w.moved && w.t >= 0.85) {
         w.moved = true; G.area = 'main';
         const R = G.metroOut || G.metroIn;
-        p.x = R.x + 1 - p.w / 2; p.y = R.y + 1; p.plat = null; p.carry = 0;
+        p.x = R.x + 1 - p.w / 2; p.y = R.y + 1; p.plat = null; p.carry = 0; p.carryT = null;
         w.rise = R.y + 1 - p.h; w.clip = { y1: R.y + 1 };
+        if (!G.room.under) { p.y = w.rise; w.clip = null; } // sokakta duraktan yürüyerek çıkar
         G.cam = clamp(p.x - 6.5, 0, G.mainW - VW);
         { const cx = colAt(G, p.x + p.w / 2); G.camY = clamp(w.rise + p.h - 12, G.camLo[cx], G.camHi[cx]); }
         for (const s of G.spawns) if (!s.done && s.x <= G.cam - 2) s.done = true;
@@ -564,9 +574,11 @@
       } else p.plat = null;
     }
 
-    // hareket (trenden zıplayınca trenin hızı havada da sürer: p.carry)
+    // hareket (araçtan zıplayınca aracın hızı havada da sürer: p.carry). Havadayken aracın hızını izler,
+    // böylece hızlanan ya da yavaşlayan araca geri inilir; bloğa yandan çarpmak bunu bozmaz (kolay bonus).
+    if (p.carryT && !p.onGround) p.carry = p.carryT.v;
     const hx = moveX(G, p, (p.vx + (p.carry || 0)) * dt);
-    if (hx) { p.vx = 0; p.carry = 0; }
+    if (hx) p.vx = 0;
     // kamera sol sınırı ve bölüm sonu
     const left = G.area === 'room' ? G.room.x0 : G.cam, right = (G.area === 'room' ? G.room.x1 : G.mainW) - p.w;
     if (p.x < left) { p.x = left; if (p.vx < 0) p.vx = 0; }
@@ -598,6 +610,7 @@
     if (r.down) {
       // trene geri inince hız trenin olur; perona inince ivme kayarak söner
       if (p.carry) { if (!(r.plat && r.plat.train)) p.vx += p.carry; p.carry = 0; }
+      p.carryT = null;
       p.vy = 0; p.plat = r.plat;
       if (!wasGround) {
         G.combo = 0;
@@ -610,7 +623,7 @@
     }
     else if (!r.down && wasGround && p.vy >= 0) p.plat = null;
     if (p.onGround && p.plat === null) G.combo = 0;
-    if (onTrain && p.plat !== onTrain && !p.onGround) p.carry = onTrain.v;
+    if (onTrain && p.plat !== onTrain && !p.onGround) { p.carry = onTrain.v; p.carryT = onTrain; }
 
     // yürüme animasyonu
     if (p.onGround) p.walkT += Math.abs(p.vx) * dt; else p.walkT = 0;
@@ -1092,7 +1105,8 @@
           const left = pl.b - pl.x;
           pl.v = Math.min(pl.sp, pl.v + TRAIN_ACC * dt, Math.sqrt(2 * TRAIN_ACC * Math.max(0, left)) + 0.15);
           pl.x = Math.min(pl.b, pl.x + pl.v * dt);
-          if (pl.x >= pl.b) { pl.x = pl.b; pl.v = 0; pl.state = 'stop'; ev(G, 'trainstop'); }
+          if (pl.yb !== pl.ya) pl.y = pl.ya + (pl.yb - pl.ya) * (pl.x - pl.a) / Math.max(1e-6, pl.b - pl.a);
+          if (pl.x >= pl.b) { pl.x = pl.b; pl.y = pl.yb; pl.v = 0; pl.state = 'stop'; ev(G, 'trainstop'); }
         }
       } else if (pl.b > pl.a) {
         if (pl.kind === 'h') { pl.x += pl.dir * pl.sp * dt; if (pl.x >= pl.b) { pl.x = pl.b; pl.dir = -1; } if (pl.x <= pl.a) { pl.x = pl.a; pl.dir = 1; } }
@@ -1109,7 +1123,7 @@
     // metro hattında raylara düşen oyuncu ölmez: metrodan çıkar (bulut odasından düşmek gibi)
     if (!p.dead && G.area === 'room' && p.y + p.h > G.room.y0 + 12.6) {
       G.warp = { kind: 'out', fall: true, t: 0.3, moved: false, clip: { y1: G.room.y0 + 12.6 } };
-      p.vx = 0; p.vy = 0; p.carry = 0; p.plat = null; ev(G, 'fall');
+      p.vx = 0; p.vy = 0; p.carry = 0; p.carryT = null; p.plat = null; ev(G, 'fall');
       return;
     }
     // metro: girişte aşağı basınca bonus odasına in; odadaki yürüyen merdivenden yukarı çık

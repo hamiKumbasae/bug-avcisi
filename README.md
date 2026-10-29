@@ -69,7 +69,7 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
 | ← → (ya da A D) | yürü |
 | Z, Boşluk ya da ↑ | zıpla (uzun basınca daha yükseğe) |
 | X ya da Shift | koş; laptop varken `{ }` kod fırlat |
-| ↓ | ince platformdan aşağı in; metro girişinde metroya in |
+| ↓ | ince platformdan aşağı in; durak ya da istasyon girişinde araca bin |
 | P / Esc | duraklat |
 | M | ses aç / kapat |
 | K | telefonu kumanda yap |
@@ -103,11 +103,26 @@ Her bölümün ortasında bir **commit noktası** var: ölürsen oradan devam ed
   simitlerin aşağı aktığı bir boşluktan inersin (Yerebatan'ın derinlikleri, iskelenin altı, çarşının mahzeni).
 - **Gizli blok:** her normal bölümde bir tane görünmez blok var; alttan vurunca disket (+1 can) çıkar.
 - **Çok simitli blok:** bazı çatlak bloklar kırılmaz; birkaç saniye boyunca her vuruşta simit verir.
-- **Metro:** Maslak (İTÜ-Ayazağa), Kadıköy, Vezneciler, Şişhane, Haliç, Kısıklı ve Ümraniye'nin dış mekân bölümlerinde
-  metro girişi var. Üstünde ↓'ye bas: peronda bekleyen trenin tavanına çıkınca kapılar kapanır, tren kalkar.
-  Beş buçuk ekranlık tünelde simit yaylarını topla, uçan spamlerden ve raylardan sıçrayan bug'lardan kaçın.
-  Tren sonraki istasyonda (İTÜ-Ayazağa → Sanayi Mahallesi, Şişhane → Taksim, Kısıklı → Bulgurlu...) durur;
-  yürüyen merdivenle bölümün epey ilerisine çıkarsın. Raylara düşersen ölmezsin, metrodan çıkarsın.
+- **Bonus binişleri:** on bölümde bir durak ya da istasyon girişi var. Üstünde ↓'ye bas: bekleyen aracın
+  tavanına çıkınca araç kalkar ve seni bölümün epey ilerisine götürür. Biniş kolaydır: düşman yok, yol boyunca
+  simit yayları, bir güç bloğu ve öbür durakta gizli bir disket var. Giderken zıplarsan araca geri inersin;
+  yola ya da raylara düşersen ölmezsin, binişten çıkarsın. Araç bölüme göre değişir:
+
+  | Bölüm | Araç | Güzergâh |
+  |---|---|---|
+  | 1-1 Büyükdere Caddesi | körüklü metrobüs (34) | Zincirlikuyu → Mecidiyeköy |
+  | 2-1 Rıhtım Caddesi | metro (M4) | Kadıköy → Ayrılık Çeşmesi |
+  | 2-2 Balık Pazarı | turkuaz minibüs | Kadıköy → Bostancı |
+  | 4-1 Kuyumcular | tramvay (T1), Divanyolu'nda Çemberlitaş sütununun önünden | Beyazıt → Çemberlitaş |
+  | 6-1 Kamondo Merdivenleri | 1875'ten beri çalışan Tünel füniküleri (F2), eğik tünelde yokuş yukarı | Karaköy → Beyoğlu |
+  | 6-2 Kuledibi | metro (M2) | Şişhane → Taksim |
+  | 7-2 Haliç Kıyısı | metro (M2), Haliç Metro Köprüsü | Haliç → Vezneciler |
+  | 10-1 Tepe Yolu | sarı taksi, gece | Çamlıca → Kısıklı |
+  | 11-1 Çarşı | turkuaz minibüs | Ümraniye → Kadıköy |
+  | 11-2 Yeni Plazalar | metro (M5) | Ümraniye → Çarşı |
+
+  Her aracın kendi sesi var: metronun kapı "ding-dong"u, metrobüsün hava fren tıslaması, minibüsün kornası,
+  taksinin iki kısa kornası, tramvayın ve Tünel'in zili.
 - **DEPLOY anteni:** bölüm sonundaki merdivenden atla; antene ne kadar yüksekten değersen o kadar puan
   (100'den 5000'e). Kalan sürenin son hanesi tekse havai fişekler patlar.
 
@@ -125,6 +140,7 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 - `src/art.js`: vektör çizimler: kahraman, düşmanlar, eşyalar, 11 patron, her dünyanın karoları.
 - `src/scenes.js`: İstanbul arka planları (iki katmanlı, kaydırmalı) ve başlık ekranının İstanbul silueti.
 - `src/places.js`: bölüm mekânları (gökdelenin içi, sunucu odası, balık pazarı, fırtına, saat kulesi...).
+- `src/rides.js`: bonus binişleri: metrobüs, tramvay, minibüs, taksi ve füniküler çizimleri, duraklar, sokak ve Tünel arka planları.
 - `src/story.js`: yazısız hikâye sahneleri (giriş, 8 ara sahne, son).
 - `tools/onizle.html`: bütün çizimleri ve arka planları tek sayfada görmek için geliştirme önizlemesi.
 - `src/audio.js`: sentezlenmiş efektler, şehir sesleri ve her dünyanın özgün çiptün müziği

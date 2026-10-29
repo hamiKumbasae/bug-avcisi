@@ -346,62 +346,95 @@ const flat = (w, extraRows) => {
   ok(n === 10 && good === n, `bütün metro girişleri odaya iner, çıkıştan yukarı çıkılır (${good}/${n})`);
 }
 
-// ---------- metro hattı: perondan trene bin, tüneli geç, öbür perondan çık ----------
+// ---------- bonus binişleri: duraktan araca bin, yolculuk, öbür duraktan çık ----------
 {
-  const idx = LV.findIndex((L, i) => i < NL && L.room);
-  const enter = () => {
+  const enter = (idx) => {
     const G = BA.loadStage(BA.newRun(), idx), p = G.player, mi = G.metroIn;
     p.x = mi.x + 1 - p.w / 2; p.y = mi.y + 1 - p.h; p.vy = 0; p.onGround = true; G.cam = Math.max(0, mi.x - 7);
     run(G, { down: true }, 0.05); run(G, NONE, 2);
     return G;
   };
+  const rides = LV.map((L, i) => [L, i]).filter(([L, i]) => i < NL && L.room);
+  ok(rides.length === 10 && rides.every(([L]) => L.ride && L.ride.w && L.ride.v), `10 bonus binişinin hepsinde araç bilgisi var (${rides.length})`);
+  const kinds = new Set(rides.map(([L]) => L.ride.type));
+  ok(['metro', 'metrobus', 'minibus', 'tram', 'funicular', 'taxi'].every((k) => kinds.has(k)), `altı araç türü de var (${[...kinds].join(', ')})`);
+  // kolay: binişlerde düşman yok
+  let foes = 0;
+  for (const [, i] of rides) { const G = BA.loadStage(BA.newRun(), i); foes += G.spawns.filter((s) => s.x >= G.room.x0).length; }
+  ok(foes === 0, `bonus binişlerinde düşman yok (${foes})`);
   {
-    const G = enter(), p = G.player, tr = G.plats.find((q) => q.train);
-    ok(tr && tr.w === BA.TRAIN_W && tr.state === 'wait' && tr.x === tr.a, 'metro hattında tren peronda bekliyor');
-    ok(tr.b - tr.a > 50, `tren tünel boyunca gider (${(tr.b - tr.a).toFixed(0)} karo)`);
+    // ilk biniş baştan sona: bekler, binince kalkar, giderken zıplanır, öbür durakta durur, çıkılır
+    const [L, idx] = rides[0];
+    const G = enter(idx), p = G.player, tr = G.plats.find((q) => q.train);
+    ok(tr && tr.w === L.ride.w && tr.state === 'wait' && tr.x === tr.a, `${L.ride.type}: araç durakta bekliyor`);
+    ok(tr.b - tr.a > 50, `araç yol boyunca gider (${(tr.b - tr.a).toFixed(0)} karo)`);
     run(G, NONE, 3);
-    ok(tr.state === 'wait' && tr.x === tr.a, 'oyuncu binmeden tren kalkmaz');
-    // trenin üstüne yürü, dur
+    ok(tr.state === 'wait' && tr.x === tr.a, 'oyuncu binmeden araç kalkmaz');
     run(G, { right: true }, 3, (g) => g.player.plat === tr && g.player.x > tr.x + 3);
     run(G, NONE, 1);
-    ok(tr.state === 'go' && tr.x > tr.a, 'trene binince tren kalktı');
-    // tren giderken zıpla: aynı yere geri inilir (trenin hızı havada sürer)
+    ok(tr.state === 'go' && tr.x > tr.a, 'binince araç kalktı');
     run(G, (g) => { g.player.inv = 9; return {}; }, 3);
     const rel0 = p.x - tr.x, v0 = tr.v;
-    run(G, (g, t) => { g.player.inv = 9; return { jump: t < 0.06 }; }, 0.2); // kısa zıplama: tavandaki bloklara çarpmasın
+    run(G, (g, t) => { g.player.inv = 9; return { jump: t < 0.06 }; }, 0.2);
     const air = !p.onGround;
     run(G, (g) => { g.player.inv = 9; return {}; }, 1.6, (g) => g.player.onGround);
-    ok(air && p.plat === tr && Math.abs(p.x - tr.x - rel0) < 0.6 && v0 > 4, `giden trende zıplayınca yine trene inildi (kayma ${(p.x - tr.x - rel0).toFixed(2)})`);
+    ok(air && p.plat === tr && Math.abs(p.x - tr.x - rel0) < 0.6 && v0 > 4, `giden araçta zıplayınca yine araca inildi (kayma ${(p.x - tr.x - rel0).toFixed(2)})`);
     let maxV = 0;
-    run(G, (g) => { maxV = Math.max(maxV, tr.v); g.player.inv = 9; return {}; }, 20, () => tr.state === 'stop');
-    ok(tr.state === 'stop' && tr.x === tr.b && maxV <= BA.TRAIN_V + 1e-6, 'tren öbür perona yanaşıp durdu');
-    ok(p.plat === tr && !p.dead && G.area === 'room', 'oyuncu tüm yol boyunca trenin üstünde kaldı');
+    run(G, (g) => { maxV = Math.max(maxV, tr.v); g.player.inv = 9; return {}; }, 25, () => tr.state === 'stop');
+    ok(tr.state === 'stop' && tr.x === tr.b && maxV <= L.ride.v + 1e-6, 'araç öbür durağa yanaşıp durdu');
+    ok(p.plat === tr && !p.dead && G.area === 'room', 'oyuncu tüm yol boyunca aracın üstünde kaldı');
     run(G, { right: true }, 4, (g) => !!g.warp);
-    ok(G.warp && G.warp.kind === 'out' && !G.warp.fall, 'öbür perondan yürüyen merdivene çıkıldı');
+    ok(G.warp && G.warp.kind === 'out' && !G.warp.fall, 'öbür duraktan çıkışa girildi');
     run(G, NONE, 2.5);
-    ok(G.area === 'main' && !p.dead && p.onGround, 'metrodan yukarı, bölüme dönüldü');
+    ok(G.area === 'main' && !p.dead && p.onGround, 'binişten bölüme dönüldü');
   }
   {
-    // raylara düşen oyuncu ölmez, metrodan çıkar
-    const G = enter(), p = G.player, lives = G.S.lives, tr = G.plats.find((q) => q.train);
+    // bütün binişler: araca bin, varınca çık (füniküler eğik rayda yükselir)
+    let good = 0;
+    for (const [L, idx] of rides) {
+      const G = enter(idx), p = G.player, tr = G.plats.find((q) => q.train), y0 = tr.y;
+      run(G, (g) => { g.player.inv = 9; return { right: g.player.x < tr.x + tr.w / 2 }; }, 3, (g) => g.player.plat === tr && Math.abs(g.player.x - (tr.x + tr.w / 2)) < 1.2);
+      run(G, (g) => { g.player.inv = 9; return {}; }, 40, () => tr.state === 'stop');
+      const climbed = L.ride.type === 'funicular' ? tr.y < y0 - 3.5 : tr.y === y0;
+      run(G, (g) => { g.player.inv = 9; return { right: true }; }, 5, (g) => !!g.warp);
+      const exited = G.warp && G.warp.kind === 'out' && !G.warp.fall;
+      run(G, NONE, 2.5);
+      if (tr.state === 'stop' && climbed && exited && G.area === 'main' && !p.dead) good++;
+      else console.log('  biniş sorunu', L.world + '-' + L.section, L.ride.type, tr.state, climbed, exited, G.area, p.dead);
+    }
+    ok(good === rides.length, `bütün binişlerde araca binilip öbür duraktan çıkıldı (${good}/${rides.length})`);
+  }
+  {
+    // kolay biniş: giderken (hızlanırken de) uzun zıplayıp bloklara çarpsan bile araca geri inersin
+    let tries = 0, back = 0;
+    for (const [L, idx] of rides) {
+      for (const when of [0.1, 0.8, 2, 3.5, 5, 6.5]) {
+        const G = enter(idx), p = G.player, tr = G.plats.find((q) => q.train);
+        run(G, (g) => { g.player.inv = 9; return { right: g.player.x < tr.x + 1.2 }; }, 3, (g) => g.player.plat === tr && g.player.x >= tr.x + 1.2);
+        run(G, (g) => { g.player.inv = 9; return {}; }, 3, () => tr.state === 'go');
+        run(G, (g) => { g.player.inv = 9; return {}; }, when);
+        if (tr.state !== 'go') continue;
+        tries++;
+        run(G, (g, t) => { g.player.inv = 9; return { jump: t < 0.33 }; }, 0.4);
+        run(G, (g) => { g.player.inv = 9; return {}; }, 2, (g) => g.player.onGround || g.area !== 'room');
+        if (G.area === 'room' && p.plat === tr) back++;
+        else console.log('  zıplayınca araçtan düştü', L.ride.type, when, G.area);
+      }
+    }
+    ok(tries > 40 && back === tries, `giden araçtan uzun zıplayınca hep araca geri inildi (${back}/${tries})`);
+    // sokak binişlerinde oyuncu durağın üstünde başlar (merdivenden inmez)
+    const street = rides.find(([L]) => L.ride.type === 'minibus');
+    const G = enter(street[1]), tr = G.plats.find((q) => q.train);
+    ok(!G.room.under && G.player.onGround && Math.abs(G.player.y + G.player.h - tr.ya) < 0.05, 'sokak binişinde durakta başlanır');
+  }
+  {
+    // yola/raylara düşen oyuncu ölmez, binişten çıkar
+    const G = enter(rides[0][1]), p = G.player, lives = G.S.lives, tr = G.plats.find((q) => q.train);
     p.x = tr.x + tr.w + 1.5; p.y = G.room.y0 + 9.5; p.vy = 0; p.onGround = false; p.plat = null;
     run(G, NONE, 1.2, (g) => !!g.warp);
-    ok(G.warp && G.warp.kind === 'out' && G.warp.fall && !p.dead, 'raylara düşünce metrodan çıkış başladı');
+    ok(G.warp && G.warp.kind === 'out' && G.warp.fall && !p.dead, 'yola düşünce binişten çıkış başladı');
     run(G, NONE, 2.5);
-    ok(G.area === 'main' && !p.dead && G.S.lives === lives && G.phase === 'play', 'raylara düşen oyuncu canını yitirmeden bölüme döndü');
-  }
-  {
-    // raylardan sıçrayan bug: ekranda belirir, yükselip raylara geri düşer
-    const G = enter(), sp = G.spawns.filter((s) => s.kind === 'leap');
-    ok(sp.length >= 3, `tünelde sıçrayan bug'lar var (${sp.length})`);
-    const s = sp[0];
-    G.cam = s.x - BA.VW + 2.5; G.player.x = G.cam + 6.5; G.player.y = G.room.y0 + 4; G.player.inv = 99;
-    run(G, (g) => { g.player.y = g.room.y0 + 4; g.player.vy = 0; g.player.inv = 99; return {}; }, 0.02);
-    const e = G.ents.find((q) => q.kind === 'leap');
-    ok(e && e.x < G.cam + BA.VW, 'sıçrayan bug ekranın içinde doğdu');
-    let top = 99;
-    run(G, (g) => { if (e) top = Math.min(top, e.y); g.player.y = g.room.y0 + 4; g.player.vy = 0; g.player.inv = 99; return {}; }, 3);
-    ok(e && top < G.room.y0 + 7 && !G.ents.includes(e), `bug yükselip raylara geri düştü (tepe ${(top - G.room.y0).toFixed(1)})`);
+    ok(G.area === 'main' && !p.dead && G.S.lives === lives && G.phase === 'play', 'yola düşen oyuncu canını yitirmeden bölüme döndü');
   }
 }
 

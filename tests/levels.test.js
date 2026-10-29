@@ -32,7 +32,7 @@ function analyse(idx, revealHidden) {
   for (const p of G.plats) {
     if (p.train) {
       // tren: iki ucunda durur; bir ucundan binip öbür ucunda inilir
-      const a = { x: p.a, y: p.y, w: p.w, h: 0.5, dy: 0 }, z = { x: p.b, y: p.y, w: p.w, h: 0.5, dy: 0 };
+      const a = { x: p.a, y: p.ya !== undefined ? p.ya : p.y, w: p.w, h: 0.5, dy: 0 }, z = { x: p.b, y: p.yb !== undefined ? p.yb : p.y, w: p.w, h: 0.5, dy: 0 };
       statics.push(a, z); rides.push([a, z]);
     } else if (p.kind === 'h') statics.push({ x: p.a, y: p.y, w: p.b - p.a + p.w, h: 0.5, dy: 0 });
     else { statics.push({ x: p.x, y: p.a, w: p.w, h: 0.5, dy: 0 }); statics.push({ x: p.x, y: p.b, w: p.w, h: 0.5, dy: 0 }); }

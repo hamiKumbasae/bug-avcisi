@@ -1,7 +1,7 @@
 // Bug Avcısı: İstanbul — oyun kabuğu: çizim, kamera, HUD, menüler, giriş, ses.
 (function () {
   'use strict';
-  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO, ST = window.BA_STORY;
+  const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO, ST = window.BA_STORY, RD = window.BA_RIDE;
   const LEVELS = window.BA_LEVELS, WORLDS = window.BA_WORLDS;
   const canvas = document.getElementById('oyun');
   const ctx = canvas.getContext('2d');
@@ -304,6 +304,7 @@
         case 'bossdown': AU.sfx('bossdown'); AU.stopMusic(); break;
         case 'hurry': AU.sfx('hurry'); AU.setRate(1.25); break;
         case 'starend': break;
+        case 'train': case 'trainstop': AU.sfx(e.e, G.L.ride && G.L.ride.type); break;
         case 'piece': AU.sfx('piece'); app.pieces[e.world] = true; store.set('ba-parcalar', app.pieces); break;
         default: AU.sfx(e.e);
       }
@@ -401,18 +402,37 @@
     ctx.drawImage(c, Math.round(x * S), Math.round(y * S), Math.round(c.lw * S), Math.round(c.lh * S));
     ctx.setTransform(S, 0, 0, S, 0, 0);
   }
-  // metro hattı: istasyonlar trenin durduğu yerlerde, aralarında tünel; hepsi odayla birlikte kayar
-  function metroBack(G, cam) {
-    const P = SC.metroLine(G.world, VH), r = G.room, rc = cam - r.x0 * TS;
+  // bonus binişinin arka planı: yer altında istasyonlar ve tünel, sokakta şehir, yol ve duraklar; hepsi odayla kayar
+  function rideBack(G, cam) {
+    const rd = G.L.ride || { type: 'metro', line: 'M2', col: '#2fa84f', a: 'METRO', b: 'METRO' };
+    const r = G.room, rc = cam - r.x0 * TS, rw = (r.x1 - r.x0) * TS;
     const tr = G.plats.find((q) => q.train);
-    const ha = ((tr ? tr.a + tr.w : 20) - r.x0 + 2) * TS, hb = ((tr ? tr.b : 69) - r.x0 - 2) * TS, rw = (r.x1 - r.x0) * TS;
-    strip(P.tunnel, ha, hb, rc); strip(P.hall, 0, ha, rc); strip(P.hall, hb, rw, rc);
-    spr(P.portalL, ha - 2, 0, rc); spr(P.portalR, hb - 38, 0, rc);
-    spr(P.signA, 30, 57, rc); spr(P.mapA, 134, 114, rc); spr(P.signA, ha - 116, 57, rc);
-    spr(P.signB, hb + 44, 57, rc); spr(P.mapB, hb + 150, 114, rc); spr(P.signB, rw - 30 - P.signB.lw, 57, rc);
-    // trenin farı tünel duvarını aydınlatır
-    if (tr && tr.state === 'go') {
-      const hx = (tr.x + tr.w) * TS - cam, hy = TOP + (tr.y - G.camY) * TS + 37;
+    const ha = ((tr ? tr.a + tr.w : 20) - r.x0 + 2) * TS, hb = ((tr ? tr.b : 69) - r.x0 - 2) * TS;
+    if (rd.type === 'metro') {
+      const P = SC.metroLine(rd, VH);
+      strip(P.tunnel, ha, hb, rc); strip(P.hall, 0, ha, rc); strip(P.hall, hb, rw, rc);
+      spr(P.portalL, ha - 2, 0, rc); spr(P.portalR, hb - 38, 0, rc);
+      spr(P.signA, 30, 57, rc); spr(P.mapA, 134, 114, rc); spr(P.signA, ha - 116, 57, rc);
+      spr(P.signB, hb + 44, 57, rc); spr(P.mapB, hb + 150, 114, rc); spr(P.signB, rw - 30 - P.signB.lw, 57, rc);
+    } else if (rd.type === 'funicular') {
+      const P = RD.funiLine(rd, VH);
+      strip(P.tunnel, ha, hb, rc); strip(P.hall, 0, ha, rc); strip(P.hall, hb, rw, rc);
+      spr(P.portalL, ha - 2, 0, rc); spr(P.portalR, hb - 38, 0, rc);
+      spr(P.signA, 30, 66, rc); spr(P.plaque, 112, 68, rc);
+      spr(P.signB, hb + 50, 66, rc); spr(P.plaque, hb + 6, 68, rc);
+    } else {
+      if (rd.scene) {
+        // bölümün kendi arka planı sokağa uymuyorsa (çarşının içi gibi) binişin kendi sahnesi
+        const Ls = RD.scene(rd.scene, VW, VH);
+        full(Ls.sky); layerDraw(Ls.far, cam * 0.15); layerDraw(Ls.near, cam * 0.4);
+      } else backdrop(G.place, cam, 0, 0, 99, 99);
+      const P = RD.streetLine(rd, VH);
+      strip(P.road, 0, rw, rc);
+      for (const d of P.decor) spr(d.c, d.x, d.y, rc);
+    }
+    // aracın farı önündeki duvarı/yolu aydınlatır (yer altında)
+    if (tr && tr.state === 'go' && r.under) {
+      const hx = (tr.x + tr.w) * TS - cam, hy = TOP + (tr.y - G.camY) * TS + (rd.type === 'metro' ? 37 : 28);
       if (hx < VW + 4) {
         const gr = ctx.createLinearGradient(hx, 0, hx + 96, 0);
         gr.addColorStop(0, 'rgba(255,246,206,0.34)'); gr.addColorStop(1, 'rgba(255,246,206,0)');
@@ -420,6 +440,21 @@
         ctx.moveTo(hx, hy - 2.5); ctx.lineTo(hx + 96, hy - 26); ctx.lineTo(hx + 96, hy + 18); ctx.lineTo(hx, hy + 2.5); ctx.closePath(); ctx.fill();
       }
     }
+  }
+  // önde kalan parçalar: sokakta bordür/bariyer, Tünel'de rampa (düşen oyuncu arkasında kaybolur)
+  function rideFront(G, cam) {
+    const rd = G.L.ride;
+    if (!rd || rd.type === 'metro') return;
+    const r = G.room, rc = cam - r.x0 * TS, tr = G.plats.find((q) => q.train);
+    if (rd.type === 'funicular') {
+      if (!tr) return;
+      const H = RD.HT.funicular, s = (tr.yb - tr.ya) / Math.max(1e-6, tr.b - tr.a);
+      const ya = TOP + (tr.ya - r.y0) * TS + H, xa = (tr.a - r.x0) * TS;
+      const X0 = 10 * TS, X1 = (r.x1 - r.x0 - 9) * TS;
+      RD.funiBed(ctx, X0 - rc, ya + s * (X0 - xa), X1 - rc, ya + s * (X1 - xa), VH, app.t);
+      return;
+    }
+    strip(RD.streetLine(rd, VH).front, 10 * TS, (r.x1 - r.x0 - 9) * TS, rc);
   }
   // pl: mekân (dünya*3 + bölüm)
   // up: kamera başlangıç bandının kaç karo üstünde (tırmanınca arka plan aşağı kayar, gökyüzü açılır);
@@ -519,7 +554,7 @@
     if (G.shake > 0) { sx = (Math.random() - 0.5) * 4; sy = (Math.random() - 0.5) * 4; }
     const cam = Math.round(G.cam * TS * S) / S, camY = Math.round(G.camY * TS * S) / S / TS;
     const pcx = Math.max(0, Math.min(G.W - 1, Math.floor(G.player.x + G.player.w / 2)));
-    if (G.area === 'room') metroBack(G, cam);
+    if (G.area === 'room') rideBack(G, cam);
     else backdrop(pl, cam, 0, G.base0 - camY, G.camHi[pcx] + 12.2 - camY, G.H - 1.6 - camY);
     const ox = -cam + sx, oy = TOP + sy - camY * TS;
     // karolar: cihaz pikseline oturtulur, aralarında çizgi kalmaz
@@ -542,7 +577,7 @@
         const i = ty * G.W + tx, t = G.grid[i];
         if (!t) continue;
         const px = tx * TS, py = ty * TS + (bumpOff.get(i) || 0);
-        const tw = G.room && tx >= G.room.x0 ? ART.METRO : theme; // bonus odası metro karolarıyla
+        const tw = G.room && tx >= G.room.x0 ? RD.tiles(G.L.ride) : theme; // bonus odası: peron ya da kaldırım
         if (t === 1) put(ART.tile(tw, ty > 0 && G.grid[i - G.W] === 1 ? 'fill' : 'surf'), px, py);
         else if (t === 4) put(ART.tile(tw, 'block', blink), px, py);
         else if (TILEK[t]) put(ART.tile(tw, TILEK[t]), px, py);
@@ -568,12 +603,12 @@
         text('DEPLOY', gx + 8, ly + 2.4 + bob, '#7cff6a', 6, 'center', null);
       }
     }
-    // metro girişi, çıkışı ve odadaki yürüyen merdiven
+    // biniş girişi (durak/istasyon), varış noktası ve odadaki çıkış merdiveni
     if (G.room) {
-      const [, ln, lc] = SC.station(w);
-      for (const m of [G.metroIn, G.metroOut]) if (m && m.x > G.cam - 3 && m.x < G.cam + 18) ART.drawMetroGate(ctx, m.x * TS, m.y * TS, app.t, lc, ln);
+      const rd = G.L.ride;
+      for (const m of [G.metroIn, G.metroOut]) if (m && m.x > G.cam - 3 && m.x < G.cam + 18) RD.drawGate(ctx, rd, m.x * TS, m.y * TS, app.t);
       const ex = G.room.exit;
-      if (ex && G.area === 'room') ART.drawEscalator(ctx, ex.x * TS, ex.y * TS, app.t, lc);
+      if (ex && G.area === 'room') RD.drawExit(ctx, rd, ex.x * TS, ex.y * TS, app.t);
       // girişin üstünde dururken aşağı ok
       const p = G.player, mi = G.metroIn;
       if (mi && !G.warp && G.area === 'main' && p.onGround && Math.abs(p.x + p.w / 2 - mi.x - 1) < 0.8 && Math.abs(p.y + p.h - mi.y - 1) < 0.05) {
@@ -584,7 +619,7 @@
     // hareketli platformlar (metro treni dahil) ve dönen kıvılcımlar
     for (const pl of G.plats) {
       if (!pl.train) ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
-      else if (G.area === 'room') ART.drawTrain(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, SC.station(w)[2], (pl.x - pl.a) * TS, pl.state === 'go');
+      else if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS);
     }
     for (const b of G.bars) {
       img(ART.tile(theme, 'anchor'), (b.cx - 0.5) * TS, (b.cy - 0.5) * TS);
@@ -619,6 +654,7 @@
     for (const s of G.bshots) drawBossShot(s);
     for (const f of G.fx) drawFx(f, theme);
     ctx.restore();
+    if (G.area === 'room') rideFront(G, cam);
     // patron canı
     if (G.boss && !G.boss.dead) {
       const b = G.boss, name = up(G.L.bossName || '');
@@ -918,7 +954,7 @@
     const story = ["Maslak'tan Ümraniye'ye, şehrin öbür ucuna git.", "Bug'ları temizle, her bölümü DEPLOY et,", `patronları yen, ${NW} hatıra parçasını topla.`];
     story.forEach((s, i) => text(s, VW / 2, 28 + i * 10, '#fff8ec', 6.4, 'center', null, 500));
     panel(10, 62, VW - 20, 58, 8);
-    const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in, metroya gir']];
+    const keys = [['← →', 'yürü'], ['Z / BOŞLUK', 'zıpla (uzun basınca yüksek)'], ['X / SHIFT', 'koş, laptop varken kod at'], ['↓', 'ince platformdan in, araca bin']];
     keys.forEach(([k, s], i) => { text(k, 72, 68 + i * 12.5, '#9af4e4', 6.6, 'right', null); text(s, 80, 68 + i * 12.5, '#fff8ec', 6.4, 'left', null, 500); });
     panel(10, 126, VW - 20, 96, 8);
     const items = [['simit', 'SİMİT', '100 tane = +1 can'], ['cay', 'ÇAY', 'büyü, çatlak blok kır'], ['laptop', 'LAPTOP', '{ } kod fırlat'], ['kahve', 'KAHVE', 'kısa süre dokunulmazlık'], ['disket', 'DİSKET', '+1 can'], ['virus', 'VİRÜS', 'üstüne basılmaz!']];

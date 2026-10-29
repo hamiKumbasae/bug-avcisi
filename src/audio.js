@@ -65,7 +65,7 @@
     g.cancelScheduledValues(t); g.setValueAtTime(Math.max(0.0001, g.value), t); g.linearRampToValueAtTime(0.0001, t + 0.6);
     trainSnd.s.stop(t + 0.7); trainSnd = null;
   }
-  function sfx(name) {
+  function sfx(name, kind) {
     if (!ctx() || muted) return;
     const t = ac.currentTime, B = sfxBus;
     const now = performance.now();
@@ -114,18 +114,51 @@
       case 'over': stopMusic(); [67, 64, 60, 55, 52, 48].forEach((n, i) => osc('triangle', mid(n), t + i * 0.25, 0.3, 0.3, B)); break;
       case 'piece': seq([72, 76, 79, 84, 88, 91, 96], 0.07, 'triangle', 0.22, 0.4); for (const [f, v] of [[1047, 0.05], [2093, 0.02]]) osc('sine', f, t + 0.5, 1.4, v, B, 1, 0.003); break;
       case 'train': {
-        // kapı kapanır ("ding-dong"), motor homurdanarak hızlanır; tünel uğultusu tren durana dek sürer
-        osc('sine', 784, t, 0.5, 0.07, B); osc('sine', 622, t + 0.3, 0.75, 0.07, B);
-        osc('sawtooth', 60, t + 0.8, 3.2, 0.025, B, 3.4, 0.4);
+        // kalkış: metro kapı "ding-dong"u, otobüs/minibüs kornası, taksinin iki kısa kornası, tramvay ve Tünel zili;
+        // ardından motor hızlanır, yol/tünel uğultusu araç durana dek sürer
+        const k = kind || 'metro';
+        let lp = [140, 320, 0.16], start = 0.6;
+        if (k === 'metro') {
+          osc('sine', 784, t, 0.5, 0.07, B); osc('sine', 622, t + 0.3, 0.75, 0.07, B);
+          osc('sawtooth', 60, t + 0.8, 3.2, 0.025, B, 3.4, 0.4);
+        } else if (k === 'metrobus') {
+          noise(t, 0.45, 0.1, 2600, B, true);                                   // kapı kapanır (hava)
+          osc('sine', 988, t + 0.45, 0.5, 0.06, B);
+          osc('sawtooth', 46, t + 0.7, 3.6, 0.04, B, 2.4, 0.5); osc('square', 92, t + 0.7, 2.6, 0.012, B, 2.2, 0.5);
+          lp = [180, 380, 0.13];
+        } else if (k === 'minibus' || k === 'taxi') {
+          const f = k === 'taxi' ? 520 : 415;
+          osc('square', f, t, 0.12, 0.035, B); osc('square', f * 1.26, t, 0.12, 0.025, B);
+          if (k === 'taxi') { osc('square', f, t + 0.17, 0.12, 0.035, B); osc('square', f * 1.26, t + 0.17, 0.12, 0.025, B); }
+          osc('sawtooth', k === 'taxi' ? 70 : 55, t + 0.35, 2.4, 0.035, B, 3.2, 0.25);
+          lp = [200, 460, 0.11]; start = 0.4;
+        } else if (k === 'tram') {
+          for (const d of [0, 0.32]) { osc('sine', 1568, t + d, 0.6, 0.06, B); osc('sine', 2093, t + d, 0.35, 0.025, B); osc('sine', 3136, t + d, 0.2, 0.012, B); }
+          osc('sine', 180, t + 0.7, 3, 0.03, B, 3.4, 0.6);                      // elektrik motoru vınlaması
+          lp = [120, 260, 0.1];
+        } else if (k === 'funicular') {
+          osc('sine', 880, t, 1.6, 0.07, B); osc('sine', 1760, t, 0.8, 0.02, B); osc('sine', 1318, t, 1.2, 0.025, B);
+          osc('sawtooth', 75, t + 0.8, 4, 0.016, B, 1.3, 0.8);                    // kablo makarası
+          lp = [110, 220, 0.12]; start = 0.9;
+        }
         stopTrain();
         const s = loopNoise(), f = ac.createBiquadFilter(), g = ac.createGain();
-        f.type = 'lowpass'; f.frequency.setValueAtTime(140, t); f.frequency.linearRampToValueAtTime(320, t + 3.5);
-        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 3); g.gain.setValueAtTime(0.16, t + 16); g.gain.linearRampToValueAtTime(0.0001, t + 18);
-        s.connect(f).connect(g).connect(B); s.start(t + 0.6, Math.random()); s.stop(t + 18.2);
+        f.type = 'lowpass'; f.frequency.setValueAtTime(lp[0], t); f.frequency.linearRampToValueAtTime(lp[1], t + 3.5);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lp[2], t + 3); g.gain.setValueAtTime(lp[2], t + 16); g.gain.linearRampToValueAtTime(0.0001, t + 18);
+        s.connect(f).connect(g).connect(B); s.start(t + start, Math.random()); s.stop(t + 18.2);
         trainSnd = { s, g };
         break;
       }
-      case 'trainstop': stopTrain(); noise(t, 1, 0.09, 3200, B, true); osc('sawtooth', 210, t, 1.3, 0.022, B, 0.35); break;
+      case 'trainstop': {
+        stopTrain();
+        const k = kind || 'metro';
+        if (k === 'metro') { noise(t, 1, 0.09, 3200, B, true); osc('sawtooth', 210, t, 1.3, 0.022, B, 0.35); }
+        else if (k === 'metrobus' || k === 'minibus') { noise(t, 0.7, 0.13, 2400, B, true); osc('sine', 988, t + 0.7, 0.4, 0.05, B); }
+        else if (k === 'taxi') { osc('sine', 1900, t, 0.35, 0.03, B, 0.85); noise(t, 0.3, 0.06, 1800, B, true); }
+        else if (k === 'tram') { noise(t, 0.6, 0.06, 3000, B, true); osc('sine', 1568, t + 0.5, 0.5, 0.05, B); osc('sine', 2093, t + 0.5, 0.3, 0.02, B); }
+        else if (k === 'funicular') { osc('sine', 880, t + 0.2, 1.4, 0.06, B); osc('sine', 1318, t + 0.2, 1, 0.02, B); noise(t, 0.5, 0.05, 2600, B, true); }
+        break;
+      }
       case 'fall': stopTrain(); osc('triangle', 900, t, 0.55, 0.1, B, 0.22); break;
       case 'leap': osc('square', 210, t, 0.17, 0.05, B, 2.8); noise(t, 0.08, 0.08, 4200, B, true); break;
       case 'win': [72, 72, 76, 79, 84, 79, 84, 88, 91].forEach((n, i) => { osc('pulse', mid(n), t + i * 0.14, 0.16, 0.1, B); osc('triangle', mid(n - 12), t + i * 0.14, 0.16, 0.22, B); }); break;
