@@ -154,14 +154,14 @@ Her `main` gönderiminde GitHub Actions testleri çalıştırır ve siteyi GitHu
 
 ## Sürümler
 
-Oyun büyük değişikliklerden önce etiketlenip saklanır. Site her zaman son hâli gösterir; eski bir sürümü
-oynamak için etiketini indirip yerelde aç (`python3 -m http.server`).
+Oyun büyük değişikliklerden önce saklanır: her sürüm bir commit'e bağlıdır. Site her zaman son hâli gösterir; eski bir sürümü
+oynamak için zip'ini indirip yerelde aç (`python3 -m http.server`).
 
 | Sürüm | Tarih | İçerik | Kaynak |
 |---|---|---|---|
-| v1.0 | 29 Ekim 2026 | 12 dünya, 36 bölüm, 12 patron; 10 bonus binişi (metro, metrobüs, tramvay, minibüs, taksi, Tünel füniküleri); Ataşehir dünyası; yazısız hikâye ve 12 hatıra parçası | [`v1.0`](https://github.com/hamiKumbasae/bug-avcisi/tree/v1.0) · [zip](https://github.com/hamiKumbasae/bug-avcisi/archive/refs/tags/v1.0.zip) |
+| v1.0 | 29 Ekim 2026 | 12 dünya, 36 bölüm, 12 patron; 10 bonus binişi (metro, metrobüs, tramvay, minibüs, taksi, Tünel füniküleri); Ataşehir dünyası; yazısız hikâye ve 12 hatıra parçası | [`2a82261`](https://github.com/hamiKumbasae/bug-avcisi/tree/2a822611a7d55d2daf7f049f5052164add01e3b4) · [zip](https://github.com/hamiKumbasae/bug-avcisi/archive/2a822611a7d55d2daf7f049f5052164add01e3b4.zip) |
 
-Git ile bu sürüme dönmek için: `git checkout v1.0`.
+Git ile bu sürüme dönmek için: `git checkout 2a82261`.
 
 ## Lisans
 
