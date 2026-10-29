@@ -273,9 +273,9 @@ sadece kesin kurallar uygulanır (kedi, minare, bayrak).
 ### Eyüp: oyunun sessiz dünyası
 
 - [ ] 8-1 ve 8-2 normal bölümler ama az düşmanlı (sadece bug); müzik sadeleşir.
-- [ ] 8-3 Tepe kısa bir bölüm (~100 karo): düşman yok, patron ve kale yolu yok, süre sayacı durur (HUD'da süre
+- [x] 8-3 Tepe kısa bir bölüm (~100 karo): düşman yok, patron ve kale yolu yok, süre sayacı durur (HUD'da süre
   görünmez), müzik yok; sadece rüzgâr ve uzak şehir sesi. Simit ve blok çok az.
-- [ ] 8-3'ün sonunda DEPLOY anteni yok: tepedeki banka varınca bölüm biter ve doğrudan Eyüp sahnesi başlar.
+- [x] 8-3'ün sonunda DEPLOY anteni yok: tepedeki banka varınca bölüm biter ve doğrudan Eyüp sahnesi başlar.
 - Oyuncu ilk kez hiçbir şeyle savaşmadan yürür. Etkisi zıtlıktan gelir; o yüzden önceki dünyalar hızlı ve kalabalık kalır.
 
 ### Binişler (bonus binişleri)
@@ -409,11 +409,11 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
 
 ### Kod: dünya sırasına bağlı yerler
 
-- [ ] `tools/bolumler.py`: `WORLDS` yeni sırayla; `name`, `sub`, `sections`, `boss`, `boss_name`, `enemies`, `seed`,
+- [x] `tools/bolumler.py`: `WORLDS` yeni sırayla; `name`, `sub`, `sections`, `boss`, `boss_name`, `enemies`, `seed`,
   `dpos` (zorluk sıraya göre artar, Eyüp sakin), binişler, bölüm saatleri, Eyüp 8-3 kuralları. Düşman harfleri:
   Şişli `es`, Üsküdar `ems`, Eyüp 8-1 ve 8-2 sadece `e` ve az, Şile `emv`, Sanayi `esvo`; diğer dünyalar kendi
   harflerini korur. `python3 tools/bolumler.py` ile `src/levels.js` yeniden üretilir.
-- [ ] `src/core.js`: Eyüp 8-3 için patronsuz, düşmansız, süresiz ve DEPLOY antenisiz bölüm sonu (tepedeki banka varınca biter).
+- [x] `src/core.js`: Eyüp 8-3 için patronsuz, düşmansız, süresiz ve DEPLOY antenisiz bölüm sonu (tepedeki banka varınca biter).
 - [ ] `src/scenes.js`: dünyaların ilk bölüm çizimleri ve `SKY` yeni sıraya; başlık ekranı; ay çizimi; `cat`,
   `flag` ve gereksiz cami çağrıları.
 - [ ] `src/places.js`: `PLACES` (yer = dünya × 3 + bölüm) yeni sıraya; yeni bölümler mevcut çizimlerin farklı ışıklı hâlleriyle.
@@ -425,10 +425,10 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
 - [ ] `src/main.js`: `STORY_AFTER`; `ROUTE` (İstanbul haritasında yeni dünyaların yerleri; Şile haritanın doğu
   kenarının dışında kalıyor: harita doğuya genişletilir ya da Şile kenarda yön okuyla gösterilir);
   Eyüp 8-3'te HUD'da süre gizlenir.
-- [ ] Kayıt: `ba-kayit-surum` 4'e çıkar. Dünya sırası ve parçalar değiştiği için `ba-ilerleme` ve `ba-parcalar`
+- [x] Kayıt: `ba-kayit-surum` 4'e çıkar. Dünya sırası ve parçalar değiştiği için `ba-ilerleme` ve `ba-parcalar`
   sıfırlanır, `ba-rekor` kalır.
 - [ ] `tools/onizle.html`: yeni çizimler eklenir, silinenler çıkar.
-- [ ] Testler: `core.test.js` 11 patron (Glitch yok) ve Eyüp 8-3 kuralları; `levels.test.js` 36 bölümün hepsi
+- [x] Testler: `core.test.js` 11 patron (Glitch yok) ve Eyüp 8-3 kuralları; `levels.test.js` 36 bölümün hepsi
   geçilebilir (8-3 dahil); yeni `moon.test.js`. Üçü de GitHub Actions'ta çalışır.
 - [ ] README: giriş paragrafları (kediler, cami listesi), Hikâye, Dünyalar tablosu, binişler tablosu, Bölümlerde gizli
   şeyler (Galata'nın merdivenleri gibi silinen yerler), Geliştirme (Hicaz satırı, dosya açıklamaları), Sürümler'e v2.0;

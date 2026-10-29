@@ -746,14 +746,15 @@
     g.restore();
   }
 
-  // ---------- mekânlar: her dünyanın 3 bölümü ayrı bir yer (yer = dünya*3 + bölüm) ----------
-  // Dünyanın ilk çizimi hangi bölümde kullanılıyor; diğer iki bölüm PLACES'ta
-  const BASE_AT = [0, 0, 1, 0, 0, 1, -1, 0, 0, -1, 0, -1];
-  const PLACES = {};
+  // ---------- mekân çizimleri: her bölüm levels.js'teki 'yer' anahtarıyla bir çizim seçer ----------
+  // (v2.0'da dünyalar yeniden sıralandı; çizimler adlarıyla durur, yeni dünyalar eskilerini yeniden kullanır)
+  const DRAW = {};
+  ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', null, 'kopru', 'catilar', null, 'camlica', null].forEach((k, w) => {
+    if (k) DRAW[k] = { sky: SKY[w], far: WORLDS[w].far, near: WORLDS[w].near };
+  });
   function placeDef(p) {
-    const w = Math.floor(p / 3), s = p % 3;
-    if (s === BASE_AT[w] || !PLACES[p]) return { sky: SKY[w], far: WORLDS[w].far, near: WORLDS[w].near };
-    return PLACES[p];
+    const L = root.BA_LEVELS && root.BA_LEVELS[p];
+    return DRAW[(L && L.yer) || 'maslak'] || DRAW.maslak;
   }
 
   // ---------- önbellek ----------
@@ -959,7 +960,7 @@
     return c;
   }
   root.BA_SCENE = {
-    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, BASE_AT, PLACES, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
+    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,

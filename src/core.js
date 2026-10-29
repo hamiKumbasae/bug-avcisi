@@ -85,6 +85,7 @@
       clearT: 0, dieT: 0, bossDownT: 0, combo: 0, hurry: false, rand: rng(idx * 7919 + 13),
       prev: { jump: false, run: false },
       multi: new Map(), area: 'main', mainW: L.room || W, room: null, metroIn: null, metroOut: null, warp: null,
+      quiet: !!L.quiet, bench: null,   // sessiz bölüm (Eyüp'ün tepesi): süre işlemez, bankta biter
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -122,6 +123,7 @@
           case 'P': start = { x, y }; break;
           case 'G': G.goal = { x, y: y - 1, w: 1, h: 2, active: !L.boss, t: 0 }; break;
           case 'Q': G.checkpoint = { x, y, on: false }; break;
+          case 'W': G.bench = { x, y }; break;
           case 'A': G.arena = { ax: x, locked: false, cam: x + 3 }; break;
           case 'B': G.bossSpawn = { x, y }; break;
           case 'h': G.piece = { x: x + 0.125, y: y + 0.1, w: 0.75, h: 0.8, taken: false }; break;
@@ -1094,6 +1096,16 @@
       G.prev.jump = inp.jump; G.prev.run = inp.run;
       return;
     }
+    if (G.phase === 'clear' && G.quiet) {
+      // tepedeki bankta: alkış, sayım ve havai fişek yok; kahraman durur, bir an sonra sahne başlar
+      G.clearT += dt; p.vx = 0;
+      p.vy = Math.min(PH.maxFall, p.vy + PH.gFall * dt);
+      const r = moveY(G, p, p.vy * dt, true);
+      if (r.down) { p.vy = 0; p.onGround = true; }
+      if (G.clearT > 1.4) G.result = 'clear';
+      G.prev.jump = inp.jump; G.prev.run = inp.run;
+      return;
+    }
     if (G.phase === 'clear') {
       G.clearT += dt;
       p.vx = 0;
@@ -1123,8 +1135,8 @@
       return;
     }
 
-    // süre
-    G.time = Math.max(0, G.time - dt);
+    // süre (sessiz bölümde işlemez)
+    if (!G.quiet) G.time = Math.max(0, G.time - dt);
     if (!G.hurry && G.time < 100) { G.hurry = true; ev(G, 'hurry'); }
     if (G.time <= 0) die(G);
 
@@ -1263,6 +1275,12 @@
       }
     }
 
+    // sessiz bölümün sonu: tepedeki banka varınca
+    const bn = G.bench;
+    if (bn && !p.dead && p.onGround && p.x + p.w / 2 > bn.x + 0.3) {
+      G.phase = 'clear'; G.clearT = 0; p.vx = 0; G.S.checkpoint = null;
+      ev(G, 'bench');
+    }
     // DEPLOY
     const g = G.goal;
     if (g && g.active && !p.dead && G.area === 'main' && p.x + p.w > g.x + 0.15) {

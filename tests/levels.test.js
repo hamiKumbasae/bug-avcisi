@@ -153,8 +153,9 @@ function analyse(idx, revealHidden) {
   // başlangıç
   const P = G.player;
   const start = findSeg(Object.assign({}, P, { h: BIG_H, y: P.y + P.h - BIG_H }));
-  const gx = G.goal.x;
-  const goalSegs = segs.filter((s) => s.y === G.goal.y + 1 && s.x0 <= gx && s.x1 >= gx);
+  // hedef: DEPLOY'un zemini; sessiz bölümde bankın zemini
+  const end = G.goal || G.bench, gx = Math.floor(end.x), fy = G.goal ? G.goal.y + 1 : Math.floor(G.bench.y);
+  const goalSegs = segs.filter((s) => s.y === fy && s.x0 <= gx && s.x1 >= gx);
   const target = L.boss ? segs.filter((s) => s.x0 <= G.arena.ax + 4 && s.x1 >= G.arena.ax + 4 && s.y === 11) : goalSegs;
   const seen = new Set();
   const q = start ? [start.id] : [];
@@ -189,9 +190,10 @@ for (let i = 0; i < LEVELS.length; i++) {
   ok(rows.every((r) => r.length === rows[0].length), `${L.world}-${L.section}: satırlar eşit uzunlukta`);
   const count = (ch) => rows.reduce((n, r) => n + r.split(ch).length - 1, 0);
   ok(count('P') === 1, `${L.world}-${L.section}: tek başlangıç`);
-  ok(count('G') === 1, `${L.world}-${L.section}: tek DEPLOY`);
+  if (L.quiet) ok(count('W') === 1 && count('G') === 0 && count('Q') === 0 && !L.boss, `${L.world}-${L.section}: sessiz bölüm: bank var, DEPLOY ve kayıt noktası yok`);
+  else ok(count('G') === 1 && count('W') === 0, `${L.world}-${L.section}: tek DEPLOY`);
   if (L.boss) { ok(count('A') === 1 && count('B') === 1, `${L.world}-${L.section}: patron arenası`); }
-  else ok(count('Q') === 1, `${L.world}-${L.section}: kayıt noktası`);
+  else if (!L.quiet) ok(count('Q') === 1, `${L.world}-${L.section}: kayıt noktası`);
   ok(count('h') === (L.section === 2 ? 1 : 0), `${L.world}-${L.section}: hatıra parçası yalnız 2. bölümde, bir tane`);
   const r = analyse(i);
   ok(r.start, `${L.world}-${L.section}: başlangıç zeminde`);

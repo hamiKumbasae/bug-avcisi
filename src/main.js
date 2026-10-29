@@ -176,24 +176,12 @@
   }
 
   // ---------- uygulama durumu ----------
-  // eski kayıtları yeni dünya sırasına taşı: önce Haliç (7.), sonra Ataşehir (10.) araya girdi
   const NW = WORLDS.length, NL = LEVELS.length;
-  // Galata'dan sonra her dünya için gösterilecek ara sahne; son dünyadan sonra 'son'
-  const STORY_AFTER = ['ara1', 'ara2', 'ara3', 'ara4', 'ara5', 'ara6', 'halic', 'ara7', 'ara8', 'atasehir', 'eve'];
-  if (store.get('ba-kayit-surum', 1) < 2) {
-    const old = store.get('ba-parcalar', null);
-    if (Array.isArray(old) && old.length > 0 && old.length <= 9) store.set('ba-parcalar', [...old.slice(0, 6), false, ...old.slice(6, 9), false]);
-    const pr = store.get('ba-ilerleme', 1);
-    if (pr >= 7) store.set('ba-ilerleme', pr + 1);
-    store.set('ba-kayit-surum', 2);
-  }
-  // 12 dünya: Ataşehir 10. dünya olarak Çatılar ile Çamlıca'nın arasına girdi
-  if (store.get('ba-kayit-surum', 1) < 3) {
-    const old = store.get('ba-parcalar', null);
-    if (Array.isArray(old) && old.length === 11) store.set('ba-parcalar', [...old.slice(0, 9), false, ...old.slice(9)]);
-    const pr = store.get('ba-ilerleme', 1);
-    if (pr >= 10) store.set('ba-ilerleme', pr + 1);
-    store.set('ba-kayit-surum', 3);
+  // her dünyadan sonra gösterilecek ara sahne (v2.0 sırası); son dünyadan sonra 'son'
+  const STORY_AFTER = ['ara1', 'ara4', 'ara8', 'ara2', 'atasehir', 'ara5', 'ara7', 'eyup', 'sile', 'sanayi', 'eve'];
+  // v2.0 (kayıt sürümü 4): dünya sırası ve hatıra parçaları değişti; ilerleme ve parçalar sıfırlanır, rekor kalır
+  if (store.get('ba-kayit-surum', 1) < 4) {
+    store.set('ba-ilerleme', 1); store.set('ba-parcalar', new Array(NW).fill(false)); store.set('ba-kayit-surum', 4);
   }
   const app = {
     screen: 'title', menu: 0, menuItems: [], t: 0, S: null, G: null, introT: 0, overT: 0, endT: 0,
@@ -233,15 +221,15 @@
     app.G.moon = L.ic || !window.BA_MOON ? null : window.BA_MOON.forScene(L.saat || 'gece', new Date(), L.gun);
     app.screen = 'play';
     AU.setRate(1);
-    AU.playMusic(AU.WORLD_SONG[app.G.world]);
-    AU.ambient(AU.PLACE_AMB[app.G.place], 0.45);
+    if (L.quiet) AU.stopMusic(); else AU.playMusic(AU.WORLD_SONG[app.G.world]);   // Eyüp'ün tepesinde müzik yok
+    AU.ambient(AU.placeAmb(app.G.L), 0.45);
   }
   function pauseGame() { if (app.screen !== 'play') return; app.screen = 'pause'; app.menu = 0; AU.sfx('pause'); AU.stopMusic(); AU.stopAmbient(0.3); }
   function resume() {
     app.screen = 'play';
     const G = app.G;
-    AU.playMusic(G.boss && !G.boss.dead ? 'boss' : AU.WORLD_SONG[G.world]);
-    AU.ambient(AU.PLACE_AMB[G.place], 0.45);
+    if (G.quiet) AU.stopMusic(); else AU.playMusic(G.boss && !G.boss.dead ? 'boss' : AU.WORLD_SONG[G.world]);
+    AU.ambient(AU.placeAmb(G.L), 0.45);
     AU.setRate(G.hurry ? 1.25 : 1);
   }
   function saveScore() {
@@ -536,10 +524,12 @@
     panel(3, y, 58, h, 6.5); text(String(St.score).padStart(6, '0'), 32, ty, '#fff8ec', sz, 'center');
     panel(65, y, 44, h, 6.5); img(coinImg(0), 66.5, y - 1.5); text('×' + String(St.simit).padStart(2, '0'), 93, ty, '#ffe08a', sz, 'center');
     panel(113, y, 30, h, 6.5); text(`${L.world}-${L.section}`, 128, ty, '#9af4e4', sz, 'center');
-    panel(147, y, 52, h, 6.5); clockIcon(157, y + 6.5, 4.2);
-    const tm = G ? Math.ceil(G.time) : L.time;
-    const warn = G && G.time < 100 && G.phase === 'play' && Math.floor(app.t * 4) % 2;
-    text(String(tm).padStart(3, '0'), 180, ty, warn ? '#ff7a6a' : '#fff8ec', sz, 'center');
+    if (!L.quiet) {   // Eyüp'ün tepesinde süre yok
+      panel(147, y, 52, h, 6.5); clockIcon(157, y + 6.5, 4.2);
+      const tm = G ? Math.ceil(G.time) : L.time;
+      const warn = G && G.time < 100 && G.phase === 'play' && Math.floor(app.t * 4) % 2;
+      text(String(tm).padStart(3, '0'), 180, ty, warn ? '#ff7a6a' : '#fff8ec', sz, 'center');
+    }
     panel(203, y, 50, h, 6.5); ART.drawHead(ctx, 213, y + 7.4, 4.4, { skin: St.power === 2 ? 'hacker' : 'normal' });
     text('×' + St.lives, 234, ty, '#fff8ec', sz, 'center');
   }
@@ -612,6 +602,7 @@
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) if (G.coins[ty * G.W + tx]) img(coin, tx * TS, ty * TS);
     // kayıt noktası ve DEPLOY
     if (G.checkpoint) ART.drawCheckpoint(ctx, G.checkpoint.x * TS, (G.checkpoint.y - 1) * TS, G.checkpoint.on, app.t);
+    if (G.bench) ART.drawBench(ctx, (G.bench.x + 0.5) * TS, (G.bench.y + 1) * TS);
     const gl = G.goal;
     if (gl && (gl.active || !G.bossKind)) {
       const gx = gl.x * TS, gy = gl.y * TS, mast = !G.bossKind;
@@ -701,7 +692,7 @@
       text('DEPLOY BAŞARILI!', VW / 2, 79, '#7cff6a', 9, 'center');
       text('süre bonusu', VW / 2, 96, '#fff8ec', 6.6, 'center', null, 500);
     }
-    if (G.time < 100 && G.time > 97 && G.phase === 'play') text('ACELE ET!', VW / 2, 60, '#ff7a6a', 14, 'center');
+    if (!G.quiet && G.time < 100 && G.time > 97 && G.phase === 'play') text('ACELE ET!', VW / 2, 60, '#ff7a6a', 14, 'center');
     // metro geçişinde ekran kararıp açılır
     if (G.warp) {
       const t = G.warp.t, a = t < 0.5 ? 0 : t < 0.85 ? (t - 0.5) / 0.35 : Math.max(0, 1 - (t - 0.85) / 0.3);
@@ -1069,7 +1060,8 @@
   }
   // ---------- İstanbul yol haritası: Maslak'tan Ümraniye'ye ----------
   // Dünyaların harita üzerindeki yerleri (kutuya göre 0..1)
-  const ROUTE = [[0.46, 0.22], [0.70, 0.84], [0.60, 0.86], [0.40, 0.75], [0.50, 0.77], [0.50, 0.625], [0.39, 0.665], [0.635, 0.46], [0.545, 0.555], [0.88, 0.74], [0.80, 0.62], [0.93, 0.55]];
+  // Maslak, Kapalıçarşı, Şişli, Üsküdar, Ataşehir, Yerebatan, Köprü, Eyüp, Şile, Sanayi, Çamlıca, Ümraniye
+  const ROUTE = [[0.46, 0.22], [0.40, 0.75], [0.49, 0.40], [0.66, 0.70], [0.88, 0.74], [0.50, 0.77], [0.635, 0.46], [0.36, 0.58], [0.98, 0.18], [0.96, 0.48], [0.80, 0.62], [0.93, 0.55]];
   const STRAIT = [[0.67, -0.02], [0.69, 0.12], [0.63, 0.28], [0.645, 0.4], [0.625, 0.5], [0.605, 0.62], [0.585, 0.72], [0.575, 0.84]];
   const mapCache = ART.cache();
   function mapBase(w, h) {

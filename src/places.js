@@ -9,8 +9,7 @@
   const { B, C, E, P, rect, archWin, dome, minaret, hillMosque, bridge, camlicaTower, house, hillsY, hills, hillHouses,
     cloud, glassTower, tree, pine, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, homeTower, lonelyWindow } = SC.kit;
   const TAU = Math.PI * 2, W = 512, H = 240;
-  const PL = SC.PLACES;
-  const at = (w, s) => w * 3 + s;
+  const DR = SC.DRAW;   // çizim anahtarı → { sky, far, near }; bölümler levels.js'teki 'yer' ile seçer
 
   // ---------- ortak küçük parçalar ----------
   function grad(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; }
@@ -50,7 +49,7 @@
 
   // ================= 1 MASLAK =================
   // 1-2 Toplantı Katı: gökdelenin içi; boydan boya cam duvarın ardında Maslak, önde toplantı odası, beyaz tahta, masalar
-  PL[at(0, 1)] = {
+  DR.toplanti = {
     sky: {
       draw(g, vw, vh) {
         skyGrad(g, vw, vh, [[0, '#9fd2f2'], [0.7, '#d8eefa'], [1, '#eef8ff']]);
@@ -110,7 +109,7 @@
   };
 
   // 1-3 Sunucu Katı: karanlık sunucu odası; sıra sıra kabinler, yanıp sönen ışıklar, kablo kanalları
-  PL[at(0, 2)] = {
+  DR.sunucu = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#04070d'], [0.6, '#0b1220'], [1, '#121c30']]); } },
     far(g) {
       const r = rng(202);
@@ -153,7 +152,7 @@
 
   // ================= 2 KADIKÖY =================
   // 2-2 Balık Pazarı: çarşı sokağı; tentelerin altında balık, turşu ve zeytin tezgâhları, sokağın üstünde ampuller
-  PL[at(1, 1)] = {
+  DR.balikPazari = {
     sky: { stops: [[0, '#7cc0ec'], [0.6, '#cfe8f6'], [1, '#fde8c8']] },
     far(g) {
       const r = rng(211);
@@ -207,7 +206,7 @@
   };
 
   // 2-3 Moda Yokuşu: gün batımında Moda; karşıda tarihi yarımada, iskele, ahşap evler, çınarlar
-  PL[at(1, 2)] = {
+  DR.moda = {
     sky: { stops: [[0, '#2c2a6a'], [0.4, '#7a4a8a'], [0.72, '#e8806a'], [1, '#ffc48a']], sun: [196, 170, 14, '#ffd8a0'], stars: 18 },
     far(g) {
       g.fillStyle = grad(g, 0, 172, 0, 240, [[0, '#6a4a8a'], [1, '#3a3070']]); g.fillRect(0, 172, W, 68);
@@ -255,7 +254,7 @@
 
   // ================= 3 VAPUR =================
   // 3-1 İskele: sabah; saat kuleli iskele binası, yanaşmış vapur, karşıda puslu tarihi yarımada
-  PL[at(2, 0)] = {
+  DR.iskele = {
     sky: { stops: [[0, '#9ab8e8'], [0.45, '#f4b8a8'], [0.8, '#fcd8b0'], [1, '#fff0d8']], sun: [80, 148, 14, '#fff6d8'] },
     far(g) {
       const hz = { wall: '#c8a2b4', wallD: '#be98aa', roof: '#b490a4', trim: '#d0aabc' };
@@ -290,7 +289,7 @@
   };
 
   // 3-3 Kaptan Köşkü: fırtınalı gece; köpüklü dalgalar, uzakta deniz feneri, yağmur, sallanan fener
-  PL[at(2, 2)] = {
+  DR.kaptan = {
     sky: {
       draw(g, vw, vh) {
         skyGrad(g, vw, vh, [[0, '#070b16'], [0.6, '#16203a'], [1, '#26344c']]);
@@ -346,7 +345,7 @@
   // ================= 4 KAPALIÇARŞI =================
   // 4-2 Halıcılar: ahşap kirişli loş salon; duvarlarda asılı halılar, yığın yığın katlanmış halılar, çay tepsisi
   const PATS = [['#a8201e', '#f2d48a', '#1e3a6a'], ['#1e3a6a', '#e8c070', '#a8201e'], ['#7a2a4a', '#f4e4c0', '#2a6a5a'], ['#c86a1e', '#2a1a3a', '#f2e0b0'], ['#2a5a4a', '#e8c070', '#7a1e2a']];
-  PL[at(3, 1)] = {
+  DR.halicilar = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#1e0e06'], [0.5, '#3a1e0e'], [1, '#4e2a14']]); } },
     far(g) {
       rect(g, 0, 46, W, 170, '#5a3018');
@@ -381,7 +380,7 @@
   };
 
   // 4-3 Bedesten: kubbeli taş salon; kubbelerden süzülen ışık, bakır kaplar, eski saatler, gramofon
-  PL[at(3, 2)] = {
+  DR.bedesten = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#140e08'], [0.6, '#2c2016'], [1, '#3a2c1e']]); } },
     far(g) {
       rect(g, 0, 0, W, 216, '#3a2e22');
@@ -418,7 +417,7 @@
 
   // ================= 5 YEREBATAN =================
   // 5-2 Medusa: yeşil ışıkla aydınlanan sütunlar; tabanlarda dev Medusa başları, ziyaretçi yolu
-  PL[at(4, 1)] = {
+  DR.medusa = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#010c0e'], [0.6, '#042024'], [1, '#08302e']]); } },
     far(g) {
       for (let row = 0; row < 2; row++) {
@@ -446,7 +445,7 @@
   };
 
   // 5-3 Karanlık Su: neredeyse zifiri; sis, birkaç fener, karanlıkta parlayan gözler
-  PL[at(4, 2)] = {
+  DR.karanlikSu = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#000203'], [0.7, '#03080a'], [1, '#061014']]); } },
     far(g) {
       for (let x = 0; x < W; x += 36) column(g, x, 214, 0.65, '#0a1416', '#16282a', false);
@@ -469,7 +468,7 @@
 
   // ================= 6 GALATA =================
   // 6-1 Kamondo Merdivenleri: Bankalar Caddesi'nin taş cepheleri, kıvrılan ünlü merdiven, tepede Galata Kulesi
-  PL[at(5, 0)] = {
+  DR.kamondo = {
     sky: { stops: [[0, '#62b2ec'], [0.7, '#cbe7fa'], [1, '#eef8ff']] },
     far(g) {
       cloud(g, 60, 40, 1, 'rgba(255,255,255,0.9)'); cloud(g, 330, 56, 0.8, 'rgba(255,255,255,0.85)');
@@ -514,7 +513,7 @@
   };
 
   // 6-3 Çatı Arası: kulenin tepesindeki tavan arası; taş duvar, kemerli pencerelerden gece Haliç, kirişler, Hezarfen'in kanatları
-  PL[at(5, 2)] = {
+  DR.catiArasi = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#0c0a18'], [1, '#1e1a30']]); } },
     far(g) {
       rect(g, 0, 0, W, 216, '#4a4250');
@@ -557,7 +556,7 @@
 
   // ================= 7 HALİÇ =================
   // 7-1 Karaköy: karşıda tarihi yarımadanın tepeleri, Galata Köprüsü'nde olta sallayan balıkçılar; önde bankalar, balık pazarı, kayıklar
-  PL[at(6, 0)] = {
+  DR.karakoy = {
     sky: { stops: [[0, '#5eaee8'], [0.7, '#c4e4f8'], [1, '#f0f8ff']], sun: [420, 46, 12, '#fffbe6'] },
     far(g) {
       cloud(g, 90, 44, 1, 'rgba(255,255,255,0.9)'); cloud(g, 300, 30, 0.8, 'rgba(255,255,255,0.85)');
@@ -604,7 +603,7 @@
   };
 
   // 7-2 Haliç Kıyısı: ikindi ışığında Haliç Metro Köprüsü, tepede Süleymaniye; önde eski tersane, vinçler, sandallar
-  PL[at(6, 1)] = {
+  DR.halicKiyisi = {
     sky: { stops: [[0, '#7ab4e4'], [0.6, '#f0d8b0'], [1, '#ffe8c8']], sun: [380, 140, 13, '#fff0c8'] },
     far(g) {
       const hz = { wall: '#c8aa98', wallD: '#bea090', roof: '#b49888', roofL: '#c4a898', trim: '#d0b4a2', win: '#a08878' };
@@ -643,7 +642,7 @@
   };
 
   // 7-3 Eyüp-Balat: gün batımı; Pierre Loti tepesine teleferik, Fener Rum Lisesi'nin kırmızı tuğlası, renk renk Balat evleri
-  PL[at(6, 2)] = {
+  DR.eyupBalat = {
     sky: { stops: [[0, '#4a3a8a'], [0.45, '#d8708a'], [0.8, '#f8a870'], [1, '#ffd09a']], sun: [90, 160, 16, '#ffe0a8'] },
     far(g) {
       const base = hillsY(150, 44, 721);
@@ -692,7 +691,7 @@
 
   // ================= 8 KÖPRÜ =================
   // 8-2 Halatlar: köprünün taşıyıcı halatlarında, bulut hizasında; aşağıda uzak Boğaz, karşıda öbür kule
-  PL[at(7, 1)] = {
+  DR.halatlar = {
     sky: { stops: [[0, '#5aa6e2'], [0.55, '#b8dcf4'], [0.85, '#f4dcb8'], [1, '#f8e4c4']], sun: [420, 60, 12, '#fff6dc'] },
     far(g) {
       // çok aşağıda Boğaz ve iki yaka
@@ -726,7 +725,7 @@
   };
 
   // 8-3 Tepe: gece köprü kulesinin tepesi; aşağıda iki yakanın ışıkları, kırmızı ikaz lambaları, renkli LED'ler
-  PL[at(7, 2)] = {
+  DR.kopruTepe = {
     sky: { stops: [[0, '#04081c'], [0.6, '#121848'], [1, '#26245a']], moon: [60, 50, 11], stars: 90 },
     far(g) {
       g.fillStyle = '#0a0e2c'; g.fillRect(0, 176, W, 64);
@@ -755,7 +754,7 @@
 
   // ================= 9 ÇATILAR =================
   // 9-2 Antenler: şafak öncesi mavi saat; anten ormanı, çanak antenler, su depoları, çamaşır ipleri
-  PL[at(8, 1)] = {
+  DR.antenler = {
     sky: { stops: [[0, '#0a1440'], [0.55, '#2a4a8a'], [0.85, '#6a7ab0'], [1, '#e8a07a']], stars: 40 },
     far(g) {
       const base = hillsY(200, 16, 381);
@@ -800,7 +799,7 @@
     for (let k = 0; k < 4; k++) { const a = (ang || 0) + k * Math.PI / 2; lin(g, cx, cy, cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5, mix(col, '#000000', 0.25), r * 0.12); }
     C(g, cx, cy, r * 0.12, '#3a2a1a');
   }
-  PL[at(8, 2)] = {
+  DR.saatKulesi = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#120a04'], [0.6, '#24160a'], [1, '#2e1e0e']]); } },
     far(g) {
       rect(g, 0, 0, W, 216, '#3a2818');
@@ -831,7 +830,7 @@
   // ================= 10 ATAŞEHİR =================
   // 10-1 Finans Merkezi: gece; gökyüzüne uzanan cam kuleler, cephede yukarı aşağı giden cam asansörler,
   // dev LED cephede yükselen grafik, ışık direkli meydan
-  PL[at(9, 0)] = {
+  DR.finans = {
     sky: { draw(g, vw, vh) {
       skyGrad(g, vw, vh, [[0, '#060a24'], [0.55, '#1a1e52'], [0.85, '#4a3a7a'], [1, '#8a5a8a']]);
       stars(g, vw, vh, 26, 905, 0.45);
@@ -904,7 +903,7 @@
 
   // 10-2 Veri Merkezi: soğuk koridor; iki yanda sunucu kabinleri, tavanda sarı fiber tavaları,
   // camla kapatılmış koridorun sonunda mavi ışık, soğutma üniteleri ve yangın söndürme tüpleri
-  PL[at(9, 1)] = {
+  DR.veri = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#060a14'], [0.6, '#0e1828'], [1, '#16243a']]); } },
     far(g) {
       // derinliğe uzanan koridor: kaçış noktasında mavi ışık
@@ -967,7 +966,7 @@
 
   // 10-3 Kontrol Odası: akıllı şehrin kontrol odası; kavisli ekran duvarında canlı trafik haritası,
   // kamera görüntüleri ve grafikler (bazı ekranlar fidye yazılımının kilidiyle kızıl); önde basamaklı operatör masaları
-  PL[at(9, 2)] = {
+  DR.kontrol = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#04060e'], [0.6, '#0a1020'], [1, '#121a30']]); } },
     far(g) {
       rect(g, 0, 30, W, 8, '#1a2238');
@@ -1049,7 +1048,7 @@
 
   // ================= 11 ÇAMLICA =================
   // 10-2 Asansör: kulenin cam asansör boşluğu; çelik kafes, aşağıda gece şehri ve ışıklı köprüler
-  PL[at(10, 1)] = {
+  DR.asansor = {
     sky: { stops: [[0, '#04061a'], [0.6, '#10164a'], [1, '#22205a']], stars: 70 },
     far(g) {
       g.fillStyle = '#0c1036'; g.fillRect(0, 150, W, 90);
@@ -1078,7 +1077,7 @@
   };
 
   // 10-3 Yayın Odası: kulenin yayın odası; ekran duvarı (biri mavi ekran), kumanda masaları, YAYINDA lambası
-  PL[at(10, 2)] = {
+  DR.yayin = {
     sky: { draw(g, vw, vh) { skyGrad(g, vw, vh, [[0, '#03060f'], [0.6, '#081428'], [1, '#0e1c36']]); } },
     far(g) {
       rect(g, 0, 0, W, 216, '#0c1426');
@@ -1131,7 +1130,7 @@
     if (r() < 0.7) { const dx = x + 6 + r() * (w - 16); g.fillStyle = '#d8dce4'; g.beginPath(); g.ellipse(dx, by - h - 4, 4, 4.6, -0.5, 0, TAU); g.fill(); }
     return by - h;
   }
-  PL[at(11, 0)] = {
+  DR.umraniyeCarsi = {
     sky: { stops: [[0, '#6ab4ea'], [0.7, '#cfe6f6'], [1, '#f6ead4']] },
     far(g) {
       cloud(g, 60, 50, 1, 'rgba(255,255,255,0.9)'); cloud(g, 360, 36, 0.9, 'rgba(255,255,255,0.85)');
@@ -1163,7 +1162,7 @@
   };
 
   // 11-2 Yeni Plazalar: akşamüstü yeni iş kuleleri, ışıklı otoyol; önde plaza girişi, büyük ekran, genç ağaçlar
-  PL[at(11, 1)] = {
+  DR.yeniPlazalar = {
     sky: { stops: [[0, '#24306a'], [0.5, '#5a6aa8'], [0.85, '#e8a080'], [1, '#f6c090']], stars: 12 },
     far(g) {
       const r = rng(1011);
@@ -1196,7 +1195,7 @@
   };
 
   // 11-3 Sanayi: Dudullu sanayisi, akşam; testere dişi çatılar, bacalar; önde kepenkli atölyeler: torna, kaynak, dövme (ocak ve örs)
-  PL[at(11, 2)] = {
+  DR.sanayi = {
     sky: { stops: [[0, '#1a1220'], [0.6, '#3a2430'], [1, '#8a4024']], stars: 20 },
     far(g) {
       const r = rng(1021);

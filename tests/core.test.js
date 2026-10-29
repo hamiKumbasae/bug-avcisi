@@ -343,7 +343,7 @@ const flat = (w, extraRows) => {
     const back = G.area === 'main' && !p.dead && p.onGround && G.camY >= G.camLo[cx] - 0.01 && G.camY <= G.camHi[cx] + 0.01;
     if (inRoom && back) good++;
   });
-  ok(n === 10 && good === n, `bütün metro girişleri odaya iner, çıkıştan yukarı çıkılır (${good}/${n})`);
+  ok(n === 11 && good === n, `bütün metro girişleri odaya iner, çıkıştan yukarı çıkılır (${good}/${n})`);
 }
 
 // ---------- bonus binişleri: duraktan araca bin, yolculuk, öbür duraktan çık ----------
@@ -355,9 +355,9 @@ const flat = (w, extraRows) => {
     return G;
   };
   const rides = LV.map((L, i) => [L, i]).filter(([L, i]) => i < NL && L.room);
-  ok(rides.length === 10 && rides.every(([L]) => L.ride && L.ride.w && L.ride.v), `10 bonus binişinin hepsinde araç bilgisi var (${rides.length})`);
+  ok(rides.length === 11 && rides.every(([L]) => L.ride && L.ride.w && L.ride.v), `11 bonus binişinin hepsinde araç bilgisi var (${rides.length})`);
   const kinds = new Set(rides.map(([L]) => L.ride.type));
-  ok(['metro', 'metrobus', 'minibus', 'tram', 'funicular', 'taxi'].every((k) => kinds.has(k)), `altı araç türü de var (${[...kinds].join(', ')})`);
+  ok(['metro', 'metrobus', 'minibus', 'tram', 'taxi'].every((k) => kinds.has(k)) && kinds.size === 5, `beş araç türü de var (${[...kinds].join(', ')})`);
   // kolay: binişlerde düşman yok
   let foes = 0;
   for (const [, i] of rides) { const G = BA.loadStage(BA.newRun(), i); foes += G.spawns.filter((s) => s.x >= G.room.x0).length; }
@@ -465,7 +465,7 @@ const flat = (w, extraRows) => {
   };
   const res = [];
   for (let idx = 0; idx < NL; idx++) {
-    if (LV[idx].boss) continue;
+    if (LV[idx].boss || LV[idx].quiet) continue;
     const runJ = leap(idx, BA.PH.run, true), walkJ = leap(idx, BA.PH.walk, true), off = leap(idx, BA.PH.walk, false);
     const G2 = BA.loadStage(BA.newRun(), idx), g = G2.goal;
     G2.player.x = g.x - 3; G2.player.y = g.y + 2 - G2.player.h; G2.cam = Math.max(0, g.x - 10);
@@ -519,6 +519,7 @@ function bossBot(G) {
 {
   for (let k = 2; k < NL; k += 3) {
     const L = LV[k];
+    if (!L.boss) continue;
     const S = BA.newRun();
     S.power = 1;
     const G = BA.loadStage(S, k);
@@ -535,6 +536,23 @@ function bossBot(G) {
       ok(done, `${L.world}-3 patrondan sonra DEPLOY açıldı ve bölüm bitti`);
     }
   }
+}
+
+// ---------- sessiz bölüm (8-3): süre yok, düşman yok, patron yok; bankta biter ----------
+{
+  const qs = LV.map((L, i) => [L, i]).filter(([L, i]) => i < NL && L.quiet);
+  ok(qs.length === 1 && qs[0][1] === 7 * 3 + 2, `tek sessiz bölüm 8-3 (${qs.map(([L]) => L.world + '-' + L.section).join(', ')})`);
+  const bosses = new Set(LV.slice(0, NL).filter((L) => L.boss).map((L) => L.boss));
+  ok(bosses.size === 11 && !bosses.has('glitch'), `11 patron, Glitch kullanılmıyor (${bosses.size})`);
+  const idx = qs[0][1];
+  const G = BA.loadStage(BA.newRun(), idx), p = G.player;
+  ok(G.quiet && G.bench && !G.goal && !G.boss && !G.arena, 'sessiz bölümde DEPLOY ve patron yok, bank var');
+  ok(G.spawns.length === 0, `sessiz bölümde düşman yok (${G.spawns.length})`);
+  const t0 = G.time;
+  let hopped = false;
+  const done = run(G, (g) => { if (g.phase === 'clear' && !p.onGround) hopped = true; return { right: true, jump: g.phase === 'play' && Math.abs(p.vx) < 1 }; }, 60, (g) => g.result === 'clear');
+  ok(done && G.time === t0, `sessiz bölüm sağa yürüyüp basamaklardan çıkınca bankta biter, süre akmaz (${G.time} / ${t0})`);
+  ok(!hopped && !G.goalBonus, 'bankta zıplama ve bonus yok');
 }
 
 // hatıra parçası: her dünyanın 2. bölümünde bir tane; alınınca koşu kaydına işlenir

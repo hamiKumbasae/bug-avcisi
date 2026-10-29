@@ -202,7 +202,8 @@
     son: { bpm: 112, chords: 'F C Dm Bb F C Bb C', drums: 'k...s...k...s.h.',
       lead: 'C5 - F5 . A5 - G5 F5 | E5 - G5 . C6 - . . | D5 - F5 . A5 - G5 F5 | F5 - D5 . Bb4 - . . | C5 - F5 . A5 - C6 . | Bb5 - A5 . G5 - E5 . | D5 . E5 . F5 . G5 . | F5 - - - . . . .' },
   };
-  const WORLD_SONG = ['maslak', 'kadikoy', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'atasehir', 'camlica', 'umraniye'];
+  // v2.0 dünya sırası: yeni dünyaların şarkıları gelene dek en yakın eski şarkı çalar
+  const WORLD_SONG = ['maslak', 'carsi', 'maslak', 'kadikoy', 'atasehir', 'sarnic', 'kopru', 'halic', 'vapur', 'umraniye', 'camlica', 'umraniye'];
   function chordNotes(ch) {
     const m = /^([A-G])(#|b)?(m?)/.exec(ch);
     const root = NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
@@ -360,13 +361,17 @@
     veri: { beds: [['hum', 0.2], ['wind', 0.03]], events: [['beep', 1.8], ['keys', 11]] },
     kontrol: { beds: [['hum', 0.1], ['murmur', 0.03]], events: [['beep', 2.2], ['keys', 5], ['ding', 12]] },
   };
-  const WORLD_AMB = ['plaza', 'iskele', 'vapur', 'carsi', 'sarnic', 'galata', 'halic', 'kopru', 'catilar', 'finans', 'camlica', 'mahalle'];
-  // her bölümün mekânı (dünya*3 + bölüm)
-  const PLACE_AMB = ['plaza', 'ofis', 'sunucu', 'iskele', 'pazar', 'moda', 'iskele', 'vapur', 'firtina',
-    'carsi', 'carsi', 'bedesten', 'sarnic', 'sarnic', 'karanlik', 'kamondo', 'galata', 'cati',
-    'karakoy', 'halic', 'balat', 'kopru', 'halat', 'tepe', 'catilar', 'catilar', 'saat', 'finans', 'veri', 'kontrol',
-    'camlica', 'asansor', 'yayin',
-    'mahalle', 'plazadis', 'sanayi'];
+  const WORLD_AMB = ['plaza', 'carsi', 'plazadis', 'iskele', 'finans', 'sarnic', 'kopru', 'balat', 'tepe', 'sanayi', 'camlica', 'mahalle'];
+  // bölümün çizimi ('yer') → şehir sesi; bölüm 'ses' ile değiştirebilir
+  const AMB_OF = {
+    maslak: 'plaza', toplanti: 'ofis', sunucu: 'sunucu', kadikoy: 'iskele', balikPazari: 'pazar', moda: 'moda', iskele: 'iskele',
+    vapur: 'vapur', kaptan: 'firtina', carsi: 'carsi', halicilar: 'carsi', bedesten: 'bedesten', sarnic: 'sarnic', medusa: 'sarnic',
+    karanlikSu: 'karanlik', kamondo: 'kamondo', galata: 'galata', catiArasi: 'cati', karakoy: 'karakoy', halicKiyisi: 'halic',
+    eyupBalat: 'balat', kopru: 'kopru', halatlar: 'halat', kopruTepe: 'tepe', catilar: 'catilar', antenler: 'catilar',
+    saatKulesi: 'saat', finans: 'finans', veri: 'veri', kontrol: 'kontrol', camlica: 'camlica', asansor: 'asansor', yayin: 'yayin',
+    umraniyeCarsi: 'mahalle', yeniPlazalar: 'plazadis', sanayi: 'sanayi',
+  };
+  const placeAmb = (L) => (L && (L.ses || AMB_OF[L.yer])) || 'plaza';
   function stopAmbient(fade) {
     if (!amb || !ac) { amb = null; return; }
     const t = ac.currentTime, f = fade === undefined ? 0.8 : fade, a = amb;
@@ -398,7 +403,7 @@
   }
 
   root.BA_AUDIO = {
-    unlock: ctx, sfx, playMusic, stopMusic, setRate, WORLD_SONG, ambient, stopAmbient, WORLD_AMB, PLACE_AMB, ambEvent: ev,
+    unlock: ctx, sfx, playMusic, stopMusic, setRate, WORLD_SONG, ambient, stopAmbient, WORLD_AMB, placeAmb, ambEvent: ev,
     get ambName() { return amb ? amb.name : null; },
     get muted() { return muted; }, setMuted, SONGS,
     current: () => (cur ? cur.name : null),

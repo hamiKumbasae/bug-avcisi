@@ -635,13 +635,20 @@
     { key: 'kontrol', sky: ['#081020', '#142040'], water: false },  // 20: kontrol odası: koyu halı karo, camgöbeği kenar
   ];
   const METRO = 9;
-  // mekân (dünya*3 + bölüm) → karo teması ve su rengi (yoksa false)
-  const PLACE_TILES = [0, 10, 11, 1, 1, 1, 12, 2, 2, 3, 3, 13, 4, 4, 4, 5, 5, 15, 1, 5, 5, 6, 14, 14, 7, 7, 15, 18, 19, 20, 8, 8, 8, 16, 0, 17];
-  const PLACE_WATER = [false, false, false, '#2f7fa8', false, '#3a7ab0', '#2a8ac0', '#2a86c8', '#2a4a6a', false, false, false,
-    '#0f4a50', '#0e5a58', '#081c22', false, false, false, '#2a7ab0', '#3a7290', false, '#24387a', false, false,
-    false, false, false, false, false, false, false, false, false, false, false, false];
-  const placeTiles = (p) => PLACE_TILES[p] ?? 0;
-  const placeWater = (p) => PLACE_WATER[p] || false;
+  // mekân çizimi ('yer') → karo teması ve su rengi (yoksa false); bölüm 'zemin' / 'su' ile değiştirebilir
+  const TILE_OF = {
+    maslak: 0, toplanti: 10, sunucu: 11, kadikoy: 1, balikPazari: 1, moda: 1, iskele: 12, vapur: 2, kaptan: 2,
+    carsi: 3, halicilar: 3, bedesten: 13, sarnic: 4, medusa: 4, karanlikSu: 4, kamondo: 5, galata: 5, catiArasi: 15,
+    karakoy: 1, halicKiyisi: 5, eyupBalat: 5, kopru: 6, halatlar: 14, kopruTepe: 14, catilar: 7, antenler: 7, saatKulesi: 15,
+    finans: 18, veri: 19, kontrol: 20, camlica: 8, asansor: 8, yayin: 8, umraniyeCarsi: 16, yeniPlazalar: 0, sanayi: 17,
+  };
+  const WATER_OF = {
+    kadikoy: '#2f7fa8', moda: '#3a7ab0', iskele: '#2a8ac0', vapur: '#2a86c8', kaptan: '#2a4a6a',
+    sarnic: '#0f4a50', medusa: '#0e5a58', karanlikSu: '#081c22', karakoy: '#2a7ab0', halicKiyisi: '#3a7290', kopru: '#24387a',
+  };
+  const levelAt = (p) => (root.BA_LEVELS && root.BA_LEVELS[p]) || {};
+  const placeTiles = (p) => { const L = levelAt(p); return L.zemin !== undefined ? L.zemin : TILE_OF[L.yer] ?? 0; };
+  const placeWater = (p) => { const L = levelAt(p); return L.su !== undefined ? L.su : WATER_OF[L.yer] || false; };
   const GROUND = [
     { top: '#7cc84e', topD: '#5aa63a', fill: '#c7ccd6', fillD: '#a8aeba', line: '#8e95a4' },   // Maslak: çim + granit
     { top: '#cfc3ad', topD: '#a99a82', fill: '#9a8b76', fillD: '#7c6e5c', line: '#5e5446' },   // Kadıköy: parke taşı
@@ -1270,6 +1277,14 @@
     box(g, x + 2, y + H + 1, w - 4, 3, 1, '#5a6478', K, 0.6);
     void t;
   }
+  // tepedeki iki kişilik bank (Eyüp): ahşap oturak ve arkalık, dökme demir ayaklar. (cx, by): ortası ve zemin
+  function drawBench(g, cx, by) {
+    const w = 30;
+    for (const dx of [-w / 2 + 3, w / 2 - 3]) { lin(g, cx + dx, by, cx + dx, by - 9, K, 2.4); lin(g, cx + dx, by, cx + dx, by - 9, '#3a3e48', 1.2); lin(g, cx + dx, by - 9, cx + dx - 2, by - 18, K, 2); }
+    box(g, cx - w / 2, by - 10, w, 2.6, 0.8, '#a8703a', K, 0.7);
+    for (const y of [by - 15.5, by - 19]) box(g, cx - w / 2 + 1, y, w - 2, 2.2, 0.8, '#b8804a', K, 0.6);
+    g.fillStyle = 'rgba(255,230,180,0.3)'; g.fillRect(cx - w / 2 + 1, by - 9.8, w - 2, 0.6);
+  }
   // cam silme sepeti (Ataşehir): halatlarla tepeden sarkan platform, arkada korkuluk
   function drawGondola(g, x, y, w) {
     for (const cx of [x + 3, x + w - 3]) { lin(g, cx, y - 260, cx, y - 9, 'rgba(30,36,60,0.9)', 1.1); lin(g, cx, y - 260, cx, y - 9, 'rgba(190,200,220,0.6)', 0.4); }
@@ -1294,8 +1309,8 @@
   }
 
   // ---------------- hatıra parçaları (her dünyadan bir tane) ----------------
-  // 0 Maslak camı, 1 Kadıköy'den martı tüyü, 2 vapur çanı, 3 çarşı nazarı, 4 sarnıç damlası, 5 Galata Kulesi, 6 köprü, 7 anten, 8 lale
-  const PIECES = ['cam', 'tuy', 'can', 'nazar', 'damla', 'kule', 'sepet', 'kopru', 'anten', 'anahtar', 'lale', 'cekic'];
+  // v2.0: her dünyanın parçası kaybedilen kişiye aittir (Maslak'tan Ümraniye'ye sırayla)
+  const PIECES = ['kartvizit', 'keski', 'istanbulkart', 'cay', 'anahtar', 'gozluk', 'fotograf', 'karanfil', 'kabuk', 'cekic', 'lale', 'radyo'];
   function drawPiece(g, i, cx, cy, s, t) {
     s = s || 1; t = t || 0;
     g.save(); g.translate(cx, cy); g.scale(s, s);
@@ -1379,6 +1394,10 @@
         g.beginPath(); g.moveTo(-4, -7); g.quadraticCurveTo(-4.4, -0.4, 0, -0.4); g.quadraticCurveTo(4.4, -0.4, 4, -7); g.lineTo(2, -4.6); g.lineTo(0, -8); g.lineTo(-2, -4.6); g.closePath();
         fs(g, grad(g, -4, -8, 4, 0, [[0, '#ff5a5a'], [1, '#b81a2a']]), K, 0.8);
         break;
+      default:
+        // çizimi henüz olmayan parça: yumuşak ışıklı bir taş
+        circle(g, 0, 0, 5.4, grad(g, -5, -5, 5, 5, [[0, '#fff4d6'], [1, '#c8a870']]), K, 0.8);
+        circle(g, -1.6, -1.8, 1.4, 'rgba(255,255,255,0.7)', null);
     }
     g.restore();
   }
@@ -1387,6 +1406,6 @@
     PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
-    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawCabin, drawGondola, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
+    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawCabin, drawGondola, drawBench, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
   };
 })(window);

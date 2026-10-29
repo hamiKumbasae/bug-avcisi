@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bug Avcısı: İstanbul — 12 dünya × 3 bölüm haritalarını üretir ve src/levels.js'e yazar.
+"""Bug Avcısı: İstanbul — 12 dünya × 3 bölüm haritalarını üretir (v2.0 sırası) ve src/levels.js'e yazar.
 
     python3 tools/bolumler.py
 
@@ -16,7 +16,7 @@ Harita işaretleri (14 satır):
   e  bug   s  spam   v  virüs   m  martı   j  raylardan sıçrayan bug
   T  bonus binişinin aracı (metro, metrobüs, tramvay, minibüs, taksi, füniküler; tavanına binilir)
   Y  füniküler varış noktası (aracın eğik rayda vardığı sol üst köşe)
-  P  başlangıç   G  DEPLOY noktası   A  arena girişi   B  patron
+  P  başlangıç   G  DEPLOY noktası   A  arena girişi   B  patron   W  tepedeki bank (sessiz bölümün sonu)
   h  hatıra parçası (her dünyanın 2. bölümünde bir tane, iki ince platformla çıkılan köşede)
   X  gizli blok (görünmez; alttan vurulunca disket = can çıkar)
   Z  çok simitli blok (çatlak görünür; kısa süre içinde her vuruşta bir simit verir)
@@ -32,32 +32,47 @@ import random
 from pathlib import Path
 
 H = 14
+# v2.0: iki katmanlı İstanbul. Yukarısı bugünün şehri (Maslak, Şişli, Ataşehir, Köprü, Çamlıca), aşağısı eski İstanbul
+# (Kapalıçarşı, Üsküdar, Yerebatan, Eyüp, Şile). Bütün oyun tek bir gün ve gecede geçer: saat her bölümün sahne saati.
+# seed: bölüm üretiminin tohumu (eski dünyalardan gelenler eski tohumunu korur), dpos: zorluk sırası (Eyüp sakin).
+# yer: bölümün çizimi (scenes.js / places.js'teki DRAW anahtarı)
 WORLDS = [
-    {'name': 'Maslak', 'sub': 'Plazalar', 'enemies': 'e', 'boss': 'kralbug', 'boss_name': 'Kral Bug',
-     'saat': ['sabah', 'sabah', 'sabah'], 'sections': ['Büyükdere Caddesi', 'Toplantı Katı', 'Sunucu Katı']},
-    {'name': 'Kadıköy', 'sub': 'Çarşı', 'enemies': 'es', 'boss': 'spam', 'boss_name': 'Spam Kraliçesi',
-     'saat': ['ogle', 'ogle', 'gunbatimi'], 'sections': ['Rıhtım Caddesi', 'Balık Pazarı', 'Moda Yokuşu']},
-    {'name': 'Vapur', 'sub': 'Boğaz', 'enemies': 'ems', 'boss': 'marti', 'boss_name': 'Dev Martı',
-     'saat': ['sabah', 'ogle', 'gece'], 'sections': ['İskele', 'Güverte', 'Kaptan Köşkü']},
-    {'name': 'Kapalıçarşı', 'sub': 'Kubbeler', 'enemies': 'esv', 'boss': 'truva', 'boss_name': 'Truva Atı',
-     'saat': ['ogle', 'ogle', 'ogle'], 'sections': ['Kuyumcular', 'Halıcılar', 'Bedesten']},
-    {'name': 'Yerebatan', 'sub': 'Sarnıç', 'enemies': 'evo', 'boss': 'sizinti', 'boss_name': 'Bellek Sızıntısı',
-     'saat': ['ogle', 'ogle', 'ogle'], 'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
-    {'name': 'Galata', 'sub': 'Yokuşlar', 'enemies': 'emv', 'boss': 'dongu', 'boss_name': 'Sonsuz Döngü',
-     'saat': ['gunbatimi', 'gunbatimi', 'gece'], 'sections': ['Kamondo Merdivenleri', 'Kuledibi', 'Çatı Arası']},
-    {'name': 'Haliç', 'sub': 'Karaköy\'den Balat\'a', 'enemies': 'esm', 'boss': 'spagetti', 'boss_name': 'Spagetti Kod',
-     'saat': ['ogledenSonra', 'aksamustu', 'gunbatimi'], 'sections': ['Karaköy', 'Haliç Kıyısı', 'Eyüp-Balat']},
-    {'name': 'Köprü', 'sub': 'Boğaz Köprüsü', 'enemies': 'msv', 'boss': 'ddos', 'boss_name': 'DDoS Bulutu',
-     'saat': ['gunbatimi', 'gunbatimi', 'gece'], 'sections': ['Ayak', 'Halatlar', 'Tepe']},
-    {'name': 'Çatılar', 'sub': 'Gece', 'enemies': 'evom', 'boss': 'glitch', 'boss_name': 'Glitch',
-     'saat': ['gece', 'geceyarisi', 'geceyarisi'], 'sections': ['Bacalar', 'Antenler', 'Saat Kulesi']},
-    # Ataşehir sonradan araya girdi: eski bölümler değişmesin diye her dünyanın tohumu (seed) ve zorluk sırası (dpos) sabit
-    {'name': 'Ataşehir', 'sub': 'Finans Merkezi', 'enemies': 'esvo', 'boss': 'fidye', 'boss_name': 'Fidye Yazılımı',
-     'saat': ['gece', 'gece', 'gece'], 'sections': ['Finans Merkezi', 'Veri Merkezi', 'Kontrol Odası'], 'seed': 11, 'dpos': 8.5},
-    {'name': 'Çamlıca', 'sub': 'Kule', 'enemies': 'esvmo', 'boss': 'maviekran', 'boss_name': 'Mavi Ekran',
-     'saat': ['geceyarisindanSonra', 'geceyarisindanSonra', 'safakOncesi'], 'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası'], 'seed': 9, 'dpos': 9},
-    {'name': 'Ümraniye', 'sub': 'Ev', 'gun': 1, 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç',
-     'saat': ['safak', 'sabah', 'sabah'], 'sections': ['Çarşı', 'Yeni Plazalar', 'Sanayi'], 'seed': 10, 'dpos': 10},
+    {'name': 'Maslak', 'sub': 'Plazalar', 'enemies': 'e', 'boss': 'kralbug', 'boss_name': 'Kral Bug', 'seed': 0, 'dpos': 0,
+     'saat': ['sabah', 'sabah', 'sabah'], 'yer': ['maslak', 'toplanti', 'sunucu'],
+     'sections': ['Büyükdere Caddesi', 'Toplantı Katı', 'Sunucu Katı']},
+    {'name': 'Kapalıçarşı', 'sub': 'Kubbeler', 'enemies': 'esv', 'boss': 'truva', 'boss_name': 'Truva Atı', 'seed': 3, 'dpos': 1,
+     'saat': ['ogle', 'ogle', 'ogle'], 'yer': ['carsi', 'halicilar', 'bedesten'],
+     'sections': ['Kuyumcular', 'Han', 'Bedesten']},
+    {'name': 'Şişli', 'sub': 'Mecidiyeköy', 'enemies': 'es', 'boss': 'spam', 'boss_name': 'Spam Kraliçesi', 'seed': 12, 'dpos': 2,
+     'saat': ['ogledenSonra', 'ogledenSonra', 'aksamustu'], 'yer': ['maslak', 'toplanti', 'toplanti'],
+     'sections': ['Mecidiyeköy Meydanı', 'Plaza Lobisi', 'Mesai Sonu']},
+    {'name': 'Üsküdar', 'sub': 'Sahil', 'enemies': 'ems', 'boss': 'marti', 'boss_name': 'Dev Martı', 'seed': 13, 'dpos': 3,
+     'saat': ['gunbatimi', 'gunbatimi', 'gunbatimi'], 'yer': ['iskele', 'balikPazari', 'moda'],
+     'sections': ['İskele', 'Çarşı', 'Sahil']},
+    {'name': 'Ataşehir', 'sub': 'Finans Merkezi', 'enemies': 'esvo', 'boss': 'fidye', 'boss_name': 'Fidye Yazılımı', 'seed': 11, 'dpos': 4,
+     'saat': ['gece', 'gece', 'gece'], 'yer': ['finans', 'veri', 'kontrol'],
+     'sections': ['Finans Merkezi', 'Veri Merkezi', 'Kontrol Odası']},
+    {'name': 'Yerebatan', 'sub': 'Sarnıç', 'enemies': 'evo', 'boss': 'sizinti', 'boss_name': 'Bellek Sızıntısı', 'seed': 4, 'dpos': 5,
+     'saat': ['gece', 'gece', 'gece'], 'yer': ['sarnic', 'medusa', 'karanlikSu'],
+     'sections': ['Sütunlar', 'Medusa', 'Karanlık Su']},
+    {'name': 'Köprü', 'sub': 'Boğaz Köprüsü', 'enemies': 'msv', 'boss': 'ddos', 'boss_name': 'DDoS Bulutu', 'seed': 7, 'dpos': 6,
+     'saat': ['gece', 'gece', 'gece'], 'yer': ['kopru', 'halatlar', 'kopruTepe'],
+     'sections': ['Ayak', 'Halatlar', 'Tepe']},
+    {'name': 'Eyüp', 'sub': 'Gece yarısı', 'enemies': 'e', 'boss': None, 'boss_name': None, 'seed': 14, 'dpos': 3.5,
+     'saat': ['geceyarisi', 'geceyarisi', 'geceyarisi'], 'yer': ['eyupBalat', 'eyupBalat', 'halicKiyisi'],
+     'sections': ['Balat Yokuşu', 'Teleferik', 'Tepe']},
+    {'name': 'Şile', 'sub': 'Gece yolu', 'enemies': 'emv', 'boss': 'dongu', 'boss_name': 'Sonsuz Döngü', 'seed': 15, 'dpos': 7.5,
+     'saat': ['geceyarisindanSonra', 'geceyarisindanSonra', 'geceyarisindanSonra'], 'yer': ['camlica', 'camlica', 'kaptan'],
+     'sections': ['Gece Yolu', 'Benzin İstasyonu', 'Fener']},
+    {'name': 'Sanayi', 'sub': 'Dudullu', 'enemies': 'esvo', 'boss': 'spagetti', 'boss_name': 'Spagetti Kod', 'seed': 16, 'dpos': 8.5,
+     'saat': ['geceyarisindanSonra', 'geceyarisindanSonra', 'safakOncesi'], 'yer': ['sanayi', 'sanayi', 'sanayi'],
+     'sections': ['İMES', 'DES', 'Kadosan']},
+    {'name': 'Çamlıca', 'sub': 'Kule', 'enemies': 'esvmo', 'boss': 'maviekran', 'boss_name': 'Mavi Ekran', 'seed': 9, 'dpos': 9.5,
+     'saat': ['safakOncesi', 'safakOncesi', 'safakOncesi'], 'yer': ['camlica', 'asansor', 'yayin'],
+     'sections': ['Tepe Yolu', 'Asansör', 'Yayın Odası']},
+    {'name': 'Ümraniye', 'sub': 'Ev', 'enemies': 'esvmo', 'boss': 'teknikborc', 'boss_name': 'Teknik Borç', 'seed': 10, 'dpos': 10, 'gun': 1,
+     'saat': ['safak', 'sabah', 'sabah'], 'yer': ['umraniyeCarsi', 'yeniPlazalar', 'sanayi'],
+     'sections': ['Çarşı', 'Yeni Plazalar', 'Atölye']},
 ]
 DSPAN = 32   # zorluk ölçeği: ilk 11 dünyanın 33 bölümü (0 → 1)
 
@@ -92,57 +107,57 @@ PLACES = [
         {'parts': ['flat', 'blocks', 'blocks', 'pillars', 'stairs', 'vertical', 'group', 'gap'], 'ceil': 2, 'vert': ['climb', 'climb']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'blocks', 'gap', 'tunnel', 'group'], 'ceil': 2},
     ],
-    [  # Kadıköy
-        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'stairs', 'pillars', 'bridge', 'group', 'blockgap'], 'ride': ride('metro', 'M4', '#e5427f', 'KADIKÖY', 'AYRILIK ÇEŞMESİ'), 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'ride': ride('minibus', '', '#1fb5ad', 'KADIKÖY', 'BOSTANCI'), 'vert': ['climb', 'descent']},
-        {'parts': ['slope', 'slope', 'step', 'stairs', 'gap', 'bridge', 'flat', 'pillars']},
-    ],
-    [  # Vapur
-        {'parts': ['flat', 'gap', 'gap', 'bridge', 'blocks', 'moving', 'blockgap'], 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'blocks', 'gap', 'gap', 'moving', 'bridge', 'step', 'blockgap'], 'vert': ['climb', 'descent']},
-        {'parts': ['moving', 'moving', 'gap', 'blockgap', 'bridge', 'pillars', 'loop', 'flat']},
-    ],
-    [  # Kapalıçarşı
+    [  # Kapalıçarşı: kuyumcular, eski bir han, bedesten
         {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'stairs', 'pillars', 'gap', 'spikes', 'group', 'blockgap'], 'ride': ride('tram', 'T1', '#2a6fc4', 'BEYAZIT', 'ÇEMBERLİTAŞ', scene='divanyolu'), 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'blocks', 'blocks', 'tunnel', 'pillars', 'group', 'stairs', 'blockgap'], 'ceil': 2, 'vert': ['descent', 'climb']},
         {'parts': ['spikes', 'loop', 'pillars', 'gap', 'blocks', 'tunnel', 'group', 'flat'], 'ceil': 2},
     ],
+    [  # Şişli: Mecidiyeköy meydanı, plaza lobisi, mesai sonu
+        {'parts': ['flat', 'blocks', 'blocks', 'gap', 'step', 'pillars', 'stairs', 'group', 'blockgap'], 'ride': ride('metro', 'M2', '#2fa84f', 'TAKSİM', 'ŞİŞLİ-MECİDİYEKÖY'), 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'blocks', 'pillars', 'stairs', 'vertical', 'group', 'gap', 'moving'], 'ceil': 2, 'vert': ['climb', 'climb']},
+        {'parts': ['flat', 'spikes', 'loop', 'pillars', 'blocks', 'gap', 'tunnel', 'group'], 'ceil': 2},
+    ],
+    [  # Üsküdar: iskele, çarşı, sahil
+        {'parts': ['flat', 'gap', 'gap', 'bridge', 'blocks', 'moving', 'blockgap'], 'ride': ride('metro', 'B1', '#2a9fd6', 'SİRKECİ', 'ÜSKÜDAR'), 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'awnings', 'awnings', 'blocks', 'group', 'stairs', 'blockgap', 'gap'], 'vert': ['climb', 'descent']},
+        {'parts': ['slope', 'slope', 'step', 'stairs', 'gap', 'bridge', 'flat', 'pillars']},
+    ],
+    [  # Ataşehir: finans merkezinin cam kuleleri (cephe asansörleri), veri merkezi, akıllı şehir kontrol odası
+        {'parts': ['flat', 'blocks', 'moving', 'pillars', 'vertical', 'gap', 'blocks', 'group', 'stairs', 'blockgap'], 'ride': ride('minibus', '', '#1fb5ad', 'ÜSKÜDAR', 'ATAŞEHİR', night=True), 'vert': ['climb', 'climb']},
+        {'parts': ['flat', 'tunnel', 'pillars', 'spikes', 'blocks', 'loop', 'group', 'blockgap', 'stairs'], 'ceil': 2, 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'spikes', 'loop', 'moving', 'pillars', 'blocks', 'gap', 'group'], 'ceil': 2},
+    ],
     [  # Yerebatan
-        {'parts': ['tunnel', 'tunnel', 'gap', 'pillars', 'moving', 'spikes', 'loop', 'blocks', 'group'], 'ceil': 2, 'vert': ['descent', 'descent']},
+        {'parts': ['tunnel', 'tunnel', 'gap', 'pillars', 'moving', 'spikes', 'loop', 'blocks', 'group'], 'ceil': 2, 'ride': ride('tram', 'T1', '#2a6fc4', 'SİRKECİ', 'SULTANAHMET', scene='divanyolu', night=True), 'vert': ['descent', 'descent']},
         {'parts': ['pillars', 'pillars', 'gap', 'moving', 'loop', 'bridge', 'blocks', 'flat'], 'ceil': 2, 'vert': ['descent', 'climb']},
         {'parts': ['tunnel', 'spikes', 'loop', 'loop', 'gap', 'pillars', 'moving', 'group'], 'ceil': 2},
-    ],
-    [  # Galata
-        {'parts': ['stairs', 'stairs', 'step', 'step', 'slope', 'blocks', 'group', 'gap'], 'ride': ride('funicular', 'F2', '#c43a2e', 'KARAKÖY', 'BEYOĞLU'), 'vert': ['climb', 'climb']},
-        {'parts': ['step', 'step', 'stairs', 'blocks', 'gap', 'pillars', 'spikes', 'loop', 'group', 'blockgap'], 'ride': ride('metro', 'M2', '#2fa84f', 'ŞİŞHANE', 'TAKSİM'), 'vert': ['climb', 'descent']},
-        {'parts': ['pillars', 'loop', 'spikes', 'blocks', 'gap', 'stairs', 'group', 'flat'], 'ceil': 2},
-    ],
-    [  # Haliç: Karaköy'den Eyüp-Balat'a
-        {'parts': ['flat', 'blocks', 'gap', 'bridge', 'group', 'blockgap', 'step', 'moving'], 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'bridge', 'gap', 'moving', 'blocks', 'pillars', 'group', 'stairs'], 'ride': ride('metro', 'M2', '#2fa84f', 'HALİÇ', 'VEZNECİLER'), 'vert': ['climb', 'descent']},
-        {'parts': ['slope', 'slope', 'stairs', 'step', 'blocks', 'gap', 'spikes', 'loop', 'group']},
     ],
     [  # Köprü
         {'parts': ['flat', 'blocks', 'gap', 'pillars', 'stairs', 'bridge', 'group', 'moving'], 'vert': ['climb', 'climb']},
         {'parts': ['bridge', 'bridge', 'moving', 'moving', 'vertical', 'blockgap', 'pillars'], 'vert': ['climb', 'descent']},
         {'parts': ['pillars', 'pillars', 'moving', 'vertical', 'loop', 'bridge', 'gap']},
     ],
-    [  # Çatılar
-        {'parts': ['pillars', 'pillars', 'gap', 'bridge', 'spikes', 'loop', 'step', 'vertical', 'blocks', 'group', 'blockgap'], 'vert': ['descent', 'climb']},
-        {'parts': ['pillars', 'pillars', 'vertical', 'loop', 'gap', 'step', 'blockgap', 'blocks'], 'vert': ['climb', 'descent']},
-        {'parts': ['loop', 'loop', 'moving', 'vertical', 'spikes', 'pillars', 'blocks', 'flat'], 'ceil': 2},
+    [  # Eyüp: oyunun sessiz dünyası; az düşman (yalnız bug), 3. bölüm düşmansız ve süresiz kısa bir tepe yolu
+        {'parts': ['slope', 'slope', 'stairs', 'step', 'blocks', 'gap', 'flat'], 'foes': 6},
+        {'parts': ['flat', 'moving', 'moving', 'gap', 'bridge', 'moving', 'step', 'blocks'], 'foes': 6, 'vert': ['climb', 'climb']},
+        {'quiet': True},
     ],
-    [  # Ataşehir: finans merkezinin cam kuleleri (cephe asansörleri), veri merkezi, akıllı şehir kontrol odası
-        {'parts': ['flat', 'blocks', 'moving', 'pillars', 'vertical', 'gap', 'blocks', 'group', 'stairs', 'blockgap'], 'vert': ['climb', 'climb']},
-        {'parts': ['flat', 'tunnel', 'pillars', 'spikes', 'blocks', 'loop', 'group', 'blockgap', 'stairs'], 'ceil': 2, 'vert': ['descent', 'climb']},
-        {'parts': ['flat', 'spikes', 'loop', 'moving', 'pillars', 'blocks', 'gap', 'group'], 'ceil': 2},
+    [  # Şile: şehir dışında gece yolu, ıssız benzin istasyonu, fırtınada fener
+        {'parts': ['flat', 'blocks', 'gap', 'slope', 'step', 'pillars', 'group', 'blockgap'], 'ride': ride('minibus', '', '#1fb5ad', 'ÜSKÜDAR', 'ŞİLE', night=True), 'vert': ['descent', 'climb']},
+        {'parts': ['flat', 'blocks', 'blocks', 'pillars', 'gap', 'stairs', 'group', 'spikes'], 'vert': ['climb', 'descent']},
+        {'parts': ['moving', 'moving', 'gap', 'blockgap', 'bridge', 'pillars', 'loop', 'flat']},
+    ],
+    [  # Sanayi: İMES gece vardiyası, DES depoları, Kadosan dövme atölyeleri
+        {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group'], 'ride': ride('minibus', '', '#1fb5ad', 'ŞİLE', 'DUDULLU', night=True), 'vert': ['climb', 'descent']},
+        {'parts': ['pillars', 'pillars', 'vertical', 'blocks', 'gap', 'stairs', 'group', 'blockgap'], 'ceil': 2, 'vert': ['climb', 'descent']},
+        {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group']},
     ],
     [  # Çamlıca
         {'parts': ['flat', 'step', 'slope', 'gap', 'spikes', 'pillars', 'blocks', 'group', 'stairs'], 'ride': ride('taxi', '', '#f2c21b', 'ÇAMLICA', 'KISIKLI', night=True), 'vert': ['climb', 'climb']},
         {'parts': ['vertical', 'vertical', 'moving', 'pillars', 'loop', 'blockgap', 'bridge'], 'vert': ['climb', 'climb']},
         {'parts': ['spikes', 'loop', 'tunnel', 'moving', 'pillars', 'blocks', 'gap', 'flat'], 'ceil': 2},
     ],
-    [  # Ümraniye: çarşı ve mahalle, yeni plazalar ve metro, Dudullu sanayisi
+    [  # Ümraniye: şafakta çarşı, sabah yeni plazalar ve metro, kendi atölyesi
         {'parts': ['flat', 'awnings', 'blocks', 'blocks', 'group', 'stairs', 'gap', 'step'], 'ride': ride('minibus', '', '#1fb5ad', 'ÜMRANİYE', 'KADIKÖY'), 'vert': ['descent', 'climb']},
         {'parts': ['flat', 'blocks', 'pillars', 'vertical', 'gap', 'stairs', 'group', 'blockgap'], 'ride': ride('metro', 'M5', '#8a4fae', 'ÜMRANİYE', 'ÇARŞI'), 'vert': ['climb', 'descent']},
         {'parts': ['flat', 'spikes', 'loop', 'pillars', 'moving', 'blocks', 'gap', 'group']},
@@ -235,6 +250,7 @@ class Lv:
         self.ceil = 0        # tavan kalınlığı (tünel)
         self.hidden = 0      # yerleştirilen gizli blok sayısı
         self.multi = 0       # çok simitli blok sayısı
+        self.ekinds = WORLDS[w]['enemies']   # bu bölümdeki düşman türleri
 
     @property
     def x(self):
@@ -297,7 +313,7 @@ class Lv:
             if self.r.random() < 0.5:
                 self.put(cs[1], g - h - 2, 'b')
         if self.r.random() < 0.35 + 0.3 * self.d:
-            self.put(xs[3], g - 5, self.r.choice('sm') if any(k in WORLDS[self.w]['enemies'] for k in 'sm') else 'e')
+            self.put(xs[3], g - 5, self.r.choice('sm') if any(k in self.ekinds for k in 'sm') else 'e')
         self.base = up
         self.flat(3, enemies=False)
 
@@ -371,7 +387,7 @@ class Lv:
         return self.cols[x][y]
 
     def enemy(self, x, kinds=None, air=False):
-        kinds = kinds or WORLDS[self.w]['enemies']
+        kinds = kinds or self.ekinds
         k = self.r.choice(kinds)
         if k == 'o':
             k = 'e'
@@ -424,7 +440,7 @@ class Lv:
     def populate(self, want, x0, x1, start=16):
         # Düşmanları seyrek kalan yerlere, düz zemine (ya da havaya) en boş aralıktan başlayarak ekle.
         # Özel işaretlerin (başlangıç, kayıt, metro, arena, hatıra, asansör...) ve dikey kuyuların yanından uzak dur.
-        kinds = WORLDS[self.w]['enemies'].replace('o', '')
+        kinds = self.ekinds.replace('o', '')
         walkers = ''.join(k for k in kinds if k in 'ev') or 'e'
         flyers = ''.join(k for k in kinds if k in 'sm')
         foes = [x for x in range(self.x) if any(ch in 'esvm' for ch in self.cols[x]) or any(ch in 'esvm' for ch in self.extra[x].values())]
@@ -666,7 +682,7 @@ class Lv:
         k = 2 + (self.r.random() < self.d)
         x0 = xs[4]
         for i in range(k):
-            self.set(x0 + 2 * i, self.top() - 1, 'e' if i or 'v' not in WORLDS[self.w]['enemies'] or self.r.random() < 0.6 else 'v')
+            self.set(x0 + 2 * i, self.top() - 1, 'e' if i or 'v' not in self.ekinds or self.r.random() < 0.6 else 'v')
         if self.r.random() < 0.5:
             for i in range(3):
                 self.set(x0 + i, self.top() - 4, 'C')
@@ -692,7 +708,7 @@ class Lv:
         for x in xs[3:-3:3]:
             self.set(x, y, self.r.choice('CCK'))
         if self.r.random() < 0.6:
-            self.enemy(xs[-3], kinds='ev' if 'v' in WORLDS[self.w]['enemies'] else 'e')
+            self.enemy(xs[-3], kinds='ev' if 'v' in self.ekinds else 'e')
         self.ceil = old
 
 
@@ -745,6 +761,31 @@ class Lv:
         self.set(xs[5], self.top() - 1, 'G')
 
 
+def make_quiet(lv, r):
+    # Eyüp'ün tepesi: ~100 karo, düşman yok, patron ve kale yolu yok, süre işlemez, DEPLOY anteni yok.
+    # Yumuşak bir yokuş; birkaç simit; tepedeki iki kişilik banka varınca bölüm biter (W).
+    xs = lv.flat(8, enemies=False)
+    lv.set(xs[2], lv.top() - 1, 'P')
+    plan = ['flat', 'up', 'flat', 'up', 'flat', 'up', 'flat', 'down', 'flat', 'up', 'up', 'flat']
+    simits = 0
+    for k in plan:
+        if k == 'up' or k == 'down':
+            lv.gh = max(1, min(6, lv.gh + (1 if k == 'up' else -1)))
+            lv.flat(r.randint(3, 4), enemies=False)
+        else:
+            xs = lv.flat(r.randint(6, 9), enemies=False)
+            if simits < 7 and r.random() < 0.6:
+                for i in range(2):
+                    lv.set(xs[2 + i * 2], lv.top() - 3, 'b')
+                simits += 2
+    xs = lv.flat(12, enemies=False)
+    lv.set(xs[6], lv.top() - 1, 'W')
+    lv.flat(3, enemies=False)
+    lv.wall()
+    rows, vcam = lv.assemble(None)
+    return rows, None, vcam, None
+
+
 def make(world, sec, r):
     d = min(1.0, (wdpos(world) * 3 + sec) / DSPAN)
     W = WORLDS[world]
@@ -752,9 +793,11 @@ def make(world, sec, r):
     lv = Lv(r, d, world)
     # iç mekânlarda tavan baştan sona; dış mekânlarda açık hava
     lv.ceil = PL.get('ceil', 0)
+    if PL.get('quiet'):
+        return make_quiet(lv, r)
     xs = lv.flat(8, enemies=False)
     lv.set(xs[2], lv.top() - 1, 'P')
-    boss = sec == 2
+    boss = sec == 2 and bool(W['boss'])
     # bölüm boyu: 1. dünyada ~200 blok (Mario 1-1 gibi), 11. dünyada ~320; patron bölümünde arenadan önce kale yolu
     target = (115 + int(85 * d)) if boss else (175 + int(120 * d))
     parts = PL['parts']
@@ -800,7 +843,7 @@ def make(world, sec, r):
         lv.hatira()
     # düşman yoğunluğu: Mario 1-1'de 17 düşman var; burada 14 → 20, patron yolunda 9 → 14
     lv.clear_near()
-    lv.populate((9 + round(5 * d)) if boss else (14 + round(6 * d)), 0, lv.x)
+    lv.populate(PL['foes'] if 'foes' in PL else (9 + round(5 * d)) if boss else (14 + round(6 * d)), 0, lv.x)
     # disket (can): her bölümde bir tane, gizli olmayan ama yüksekte
     x = lv.x
     lv.flat(6, enemies=False)
@@ -836,7 +879,7 @@ def main():
         for s in range(3):
             r = random.Random(wseed(w) * 1000 + s * 37 + 11)
             rows, room, vcam, rd = make(w, s, r)
-            lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s],
+            lv = {'world': w + 1, 'section': s + 1, 'name': W['sections'][s], 'yer': W['yer'][s],
                   'boss': W['boss'] if s == 2 else None, 'bossName': W['boss_name'] if s == 2 else None,
                   'time': (300 if s < 2 else 330) + 50 * round(2 * min(1.0, (wdpos(w) * 3 + s) / DSPAN)), 'map': rows}
             # sahne saati (ay ve gökyüzü için): gece yarısından sonraki saatler ve son dünyanın sabahları ertesi güne düşer
@@ -845,6 +888,8 @@ def main():
                 lv['gun'] = 1
             if PLACES[w][s].get('ceil'):
                 lv['ic'] = True      # iç mekân ya da yer altı: gökyüzü görünmez
+            if PLACES[w][s].get('quiet'):
+                lv['quiet'] = True   # sessiz bölüm: düşman, patron, süre, müzik ve DEPLOY yok; bankta biter
             if room is not None:
                 lv['room'] = room
                 lv['roomW'] = ROOM_W
