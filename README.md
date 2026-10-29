@@ -414,9 +414,9 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
   Şişli `es`, Üsküdar `ems`, Eyüp 8-1 ve 8-2 sadece `e` ve az, Şile `emv`, Sanayi `esvo`; diğer dünyalar kendi
   harflerini korur. `python3 tools/bolumler.py` ile `src/levels.js` yeniden üretilir.
 - [x] `src/core.js`: Eyüp 8-3 için patronsuz, düşmansız, süresiz ve DEPLOY antenisiz bölüm sonu (tepedeki banka varınca biter).
-- [ ] `src/scenes.js`: dünyaların ilk bölüm çizimleri ve `SKY` yeni sıraya; başlık ekranı; ay çizimi; `cat`,
+- [x] `src/scenes.js`: dünyaların ilk bölüm çizimleri ve `SKY` yeni sıraya; başlık ekranı; ay çizimi; `cat`,
   `flag` ve gereksiz cami çağrıları.
-- [ ] `src/places.js`: `PLACES` (yer = dünya × 3 + bölüm) yeni sıraya; yeni bölümler mevcut çizimlerin farklı ışıklı hâlleriyle.
+- [x] `src/places.js`: `PLACES` (yer = dünya × 3 + bölüm) yeni sıraya; yeni bölümler mevcut çizimlerin farklı ışıklı hâlleriyle.
 - [ ] `src/art.js`: her mekânın zemin ve karo teması yeni sıraya; `PIECES` ve yeni parça çizimleri; Glitch hiçbir bölümde yok.
 - [ ] `src/rides.js`: Marmaray (metro çizimi, yeni hat adı ve rengi), gece dolmuşu, T1 Sirkeci → Sultanahmet;
   tramvay arka planındaki camiler çıkar; füniküler kullanılmaz.

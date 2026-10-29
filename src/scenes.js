@@ -271,16 +271,27 @@
     const cw = w * 0.62, cxp = x + (w - cw) / 2;
     if (h > 26 && w > 12) {
       B(g, cxp - 1, by - h + 5, cw + 2, h * 0.42, 0, opt.cumba || mix(col, '#ffffff', 0.18));
-      for (let k = 0; k < 2; k++) B(g, cxp + 0.6 + k * (cw / 2), by - h + 7, cw / 2 - 1.4, h * 0.42 - 5, 0.4, winCol(opt, r));
+      for (let k = 0; k < 2; k++) {
+        const wx = cxp + 0.6 + k * (cw / 2), wy = by - h + 7, ww = cw / 2 - 1.4, wh = h * 0.42 - 5, c = winCol(opt, r, wx, wy);
+        B(g, wx, wy, ww, wh, 0.4, c);
+        if (c === opt.lit || (NIGHT && c === NIGHT.lit)) emit(g, (q) => { q.fillStyle = c; A.rr(q, wx, wy, ww, wh, 0.4); q.fill(); });
+      }
     }
     const rows = Math.floor((h * 0.5) / 9);
     for (let rr = 0; rr < rows; rr++) for (let k = 0; k < 2; k++) {
-      const wx = x + 2.2 + k * (w - 6.6), wy = by - h * 0.45 + rr * 9;
-      B(g, wx, wy, 2.2 + (w > 14 ? 0.6 : 0), 5, 0.4, winCol(opt, r));
+      const wx = x + 2.2 + k * (w - 6.6), wy = by - h * 0.45 + rr * 9, ww = 2.2 + (w > 14 ? 0.6 : 0), c = winCol(opt, r, wx, wy);
+      B(g, wx, wy, ww, 5, 0.4, c);
+      if (c === opt.lit || (NIGHT && c === NIGHT.lit)) emit(g, (q) => { q.fillStyle = c; A.rr(q, wx, wy, ww, 5, 0.4); q.fill(); });
     }
     if (opt.door) B(g, x + w / 2 - 2.2, by - 8, 4.4, 8, 1.6, mix(col, '#2a1a10', 0.6));
   }
-  function winCol(opt, r) { return opt.lit && r() < opt.litP ? opt.lit : (opt.win || '#3a4e6a'); }
+  // pencere rengi: çizimin kendi yanan pencereleri (opt.lit), yoksa gece hâlinde (NIGHT) bir kısmı yanar.
+  // Gece pencereleri konumdan seçilir (r'yi tüketmez): gündüz ve gece hâlinde evler aynı kalır.
+  function winCol(opt, r, x, y) {
+    if (opt.lit && r() < opt.litP) return opt.lit;
+    if (NIGHT && !opt.lit && h01(x, y) < NIGHT.p) return NIGHT.lit;
+    return opt.win || '#3a4e6a';
+  }
   function hillsY(base, amp, seed) {
     const r = rng(seed);
     const k = [1 + Math.floor(r() * 2), 3 + Math.floor(r() * 2), 6 + Math.floor(r() * 3)], ph = [r() * TAU, r() * TAU, r() * TAU];
@@ -296,7 +307,13 @@
       const y = yf(x + 2) + 1.5, w = 3 + r() * 2.6, h = 2.6 + r() * 3.4;
       g.fillStyle = cols[Math.floor(r() * cols.length)]; g.fillRect(x, y - h, w, h + 8);
       if (roof) { g.fillStyle = roof; g.fillRect(x - 0.3, y - h - 0.8, w + 0.6, 1); }
-      if (lit && r() < litP) { g.fillStyle = lit; g.fillRect(x + w * 0.3, y - h * 0.6, 0.9, 0.9); }
+      if (lit && r() < litP) {
+        const wx = x + w * 0.3, wy = y - h * 0.6;
+        g.fillStyle = lit; g.fillRect(wx, wy, 0.9, 0.9); emit(g, (q) => { q.fillStyle = lit; q.fillRect(wx, wy, 0.9, 0.9); });
+      } else if (NIGHT && h01(x, y) < NIGHT.p * 0.7) {
+        const wx = x + w * 0.3, wy = y - h * 0.6, c = NIGHT.lit;
+        g.fillStyle = c; g.fillRect(wx, wy, 0.9, 0.9); emit(g, (q) => { q.fillStyle = c; q.fillRect(wx, wy, 0.9, 0.9); });
+      }
     }
   }
   function cloud(g, x, y, s, col) {
@@ -323,6 +340,66 @@
   }
   function wrapX(fn, x, span) { fn(x); if (x - span < 0) fn(x + W); if (x + span > W) fn(x - W); }
 
+  // ---------- ışık: aynı çizimin başka bir saatteki hâli ----------
+  // Yeni dünyalar sıfırdan çizilmez; eski çizimler başka ışıkta yeniden kullanılır. Çizim önce kendi hâliyle
+  // çizilir, sonra yalnız dolu piksellere çarpma rengi (mul) uygulanır (akşamüstü sarı, gece lacivert).
+  // Çizilirken yakılan ışıklar (lamba haleleri, yanan pencereler) kaydedilir ve karartmadan sonra yeniden yakılır.
+  // NIGHT: gece hâlinde pencerelerin ne kadarı yanar ({ p, lit }); ev, tepe evleri ve cam kuleler buna bakar.
+  let NIGHT = null;
+  const EMIT = { rec: null };
+  function emit(g, fn) { if (EMIT.rec) EMIT.rec.push([g.getTransform(), fn]); }
+  function h01(x, y) { const v = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return v - Math.floor(v); }
+  // o: { night, pre(g): çizimin üstüne, karartmadan önce; post(g): karartmadan sonra (ışıklar); lights: hale gücü }
+  function tinted(draw, mul, o) {
+    o = o || {};
+    return (g) => {
+      const sc = g.getTransform().a, prevN = NIGHT, prevE = EMIT.rec, rec = [];
+      NIGHT = o.night || null; EMIT.rec = rec;
+      let base;
+      try { base = A.mk(W, H, (q) => { pen(null); draw(q); if (o.pre) { pen(null); o.pre(q); } }, sc); }
+      finally { NIGHT = prevN; EMIT.rec = prevE; }
+      g.drawImage(base, 0, 0, W, H);
+      if (mul) {
+        const m = A.mk(W, H, (q) => { q.drawImage(base, 0, 0, W, H); q.globalCompositeOperation = 'source-in'; q.fillStyle = mul; q.fillRect(0, 0, W, H); }, sc);
+        g.save(); g.globalCompositeOperation = 'multiply'; g.drawImage(m, 0, 0, W, H); g.restore();
+      }
+      const k = o.lights === undefined ? (mul ? 1 : 0) : o.lights;
+      if (k > 0) for (const [t, fn] of rec) { g.save(); g.setTransform(t); g.globalAlpha = Math.min(1, k); fn(g); g.restore(); }
+      if (o.post) { pen(null); o.post(g); }
+      pen(null);
+    };
+  }
+  // bir mekân çiziminin başka ışıktaki hâli: { sky, mul, farMul, nearMul, night, lights, farPre, farPost, nearPre, nearPost, anim }
+  function relit(base, o) {
+    const pick = (k) => (k in o ? o[k] : o.mul);
+    const co = { night: o.night, lights: o.lights };
+    return {
+      sky: o.sky || base.sky,
+      far: tinted(base.far, pick('farMul'), { ...co, pre: o.farPre, post: o.farPost }),
+      near: tinted(base.near, pick('nearMul'), { ...co, pre: o.nearPre, post: o.nearPost }),
+      anim: o.anim || base.anim,
+    };
+  }
+  // saatlere göre ışık: gökyüzü, çarpma rengi ve gece pencereleri
+  const LIGHT = {
+    sabah: { stops: [[0, '#5fb0ec'], [0.7, '#bfe4fb'], [1, '#fff1d8']], sun: [96, 64, 11, '#fffbe6'], mul: '#fffaf2' },
+    ogledenSonra: { stops: [[0, '#4f9ee0'], [0.6, '#a6d2f0'], [1, '#ffe4b4']], sun: [430, 84, 12, '#fff2cc'], mul: '#fff0d8' },
+    aksamustu: { stops: [[0, '#4a72b8'], [0.5, '#9ab4d8'], [0.82, '#f4c69a'], [1, '#ffb27c']], sun: [452, 148, 14, '#ffe2a0'], mul: '#ffd8b8' },
+    gunbatimi: { stops: [[0, '#3a3a7a'], [0.4, '#a8688c'], [0.75, '#f2986c'], [1, '#ffcf8a']], sun: [392, 186, 20, '#ffd890'], mul: '#f4bca4' },
+    gece: { stops: [[0, '#0a1030'], [0.6, '#1c2658'], [1, '#34427c']], stars: 80, mul: '#5866a6', night: { p: 0.42, lit: '#ffd98a' } },
+    geceyarisi: { stops: [[0, '#04071a'], [0.6, '#0e1438'], [1, '#1e2852']], stars: 120, mul: '#44528e', night: { p: 0.22, lit: '#ffd27a' } },
+    geceyarisindanSonra: { stops: [[0, '#03061a'], [0.6, '#0c1236'], [1, '#1a2450']], stars: 120, mul: '#404e8a', night: { p: 0.14, lit: '#ffd27a' } },
+    safakOncesi: { stops: [[0, '#0c1236'], [0.55, '#2a3270'], [0.85, '#6a5a8a'], [1, '#b47e7c']], stars: 50, mul: '#6a70a6', night: { p: 0.2, lit: '#ffdc94' } },
+    safak: { stops: [[0, '#3a4a8a'], [0.5, '#9a8ab0'], [0.8, '#f4b49a'], [1, '#ffd9a0']], sun: [80, 204, 16, '#ffe0a0'], mul: '#f2d0c4', night: { p: 0.1, lit: '#ffe0a0' } },
+  };
+  // saatin gökyüzü (isteğe bağlı bulutlar ve değişiklikler)
+  function skyOf(slot, extra) { const L = LIGHT[slot] || LIGHT.gece; return Object.assign({ stops: L.stops, sun: L.sun, stars: L.stars }, extra || {}); }
+  // bir çizimi bir saate taşı: gökyüzü, çarpma rengi ve gece pencereleri o saatten; o ile değiştirilebilir
+  function at(base, slot, o) {
+    const L = LIGHT[slot] || LIGHT.gece;
+    return relit(base, Object.assign({ sky: skyOf(slot), mul: L.mul, night: L.night }, o || {}));
+  }
+
   // ---------- gökyüzü (kaymaz) ----------
   const SKY = [
     { stops: [[0, '#5fb4ec'], [0.7, '#bfe6fb'], [1, '#e8f7ff']] },
@@ -346,6 +423,7 @@
       d.stops.forEach(([o, c]) => gr.addColorStop(o, c));
       g.fillStyle = gr; g.fillRect(0, 0, vw, vh);
       if (d.stars) { const r = rng(seed * 31 + 7); for (let i = 0; i < d.stars; i++) { const x = r() * vw, y = r() * vh * 0.6, a = 0.3 + r() * 0.7; g.fillStyle = `rgba(255,255,240,${a})`; g.beginPath(); g.arc(x, y, 0.35 + r() * 0.5, 0, TAU); g.fill(); } }
+      if (d.clouds) for (const [x, y, s, c] of d.clouds) cloud(g, x * vw / W, y, s, c);
       if (d.sun) {
         const [x, y, r, c] = d.sun;
         const gl = g.createRadialGradient(x, y, r * 0.5, x, y, r * 4); gl.addColorStop(0, 'rgba(255,240,200,0.65)'); gl.addColorStop(1, 'rgba(255,240,200,0)');
@@ -353,7 +431,8 @@
         g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
       }
     }
-    if (mo) {
+    if (d.after) d.after(g, vw, vh);
+    if (mo && !d.noMoon) {
       const hint = d.moon, r = hint ? hint[2] : 8;
       const x = hint ? hint[0] : d.sun ? (d.sun[0] < vw / 2 ? vw * 0.76 : vw * 0.24) : vw * 0.7;
       const y = root.BA_MOON.skyY(mo.altitudeDeg, vh * 0.6, 14 + r);
@@ -377,6 +456,8 @@
           if (!px || q[0] + q[1] + q[2] < px[0] + px[1] + px[2]) px = q;
         }
         if (!px) throw new Error('gökyüzü okunamadı');
+        // açık (gündüz) gökyüzünde yıldız yok; leke gradyanlı gökyüzünde halka gibi görünürdü
+        if (px[0] * 0.3 + px[1] * 0.55 + px[2] * 0.15 > 90) throw new Error('gündüz');
         const base = `rgba(${px[0]},${px[1]},${px[2]},`;
         const gr = g.createRadialGradient(x, y, r, x, y, r * 4.2); gr.addColorStop(0, base + '1)'); gr.addColorStop(0.75, base + '0.9)'); gr.addColorStop(1, base + '0)');
         g.fillStyle = gr; g.fillRect(x - r * 4.2, y - r * 4.2, r * 8.4, r * 8.4);
@@ -622,6 +703,14 @@
     g.fillStyle = 'rgba(255,255,255,0.25)'; for (let yy = top + 3; yy < by; yy += 6) g.fillRect(x, yy, w, 0.6);
     g.fillStyle = 'rgba(20,50,90,0.25)'; for (let xx = x + 6; xx < x + w; xx += 7) g.fillRect(xx, top, 0.6, h);
     g.fillStyle = 'rgba(255,255,255,0.22)'; g.beginPath(); g.moveTo(x + w * 0.1, by); g.lineTo(x + w * 0.35, by); g.lineTo(x + w * 0.9, top); g.lineTo(x + w * 0.65, top); g.closePath(); g.fill();
+    if (NIGHT) {
+      // gece: ofis katlarının bir kısmı yanık
+      for (let yy = top + 21; yy < by - 6; yy += 6) for (let xx = x + 1; xx < x + w - 5; xx += 7) {
+        if (h01(xx + x * 3, yy) >= NIGHT.p * 0.8) continue;
+        const c = NIGHT.lit; g.fillStyle = c; g.fillRect(xx, yy + 0.6, 5.4, 4.4);
+        emit(g, (q) => { q.fillStyle = c; q.fillRect(xx, yy + 0.6, 5.4, 4.4); });
+      }
+    }
     g.restore();
     if (k === 'c') { B(g, x + w / 2 - 6, top - 8, 12, 8, 0, '#5aa0d0'); lin(g, x + w / 2, top - 8, x + w / 2, top - 34, '#6a7a8e', 1.2); C(g, x + w / 2, top - 34, 1, '#ff4a4a'); }
     if (k === 'a') B(g, x + 6, top - 5, w - 12, 5, 0, '#3a7ab0');
@@ -960,7 +1049,7 @@
     return c;
   }
   root.BA_SCENE = {
-    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
+    W, H, layers, sky, title, metroLine, drawMoon, SKY, pen, DRAW, placeDef, relit, tinted, at, skyOf, LIGHT, emit, h01, ferry, seagull, mix, galataTower, maidensTower, blueMosque, hagiaSophia, simitCart, tram,
     // hikâye sahneleri de aynı parçaları kullanır
     kit: { B, C, E, P, rect, archWin, dome, minaret, hillMosque, star, bridge, ortakoy, haydarpasa, camlicaTower, house, hillsY, hills, hillHouses,
       cloud, glassTower, tree, pine, tulip, carpet, mosaicLamp, nazar, column, medusaHead, roofTiles, drawSky,

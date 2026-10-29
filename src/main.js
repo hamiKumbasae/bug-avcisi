@@ -382,6 +382,11 @@
     for (; X < canvas.width; X += Wd) ctx.drawImage(c, X, Y, Wd, Hd);
     ctx.setTransform(S, 0, 0, S, 0, 0);
   }
+  // katmanla birlikte kayan, her karede çizilen parçalar (512'lik şerit tekrarlanır)
+  function liveLayer(fn, off, dy) {
+    const X0 = -(((off % SC.W) + SC.W) % SC.W);
+    for (let X = X0; X < VW; X += SC.W) { ctx.save(); ctx.translate(X, dy || 0); fn(ctx); ctx.restore(); }
+  }
   // tekrarlanan şeridi oda içindeki [X0, X1) aralığına diz (X: odanın solundan mantıksal piksel, rc: kamera)
   function strip(c, X0, X1, rc) {
     const a = Math.max(X0 - rc, 0), b = Math.min(X1 - rc, VW);
@@ -461,6 +466,7 @@
   function backdrop(pl, cam, t, up, pitY, waterY) {
     const G = app.G, mo = G && (app.screen === 'play' || app.screen === 'pause') && G.place === pl ? G.moon : null;
     const sky = SC.sky(pl, VW, VH, mo), L = SC.layers(pl);
+    let fo, fy, no, ny;
     if (app.mapShift !== undefined) {
       // harita çıkarma kipi: arka plan dünyaya yapışık, üst bantlarda gökyüzü kesintisiz sürer
       const m = Math.round(app.mapShift * S);
@@ -468,13 +474,16 @@
       ctx.drawImage(sky, 0, m, canvas.width, canvas.height);
       if (m > 0) ctx.drawImage(sky, 0, 0, sky.width, 1, 0, 0, canvas.width, m);
       ctx.setTransform(S, 0, 0, S, 0, 0);
-      layerDraw(L.far, cam * 0.15, app.mapShift); layerDraw(L.near, cam * 0.4, app.mapShift);
+      fo = cam * 0.15; fy = app.mapShift; no = cam * 0.4; ny = app.mapShift;
     } else {
       full(sky);
       const u = Math.max(0, up || 0) * TS;
-      layerDraw(L.far, cam * 0.15 + (t || 0) * 0.3, u * 0.15);
-      layerDraw(L.near, cam * 0.4 + (t || 0), u * 0.4);
+      fo = cam * 0.15 + (t || 0) * 0.3; fy = u * 0.15; no = cam * 0.4 + (t || 0); ny = u * 0.4;
     }
+    layerDraw(L.far, fo, fy); layerDraw(L.near, no, ny);
+    // mekânın canlı parçaları (sönen ışıklar, fenerin dönen ışığı): katmanlarla aynı kaymayla, her karede
+    const D = SC.placeDef(pl);
+    if (D.anim) D.anim({ far: (fn) => liveLayer(fn, fo, fy), near: (fn) => liveLayer(fn, no, ny), screen: ctx, vw: VW, vh: VH, t: app.t, G: G && G.place === pl ? G : null });
     const py = TOP + (pitY === undefined ? 12.2 : pitY) * TS;
     if (!ART.placeWater(pl) && py < VH) {
       // zemin hizasının altı kararır: çukurlar çukur gibi görünsün
@@ -633,6 +642,7 @@
       if (pl.train) { if (G.area === 'room') RD.drawVehicle(ctx, G.L.ride, pl, app.t, TS); }
       else if (pl.kind === 'v' && theme === 18) ART.drawCabin(ctx, pl.x * TS, pl.y * TS, pl.w * TS, app.t, pl.a * TS, pl.b * TS); // Ataşehir: cephe asansörü
       else if (theme === 18) ART.drawGondola(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Ataşehir: cam silme sepeti
+      else if (G.L.yer === 'teleferik') ART.drawTeleferik(ctx, pl.x * TS, pl.y * TS, pl.w * TS); // Eyüp: teleferik kabini
       else ART.drawLift(ctx, pl.x * TS, pl.y * TS, pl.w * TS);
     }
     for (const b of G.bars) {

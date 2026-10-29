@@ -370,6 +370,10 @@
     eyupBalat: 'balat', kopru: 'kopru', halatlar: 'halat', kopruTepe: 'tepe', catilar: 'catilar', antenler: 'catilar',
     saatKulesi: 'saat', finans: 'finans', veri: 'veri', kontrol: 'kontrol', camlica: 'camlica', asansor: 'asansor', yayin: 'yayin',
     umraniyeCarsi: 'mahalle', yeniPlazalar: 'plazadis', sanayi: 'sanayi',
+    // v2.0 mekânları
+    mecidiyekoy: 'plazadis', plazaLobi: 'ofis', mesaiSonu: 'ofis', iskeleAksam: 'iskele', carsiAksam: 'pazar', sahil: 'moda',
+    kopruGece: 'kopru', halatlarGece: 'halat', balatGece: 'balat', teleferik: 'balat', tepe: 'tepe', sileYol: 'tepe', benzin: 'tepe',
+    fener: 'firtina', imes: 'sanayi', des: 'sanayi', kadosan: 'sanayi', atolye: 'sanayi',
   };
   const placeAmb = (L) => (L && (L.ses || AMB_OF[L.yer])) || 'plaza';
   function stopAmbient(fade) {

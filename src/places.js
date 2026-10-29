@@ -13,11 +13,13 @@
 
   // ---------- ortak küçük parçalar ----------
   function grad(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; }
-  function glow(g, x, y, r, col, a) {
+  function glowRaw(g, x, y, r, col, a) {
     const gl = g.createRadialGradient(x, y, 0, x, y, r);
     gl.addColorStop(0, col.replace(')', `,${a})`).replace('rgb', 'rgba')); gl.addColorStop(1, col.replace(')', ',0)').replace('rgb', 'rgba'));
     g.fillStyle = gl; g.fillRect(x - r, y - r, r * 2, r * 2);
   }
+  // ışık halesi; başka saatte (SC.relit) karartmadan sonra yeniden yakılsın diye kaydedilir
+  function glow(g, x, y, r, col, a) { glowRaw(g, x, y, r, col, a); SC.emit(g, (q) => glowRaw(q, x, y, r, col, a)); }
   function skyGrad(g, vw, vh, stops) { g.fillStyle = grad(g, 0, 0, 0, vh, stops); g.fillRect(0, 0, vw, vh); }
   function stars(g, vw, vh, n, seed, maxY) {
     const r = rng(seed);
@@ -304,8 +306,9 @@
     },
     far(g) {
       // uzakta tanker ve deniz feneri
-      B(g, 90, 170, 80, 10, 2, '#0e1424'); B(g, 150, 160, 16, 10, 1, '#0e1424');
-      for (const lx of [100, 120, 154, 162]) C(g, lx, 166, 1, '#ffd88a');
+      B(g, 90, 170, 80, 10, 2, '#0e1424'); B(g, 148, 158, 20, 12, 1, '#0e1424');
+      for (const lx of [98, 110, 122, 134]) rect(g, lx, 174, 2, 1, '#ffd88a');
+      for (const lx of [151, 156, 161]) rect(g, lx, 161, 2.4, 1.2, '#ffd88a');
       P(g, [380, 186, 392, 186, 389, 140, 383, 140], '#d8dce4'); rect(g, 383, 152, 6, 6, '#c8302a');
       B(g, 380, 134, 12, 7, 1, '#2a2e3a');
       g.fillStyle = 'rgba(255,240,170,0.18)'; P(g, [386, 137, 250, 110, 250, 150], 'rgba(255,240,170,0.16)');
@@ -1161,27 +1164,28 @@
     },
   };
 
-  // 11-2 Yeni Plazalar: akşamüstü yeni iş kuleleri, ışıklı otoyol; önde plaza girişi, büyük ekran, genç ağaçlar
+  // 12-2 Yeni Plazalar: sabah yeni iş kuleleri, işe giden trafik; önde plaza girişi, büyük ekran, genç ağaçlar
   DR.yeniPlazalar = {
-    sky: { stops: [[0, '#24306a'], [0.5, '#5a6aa8'], [0.85, '#e8a080'], [1, '#f6c090']], stars: 12 },
+    sky: { stops: [[0, '#5aaae8'], [0.65, '#bfe2f8'], [1, '#fff0d4']], sun: [80, 70, 11, '#fffbe6'] },
     far(g) {
       const r = rng(1011);
       for (let x = -10; x < W; x += 26 + r() * 30) {
         const w = 22 + r() * 18, h = 70 + r() * 90;
-        B(g, x, 196 - h, w, h + 20, 0, r() < 0.5 ? '#3a4a78' : '#2e3e6a');
-        for (let y = 200 - h; y < 196; y += 5) for (let wx = x + 2; wx < x + w - 2; wx += 4) if (r() < 0.35) rect(g, wx, y, 2, 2.4, '#ffd88a');
-        if (r() < 0.5) { lin(g, x + w / 2, 196 - h, x + w / 2, 186 - h, '#5a6488', 0.8); C(g, x + w / 2, 186 - h, 1, '#ff4a4a'); }
+        B(g, x, 196 - h, w, h + 20, 0, r() < 0.5 ? '#9ab8d4' : '#8aaac8');
+        for (let y = 200 - h; y < 196; y += 5) for (let wx = x + 2; wx < x + w - 2; wx += 4) if (r() < 0.35) rect(g, wx, y, 2, 2.4, 'rgba(255,255,255,0.45)');
+        if (r() < 0.5) { lin(g, x + w / 2, 196 - h, x + w / 2, 186 - h, '#7a8aa8', 0.8); C(g, x + w / 2, 186 - h, 1, '#ff6a5a'); }
       }
-      // otoyol: farlar ve stop lambaları
-      rect(g, 0, 182, W, 6, '#2a2e44'); rect(g, 0, 181, W, 1.4, '#5a6080');
-      for (let x = 0; x < W; x += 9) { rect(g, x, 183, 5, 0.9, 'rgba(255,240,200,0.9)'); rect(g, x + 3, 185.4, 4, 0.9, 'rgba(255,80,60,0.9)'); }
-      for (let x = 20; x < W; x += 60) rect(g, x, 188, 4, 26, '#3a3e58');
+      // otoyol: sabah trafiği
+      rect(g, 0, 182, W, 6, '#7a8090'); rect(g, 0, 181, W, 1.4, '#a8aeba');
+      const cars = ['#d2302a', '#f2f2ee', '#3a6ad8', '#2a2e38', '#f4c531', '#9aa0aa'];
+      for (let x = 0; x < W; x += 9) { rect(g, x, 182.6, 6, 2, cars[(x / 9) % cars.length | 0]); rect(g, x + 3, 185.2, 5, 2, cars[(x / 9 + 3) % cars.length | 0]); }
+      for (let x = 20; x < W; x += 60) rect(g, x, 188, 4, 26, '#8a90a0');
     },
     near(g) {
       pen('rgba(10,10,30,0.6)', 0.5);
       // camdan kule tabanları
       glassTower(g, 10, 214, 70, 200, 'a'); glassTower(g, 300, 214, 80, 210, 'e');
-      for (const x of [10, 300]) { B(g, x + 20, 184, 30, 30, 1, 'rgba(255,230,170,0.7)'); rect(g, x + 34, 184, 2, 30, '#5a6488'); }
+      for (const x of [10, 300]) { B(g, x + 20, 184, 30, 30, 1, 'rgba(210,235,250,0.75)'); rect(g, x + 34, 184, 2, 30, '#5a6488'); }
       // büyük ekran
       B(g, 120, 96, 120, 64, 3, '#1a1e2c'); B(g, 124, 100, 112, 56, 2, '#2a5ad8');
       g.fillStyle = '#ffffff'; g.font = '600 12px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('</> deploy', 180, 120);
@@ -1240,4 +1244,7 @@
       for (let k = 0; k < 5; k++) rect(g, 370, 208 - k * 2, 40, 1.6, '#7a7a82');
     },
   };
+
+  // v2.0 mekânları (places2.js) aynı küçük parçaları kullanır
+  SC.pk = { grad, glow, glowRaw, skyGrad, stars, bulbs, lamp, rain, gear, apartment };
 })(window);

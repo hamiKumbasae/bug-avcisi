@@ -641,10 +641,14 @@
     carsi: 3, halicilar: 3, bedesten: 13, sarnic: 4, medusa: 4, karanlikSu: 4, kamondo: 5, galata: 5, catiArasi: 15,
     karakoy: 1, halicKiyisi: 5, eyupBalat: 5, kopru: 6, halatlar: 14, kopruTepe: 14, catilar: 7, antenler: 7, saatKulesi: 15,
     finans: 18, veri: 19, kontrol: 20, camlica: 8, asansor: 8, yayin: 8, umraniyeCarsi: 16, yeniPlazalar: 0, sanayi: 17,
+    // v2.0 mekânları (places2.js)
+    mecidiyekoy: 0, plazaLobi: 10, mesaiSonu: 10, iskeleAksam: 12, carsiAksam: 1, sahil: 1, kopruGece: 6, halatlarGece: 14,
+    balatGece: 5, teleferik: 5, tepe: 5, sileYol: 6, benzin: 16, fener: 4, imes: 17, des: 17, kadosan: 17, atolye: 17,
   };
   const WATER_OF = {
     kadikoy: '#2f7fa8', moda: '#3a7ab0', iskele: '#2a8ac0', vapur: '#2a86c8', kaptan: '#2a4a6a',
     sarnic: '#0f4a50', medusa: '#0e5a58', karanlikSu: '#081c22', karakoy: '#2a7ab0', halicKiyisi: '#3a7290', kopru: '#24387a',
+    iskeleAksam: '#4a6a9a', sahil: '#4a4a86', kopruGece: '#141e48', fener: '#1a2a44',
   };
   const levelAt = (p) => (root.BA_LEVELS && root.BA_LEVELS[p]) || {};
   const placeTiles = (p) => { const L = levelAt(p); return L.zemin !== undefined ? L.zemin : TILE_OF[L.yer] ?? 0; };
@@ -1285,6 +1289,22 @@
     for (const y of [by - 15.5, by - 19]) box(g, cx - w / 2 + 1, y, w - 2, 2.2, 0.8, '#b8804a', K, 0.6);
     g.fillStyle = 'rgba(255,230,180,0.3)'; g.fillRect(cx - w / 2 + 1, by - 9.8, w - 2, 0.6);
   }
+  // teleferik kabini (Eyüp): üstüne basılan çatı, altında ışıklı kabin, tepedeki halata asılı kol
+  function drawTeleferik(g, x, y, w) {
+    const cx = x + w / 2;
+    lin(g, x - 160, y - 30, x + w + 160, y - 30, 'rgba(20,24,44,0.9)', 1.2);
+    lin(g, cx, y - 30, cx, y, K, 1.8); lin(g, cx, y - 30, cx, y, '#8a90a8', 0.8);
+    box(g, cx - 5, y - 33, 10, 5, 1.6, '#5a6078', K, 0.6);
+    const gl = g.createRadialGradient(cx, y + 12, 2, cx, y + 12, 26);
+    gl.addColorStop(0, 'rgba(255,226,160,0.4)'); gl.addColorStop(1, 'rgba(255,226,160,0)');
+    g.fillStyle = gl; g.fillRect(x - 14, y - 10, w + 28, 46);
+    box(g, x + 1, y + 2, w - 2, 18, 3, '#c83a3a', K, 0.8);
+    box(g, x + 3, y + 5, w - 6, 8, 1.4, '#ffe6a8', K, 0.5);
+    for (let fx = x + 3 + (w - 6) / 3; fx < x + w - 4; fx += (w - 6) / 3) lin(g, fx, y + 5, fx, y + 13, 'rgba(120,40,40,0.7)', 0.6);
+    g.fillStyle = 'rgba(255,255,255,0.3)'; g.fillRect(x + 1, y + 15, w - 2, 1);
+    box(g, x, y, w, 4, 1.4, '#e8e4dc', K, 0.8);
+    g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(x + 1.4, y + 0.8, w - 2.8, 0.8);
+  }
   // cam silme sepeti (Ataşehir): halatlarla tepeden sarkan platform, arkada korkuluk
   function drawGondola(g, x, y, w) {
     for (const cx of [x + 3, x + w - 3]) { lin(g, cx, y - 260, cx, y - 9, 'rgba(30,36,60,0.9)', 1.1); lin(g, cx, y - 260, cx, y - 9, 'rgba(190,200,220,0.6)', 0.4); }
@@ -1406,6 +1426,6 @@
     PIECES, drawPiece,
     K, setScale, get S() { return S; }, mk, rr, box, circle, ellipse, poly, lin, limb, grad, rng, shade, eye, fs,
     WORLD, GROUND, tile, drawHero, drawHead, drawSimit, drawItem, drawShot, drawBug, drawVirus, drawSpam, drawMarti, drawSpark,
-    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawCabin, drawGondola, drawBench, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
+    drawBoss, crown, drawCheckpoint, drawDeploy, drawLift, drawCabin, drawGondola, drawTeleferik, drawBench, drawTrain, cache, clearAll, drawAntenna, drawMetroGate, drawEscalator, METRO, placeTiles, placeWater,
   };
 })(window);
