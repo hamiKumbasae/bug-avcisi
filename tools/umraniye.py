@@ -93,15 +93,15 @@ def bolum_12_2(room):
     c.put(13, FL - 1, 'e')
 
     # ---- TANIT: şantiye çiti; vincin kirişine bin, çitin üstünden öbür yana taşısın
-    vinc(18, 11, 33, 8, 3, v=2.6, wait=1.4)
+    vinc(18, 9, 33, 9, 4, v=4.6, wait=1.2)
     c.rect(26, 5, 29, FL - 1, '=')
     c.row(4, range(26, 30), 'b')
 
     # ---- GELİŞTİR: temel çukuru; birinci vinç ortadaki direğe, ikincisi karşıya
     gap(42, 76)
-    vinc(38, 11, 52, 9, 4, v=2.8, wait=1.2)
+    vinc(38, 10, 52, 9, 7, v=4.4, wait=1)
     c.rect(57, 9, 58, Hm - 1, '=')
-    vinc(59, 9, 72, 11, 4, v=2.8, wait=1.2, t0=2.5)
+    vinc(59, 9, 72, 10, 5, v=4.4, wait=1, t0=2.5)
     c.put(65, 2, 'g')                            # altın 1: ikinci vincin yolunun üstünde
     c.row(6, range(44, 75, 4), 'b')
 
@@ -115,8 +115,8 @@ def bolum_12_2(room):
     c.put(94, FL - 1, 'Q')
     gap(97, 126)
     # ikinci vinç yarım tur geriden gelir: biri karşı uçta beklerken öbürü başta bekler, kirişler yan yana durur
-    vinc(96, 11, 108, 5, 4, v=2.4, wait=2)
-    vinc(112, 5, 124, 11, 4, v=2.4, wait=2, t0=20 / 2.4 + 2)
+    vinc(96, 9, 108, 5, 4, v=4.6, wait=1.6)
+    vinc(112, 5, 124, 9, 4, v=4.6, wait=1.6, t0=18 / 4.6 + 1.6)
     c.row(3, range(100, 124, 3), 'b')
 
     # ---- kayıt noktası, metro girişi; gizli basamaklar (altın 2)
@@ -130,10 +130,10 @@ def bolum_12_2(room):
     # ---- SINA: çukur, üç vinç, bug'lar
     c.put(149, FL - 1, 'Q')
     gap(153, 183)
-    vinc(151, 11, 160, 7, 3, v=3, wait=1)
+    vinc(151, 10, 160, 7, 3, v=4.4, wait=1)
     c.rect(165, 7, 166, Hm - 1, '=')
     c.put(165, 6, 'e')
-    vinc(168, 7, 180, 10, 3, v=3, wait=1, t0=1.5)
+    vinc(168, 7, 180, 10, 3, v=4.4, wait=1, t0=1.5)
     c.put(174, 1, 'g')                           # altın 3
     c.put(187, FL - 1, 'R')
     c.put(195, FL - 1, 'G')
