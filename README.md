@@ -163,6 +163,294 @@ oynamak için zip'ini indirip yerelde aç (`python3 -m http.server`).
 
 Git ile bu sürüme dönmek için: `git checkout 2a82261`.
 
+## v2.0 planı: yeni hikâye ve yapı (yapılacaklar)
+
+> Bu bölüm bir sonraki büyük sürümün planıdır, henüz uygulanmadı. Şu anki oyun v1.0 olarak saklı (bkz. Sürümler).
+> Uygulanırken maddeler işaretlenir. Her adım ayrı bir commit olur ve her commit'te testler geçer.
+> Plan bitince README'nin yukarıdaki bölümleri (giriş, Hikâye, Dünyalar, binişler tablosu, Bölümlerde gizli şeyler,
+> Geliştirme) yeni hâle göre yeniden yazılır, Sürümler tablosuna v2.0 eklenir ve bu bölüm kaldırılır.
+
+### Ana fikir
+
+- **İki katmanlı İstanbul.** Zıtlık bilinçlidir ve sadece mekânın kendisiyle ve günün saatiyle kurulur.
+  - **Yukarı:** bugünün İstanbul'u. Oyundaki mevcut Maslak ve Ataşehir dili aynen korunur: cam kuleler, ofis katları,
+    sunucu odaları, cephe asansörleri, LED cepheler, gece ışıkları. Yeni görsel dil, filtre ya da efekt yok.
+  - **Aşağı:** eski İstanbul: Kapalıçarşı, Üsküdar, Yerebatan, Eyüp, Şile. Müze ya da kartpostal değil;
+    bugün insanların çalıştığı ve yaşadığı yerler.
+  - Kahraman iki katman arasında metro, Marmaray, tramvay ve minibüsle gidip gelir.
+- **Gizli metafor:** yukarısı yeni sistem; aşağısı herkesin dokunmaktan kaçındığı ama bütün şehrin hâlâ üstünde
+  çalıştığı eski kod (legacy code). Bu fikir sadece tasarıma yön verir; ekranda gösterilmez, yazılmaz, anlatılmaz.
+- **Kahraman:** yalnız bir bilgisayar mühendisi. Ümraniye'deki atölyesinde demir döver, gece kod yazar.
+- **Ton:** Edward Hopper'dan esinli ışık ve kompozisyon (tablolar kopyalanmaz): sert ışık, düz renk alanları,
+  cam ardında ya da tek lambanın altında tek başına insanlar. Hikâye yazısız kalır.
+- **Yas:** kahraman içinde bir yas taşır. Kimin için olduğu hiçbir yerde söylenmez; oyuncu sezer (atölyeyi birlikte
+  paylaştığı biri olabilir). Yas aşağıda yaşar: hatıra parçaları o kişiye aittir; sahnelerde boş sandalye ve ikinci
+  çay bardağı gibi işaretler var. Yukarıda kahraman çalışarak kaçar, aşağı indikçe yüzleşir. Eyüp oyunun en sessiz dünyasıdır.
+- **Oyunun sorusu:** biri gittikten sonra şehirde kendi yerini nasıl bulursun? **Cevap:** iki dünyadan birini seçmek
+  değil, ikisini birleştirmek: gündüz demir dövülen, gece kod yazılan atölye.
+- **Zaman:** bütün oyun tek bir gün ve gecede geçer. Sabah Maslak'ta başlar, gece yarısı Eyüp'e varır, şafakta eve dönülür.
+
+### Kesin kurallar (oyunun her yerinde)
+
+- [ ] **Matrix göndermesi yok.** Yeşil kod yağmuru, glitch titremesi, yeşil filtre, firewall kapıları, binişlerde renk
+  değiştiren geçiş efektleri ve "kırmızı hap" yapılmayacak. Bilgisayar göndermeleri bugünkü seviyede kalır
+  (bug düşmanlar, DEPLOY terminali, sunucu odaları, patron adları); yenisi eklenmez.
+- [ ] **Kedi yok.** `scenes.js`'teki `cat()` ve bütün çağrıları kalkar (`places.js`, `scenes.js`, `story.js`): giriş
+  sahnesinde dolmuşun üstünde uyuyan kedi, çatı sahnesinde kahramanın yanına gelen kedi, son sahnedeki kedi,
+  arka planlardaki kediler, hatıra parçası `kedi` ve README'deki anışlar. Yerine başka hayvan konmaz, yerleri boş kalır.
+  Martılar kalabilir.
+- [ ] **Minare sadece Eyüp'te ve Üsküdar sahilinde.** Oralarda gerçekten görüntünün parçasıdırlar (Üsküdar'dan karşı
+  kıyının uzak silüeti dahil). Başka hiçbir dünyada, arka planda, binişte, sahnede ya da başlık ekranında minare
+  ve cami silüeti yok. Çıkacaklar arasında: Maslak arka planındaki uzak Sultanahmet ve Ayasofya, Köprü'deki Ortaköy
+  Camii, Çamlıca'daki cami ve Yayın Odası ekranındaki cami, Ümraniye çarşısındaki ve giriş sahnesindeki cami,
+  tramvay binişinin arka planındaki Ayasofya, Sultanahmet ve Firuz Ağa Camii, başlık ekranındaki Sultanahmet ve
+  Ayasofya. Hepsi `grep -n "minaret\|Mosque\|hagiaSophia\|ortakoy" src/*.js` ile bulunur. Başlık ekranı minaresiz
+  yeniden kurulur: modern kuleler, köprü, Kız Kulesi, Çamlıca Kulesi.
+- [ ] **Bayrak yok.** `flag()` hiçbir yerde çizilmez: vapurlar (`ferry` şu an varsayılan olarak bayrak çiziyor) ve
+  Kız Kulesi dahil. Ay da bayraktaki hilal gibi çizilmez (aşağıda).
+- [ ] **Oryantalist bakış yok.** İstanbul bugün yaşanan bir şehir olarak gösterilir. Bakış turistin değil, bu şehirde
+  yaşayan birinin bakışıdır. Arka planlardaki ve sahnelerdeki insanlar bugünün insanlarıdır: mont, sırt çantası, telefon.
+  Oyunda olmayacaklar: mozaik lamba yığınları, nazar boncuğu dizileri, halı ve baharat yığınları, nargile, fes, sarık,
+  derviş, uçan halı, "gizemli Doğu" havası veren sis ya da sepya tonları, kartpostal kareler. Kapalıçarşı'nın
+  ayrıntısı Bölümler tablosunda, müzik Müzik ve ses bölümünde.
+- [ ] **Ay, o gün İstanbul'dan nasıl görünüyorsa öyle çizilir** (Ay bölümünde).
+
+### Yeni dünya sırası (12 dünya × 3 bölüm = 36, yapı aynı kalır)
+
+| # | Dünya | Katman | Saat | Bölümler | Patron | Kaynak |
+|---|---|---|---|---|---|---|
+| 1 | Maslak | Yukarı | sabah | Büyükdere Caddesi · Toplantı Katı · Sunucu Katı | Kral Bug | aynen |
+| 2 | Kapalıçarşı | Aşağı | öğle | Kuyumcular · Han · Bedesten | Truva Atı | 4. dünyadan; oryantalist öğeler çıkar, 2. bölüm Han olur |
+| 3 | Şişli | Yukarı | öğleden sonra → akşamüstü | Mecidiyeköy Meydanı · Plaza Lobisi · Mesai Sonu | Spam Kraliçesi | yeni; Maslak çizimlerinden |
+| 4 | Üsküdar | Aşağı | gün batımı | İskele · Çarşı · Sahil | Dev Martı | yeni; Kadıköy ve Vapur çizimlerinden |
+| 5 | Ataşehir | Yukarı | gece | Finans Merkezi · Veri Merkezi · Kontrol Odası | Fidye Yazılımı | 10. dünyadan, aynen |
+| 6 | Yerebatan | Aşağı | yer altı | Sütunlar · Medusa · Karanlık Su | Bellek Sızıntısı | 5. dünyadan, aynen |
+| 7 | Köprü | Yukarı | gece | Ayak · Halatlar · Tepe | DDoS Bulutu | 8. dünyadan; 1. ve 2. bölüm gece ışığına çevrilir |
+| 8 | Eyüp | Aşağı | gece yarısı | Balat Yokuşu · Teleferik · Tepe | **yok** | yeni; Haliç çizimlerinden |
+| 9 | Şile | Aşağı | gece yarısından sonra | Gece Yolu · Benzin İstasyonu · Fener | Sonsuz Döngü | yeni; patron Galata'dan (bitmeyen yol) |
+| 10 | Sanayi | Yukarı + Aşağı | gece yarısından sonra → şafak öncesi | İMES · DES · Kadosan | Spagetti Kod | yeni; Ümraniye'nin Sanayi çiziminden |
+| 11 | Çamlıca | Yukarı | şafak öncesi | Tepe Yolu · Asansör · Yayın Odası | Mavi Ekran | aynen (cami çıkar) |
+| 12 | Ümraniye | Ev | şafak → sabah | Çarşı · Yeni Plazalar · Atölye | Teknik Borç | 3. bölüm Sanayi yerine Atölye |
+
+- **Silinen dünyalar:** Kadıköy, Vapur, Galata, Haliç, Gece Çatıları. Çizimlerinin bir kısmı yeni dünyalarda yeniden kullanılır.
+- **Kullanılmayan patron:** Glitch. Kodda kalabilir ama hiçbir bölümde kullanılmaz; testlerden çıkar.
+- **Bölüm saatleri:** 1-x sabah · 2-x öğle · 3-1, 3-2 öğleden sonra, 3-3 akşamüstü · 4-x gün batımı · 5-x gece ·
+  6-x yer altı · 7-x gece · 8-x gece yarısı · 9-x gece yarısından sonra · 10-1, 10-2 gece yarısından sonra,
+  10-3 şafak öncesi · 11-x şafak öncesi · 12-1 şafak, 12-2, 12-3 sabah.
+- **Yeniden kullanım ilkesi:** yeni dünyalar sıfırdan çizilmez; silinen dünyaların çizimleri farklı ışıkta yeniden
+  kullanılır. Yeni çizim ihtiyacı: benzin istasyonu, Han, DES'in depo rafları, Eyüp, Şile ve Sanayi sahneleri,
+  yeni hatıra parçaları.
+
+### Bölümler: hangi mevcut çizim kullanılacak
+
+Tabloda olmayan bölümler (Maslak, Ataşehir, Yerebatan, Köprü 7-3, Çamlıca, Ümraniye 12-1) mevcut hâliyle kalır;
+sadece kesin kurallar uygulanır (kedi, minare, bayrak).
+
+| Bölüm | Mevcut çizim | Değişiklik |
+|---|---|---|
+| 2-1 Kuyumcular | Kapalıçarşı dünya çizimi (`scenes.js`) | Çizgili kemerler kalır. Mozaik lambalar, halılar, baharat, nazar ve BAHARAT, LAMBA, NAZAR tabelaları çıkar. Kuyumcu vitrinleri, floresan ışık, altın fiyatı panoları, güvenlik kameraları ve sıradan kalabalık eklenir. |
+| 2-2 Han | Halıcılar (`places.js`) | Halılar, alçak tabure ve çay tepsisi çıkar. Eski bir hanın avlusu ve üst katı: gümüş ve altın atölyeleri, ocakta eriyen maden, çalışan ustalar, kargo kolileri, hamallar, çay ocağı. Kahramanın demirciliğiyle bağ burada kurulur. |
+| 2-3 Bedesten | Bedesten | Taş kubbeler kalır. Bakır kaplar, eski saatler ve gramofon çıkar. Öğle sıcağında yarı boş salon, inik kepenkler, bir bekçi. Truva Atı arenası. |
+| 3-1 Mecidiyeköy Meydanı | Büyükdere Caddesi (1-1) | Öğleden sonra ışığı; Yeni Plazalar'daki (12-2) büyük ekran. |
+| 3-2 Plaza Lobisi | Toplantı Katı (1-2) ve Yeni Plazalar'daki plaza girişi | Öğleden sonra ışığı. |
+| 3-3 Mesai Sonu | Toplantı Katı | Akşamüstü: ofis boşalıyor, ışıklar teker teker kapanıyor, tek masa lambası yanık kalıyor. Spam Kraliçesi arenası. |
+| 4-1 İskele | İskele (Vapur 3-1) | Gün batımı ışığı; vapur bayraksız. |
+| 4-2 Çarşı | Balık Pazarı (Kadıköy 2-2) | Gün batımı ışığı. |
+| 4-3 Sahil | Moda Yokuşu (Kadıköy 2-3) | Gün batımı; karşı kıyının uzak silüeti, Kız Kulesi (bayraksız), vapur. Dev Martı arenası. |
+| 7-1 Ayak, 7-2 Halatlar | mevcut | Gece ışığına çevrilir. |
+| 8-1 Balat Yokuşu | Eyüp-Balat (Haliç 7-3) | Gece ışığı. |
+| 8-2 Teleferik | Eyüp-Balat'taki teleferik | Gece. |
+| 8-3 Tepe | Haliç Kıyısı (7-2) | Gece hâli, sade; tepede iki kişilik bank. |
+| 9-1 Gece Yolu | mevcut parçalar: çam (`pine`), tepeler (`hills`), sokak lambası | Şehir dışı, orman kenarında gece yolu; şehir ışıkları yok. |
+| 9-2 Benzin İstasyonu | **yeni çizim** | Yol kenarında ıssız bir istasyon, floresan saçak, tek görevli. |
+| 9-3 Fener | Kaptan Köşkü (Vapur 3-3) | Fırtına kalır; uzaktaki deniz feneri ön plana alınır (Şile Feneri). Sonsuz Döngü arenası. |
+| 10-1 İMES | Sanayi (Ümraniye 12-3) | Gece vardiyası: yanan floresanlar, yarı açık kepenkler. |
+| 10-2 DES | Sanayi | Depo rafları ve forkliftler eklenir. |
+| 10-3 Kadosan | Sanayi | Şafak öncesi; dövme atölyeleri, ocak ve örsler. Spagetti Kod arenası (dolaşık kablolar ve hortumlar). |
+| 12-2 Yeni Plazalar | mevcut | Akşamüstü yerine sabah ışığı. |
+| 12-3 Atölye | Sanayi'deki dövme atölyesi ve son sahnedeki atölye | Sabah ışığı. Teknik Borç arenası. |
+
+### Eyüp: oyunun sessiz dünyası
+
+- [ ] 8-1 ve 8-2 normal bölümler ama az düşmanlı (sadece bug); müzik sadeleşir.
+- [ ] 8-3 Tepe kısa bir bölüm (~100 karo): düşman yok, patron ve kale yolu yok, süre sayacı durur (HUD'da süre
+  görünmez), müzik yok; sadece rüzgâr ve uzak şehir sesi. Simit ve blok çok az.
+- [ ] 8-3'ün sonunda DEPLOY anteni yok: tepedeki banka varınca bölüm biter ve doğrudan Eyüp sahnesi başlar.
+- Oyuncu ilk kez hiçbir şeyle savaşmadan yürür. Etkisi zıtlıktan gelir; o yüzden önceki dünyalar hızlı ve kalabalık kalır.
+
+### Binişler (bonus binişleri)
+
+Biniş sistemi aynen kalır, ek efekt yok. Her biniş o dünyaya nasıl gelindiğini anlatan küçük bir parçadır.
+
+| Bölüm | Araç | Güzergâh | Kaynak |
+|---|---|---|---|
+| 1-1 Büyükdere Caddesi | metrobüs (34) | Zincirlikuyu → Mecidiyeköy | aynen |
+| 2-1 Kuyumcular | tramvay (T1) | Beyazıt → Çemberlitaş | aynen (dünyasıyla taşınır); arka plandaki camiler çıkar |
+| 3-1 Mecidiyeköy Meydanı | metro (M2) | Taksim → Şişli-Mecidiyeköy | Galata 6-2 binişi (Şişhane → Taksim), yeniden adlandırılır |
+| 4-1 İskele | Marmaray | Sirkeci → Üsküdar (deniz altından) | Kadıköy 2-1 metro binişi; mevcut metro çizimi, hat adı ve rengi Marmaray |
+| 5-1 Finans Merkezi | minibüs | Üsküdar → Ataşehir | Kadıköy 2-2 minibüs binişi |
+| 6-1 Sütunlar | tramvay (T1) | Sirkeci → Sultanahmet | tramvay çizimi, yeni güzergâh, arka planda cami yok |
+| 9-1 Gece Yolu | dolmuş | Üsküdar → Şile | minibüs çiziminin gece hâli |
+| 10-1 İMES | minibüs | Şile → Dudullu | minibüs çizimi, gece |
+| 11-1 Tepe Yolu | taksi | Çamlıca → Kısıklı | aynen |
+| 12-1 Çarşı | minibüs | Ümraniye → Kadıköy | aynen |
+| 12-2 Yeni Plazalar | metro (M5) | Ümraniye → Çarşı | aynen |
+
+Çıkanlar: Tünel füniküleri (Galata 6-1) ve M2 Haliç → Vezneciler (Haliç 7-2).
+
+### Hikâye sahneleri (yazısız)
+
+`main.js`'teki `STORY_AFTER` yeni sırayla:
+`['ara1', 'ara4', 'ara8', 'ara2', 'atasehir', 'ara5', 'ara7', 'eyup', 'sile', 'sanayi', 'eve']`;
+son dünyadan sonra `son`.
+
+| Ne zaman | Sahne | Ne olur | İşlem |
+|---|---|---|---|
+| Başta | `giris` | Ümraniye'de şafak, atölye, laptop ışığı söner, kahraman şehre iner | dolmuşun üstündeki kedi ve silüetteki cami çıkar |
+| Maslak'tan sonra | `ara1` | Cam cephe, boş masa, turnike açılmaz | aynen |
+| Kapalıçarşı'dan sonra | `ara4` | Han'daki bir atölyede tek lambanın altında çalışan yaşlı usta, kahramana keski uzatır | mekân Han'a uyarlanır |
+| Şişli'den sonra | `ara8` | Akşam; kahraman boşalmış ofiste, karşı plazanın pencerelerinde hâlâ çalışanlar, biri el sallar | çatıdan Şişli'ye taşınır, kedi çıkar |
+| Üsküdar'dan sonra | `ara2` | Sahilde bank, laptop ve simit; yandaki kafenin camının ardında herkes tek başına; zarflar martılarla karşı kıyıya uçar; uzakta Kız Kulesi | Kadıköy'den Üsküdar'a taşınır; `ara3`'teki Kız Kulesi bakışı buraya katılır; vapur ve Kız Kulesi bayraksız |
+| Ataşehir'den sonra | `atasehir` | Fidye yazılımı yenilir, kuleler yanar; gece bekçisi iki ince belli çayla gelir | aynen |
+| Yerebatan'dan sonra | `ara5` | Karanlık suda yansıma; su durulunca atölyenin ateşi | aynen |
+| Köprü'den sonra | `ara7` | Gece otobüsü; Üsküdar'da yollanan zarflardan biri geri döner (plazanın giriş kartı); kahraman laptopu kapatır | aynen |
+| Eyüp'ten sonra | `eyup` | Tepede iki kişilik bank. Kahraman bir ucuna oturur, yanında ikinci bir ince belli çay bardağı. Aşağıda Haliç ve şehrin ışıkları. Rüzgâr, bir yaprak. Bir süre oturur, sonra kalkar ve yürür. Müzik yok. | **yeni, oyunun kalbi** |
+| Şile'den sonra | `sile` | Gece fener; dönen ışık denizi tarar, kahraman kayalıkta oturmuş denize bakar | **yeni** |
+| Sanayi'den sonra | `sanayi` | Şafak öncesi açık kalan tek çay ocağı, floresan ışık, camın ardında iki kişi; kepenkler iner, biri yarı açık kalır | **yeni** |
+| Çamlıca'dan sonra | `eve` | Tepede, Ümraniye'nin ışıkları; aralarında atölyenin ateşi | aynen |
+| En sonda | `son` | Şafakta iniş, atölye sabah ışığında: örs ile laptop yan yana, kendi tabelası, rafta 12 hatıra parçası, yanında boş bir sandalye | kedi çıkar, boş sandalye eklenir |
+
+Silinen sahneler: `ara3` (Üsküdar'a katılır), `ara6` (Galata balkonu), `halic` (Balat'taki teyze).
+
+### Hatıra parçaları
+
+Her dünyanın 2. bölümünde, yoldan ayrılan yüksek bir köşede bir parça (sistem aynı). Hepsi kaybedilen kişiye aittir;
+bu sadece son sahnede, rafta yan yana durunca hissedilir, hiçbir yerde açıklanmaz. `art.js`'teki `PIECES` yeni sırayla:
+
+| Dünya | Parça | Anahtar | Çizim |
+|---|---|---|---|
+| 1 Maslak | eski bir kartvizit | `kartvizit` | yeni |
+| 2 Kapalıçarşı | keski (ustanın sahnesiyle bağ) | `keski` | yeni |
+| 3 Şişli | eski bir İstanbulkart | `istanbulkart` | yeni |
+| 4 Üsküdar | ince belli çay bardağı | `cay` | yeni |
+| 5 Ataşehir | anahtar | `anahtar` | mevcut |
+| 6 Yerebatan | gözlük | `gozluk` | yeni |
+| 7 Köprü | eski bir fotoğraf | `fotograf` | yeni |
+| 8 Eyüp | kurumuş karanfil | `karanfil` | yeni |
+| 9 Şile | deniz kabuğu | `kabuk` | yeni |
+| 10 Sanayi | demirci çekici | `cekic` | mevcut |
+| 11 Çamlıca | lale | `lale` | mevcut |
+| 12 Ümraniye | eski bir radyo | `radyo` | yeni |
+
+Çıkan parçalar: `cam`, `tuy`, `can`, `nazar`, `damla`, `kule`, `sepet`, `kopru`, `kedi`.
+
+### Ay: o günün gerçek ayı
+
+Şu an ay `scenes.js`'te (`drawSky`, `d.moon`) bir dairenin içinden kaydırılmış bir daire çıkarılarak çiziliyor ve
+bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, y, r]`). Bu yöntem tamamen bırakılır.
+
+- [ ] SunCalc (MIT, ~9 KB, `suncalc@1.9.0`) `src/vendor/suncalc.js` olarak eklenir; lisansı Lisans bölümüne yazılır.
+- [ ] Hesap çizimden ayrı bir modülde (`src/moon.js`) durur ve Node'da test edilir. İstanbul: 41.01° K, 28.98° D.
+- [ ] **Tarih:** oyuncunun cihazındaki bugünün tarihi, İstanbul saatiyle (Türkiye 2016'dan beri bütün yıl UTC+3).
+- [ ] **Sahne saati** her bölüm için tanımlanır (`tools/bolumler.py`'de bölüme bir saat alanı) ve o günün güneş
+  saatlerinden hesaplanır (`SunCalc.getTimes(tarih, 41.01, 28.98)`):
+
+  | Saat | Hesap |
+  |---|---|
+  | sabah | `sunrise` + 1,5 saat |
+  | öğle | `solarNoon` |
+  | öğleden sonra | `sunset` − 2,5 saat |
+  | akşamüstü | `sunset` − 1 saat |
+  | gün batımı | `sunset` |
+  | gece | `sunset` + 3 saat |
+  | gece yarısı | `nadir` |
+  | gece yarısından sonra | `nadir` + 2 saat |
+  | şafak öncesi | `nauticalDawn` |
+  | şafak | `sunrise` |
+
+- [ ] **Evre:** `getMoonIllumination(an)` → `fraction`. Yeni ay günlerinde (`fraction` < 0,02) ay çizilmez.
+- [ ] **Eğiklik:** `angle − parallacticAngle` (`parallacticAngle` `getMoonPosition(an, 41.01, 28.98)`'den gelir).
+  Aydınlık kenarın tepeden saat yönünün tersine açısıdır; çizim bu açıyla döndürülür. Akşamları ufka yakın
+  yatık hilal böylece kendiliğinden oluşur.
+- [ ] **Görünürlük ve yükseklik:** `altitude` < 0 ise ay çizilmez. Yükseklik gökyüzündeki dikey yerini belirler
+  (ufka yakınsa alçakta). Gündüz ve gün batımı gökyüzünde soluk çizilir. İç mekân ve yer altı bölümlerinde
+  gökyüzü görünmüyorsa çizilmez.
+- [ ] **Çizim:** aydınlık kısım yarım daire ve elipsle (terminatör) çizilir; karanlık kısım arka plandan çok hafif
+  seçilir (ince hilalde dünya ışığı), kesilip atılmış gibi durmaz. Ayın çevresinde (yarıçapının ~4 katı) yıldız olmaz.
+- [ ] **Test:** `tests/moon.test.js` yazılır ve `.github/workflows/pages.yml`'deki test adımına eklenir.
+  Kontrol değerleri (aydınlık oran ±0,5 puan, açılar ±1°):
+
+  | An (İstanbul saati) | Beklenen |
+  |---|---|
+  | 29 Ekim 2026 07:00 | küçülen şişkin ay, %88,8; yükseklik 44,3° (görünür) |
+  | 29 Ekim 2026 18:00 | yükseklik −14,8° → çizilmez |
+  | 29 Ekim 2026 22:00 | %83,8; yükseklik 17,2°; eğiklik 135,0° |
+  | 9 Kasım 2026 07:00 | yeni ay, %0,2 → çizilmez |
+  | 11 Kasım 2026 18:31 | ince hilal, %5,8; yükseklik 3,4°; eğiklik −114,2° (ufka çok yakın, yatık) |
+  | 24 Kasım 2026 19:00 | dolunay, %99,8 |
+
+  29 Ekim 2026'da ay sabah 11:25'te batar, akşam 20:08'de doğar.
+
+### Müzik ve ses
+
+- [ ] `audio.js`'te `WORLD_SONG` yeni sırayla:
+  `['maslak', 'carsi', 'sisli', 'uskudar', 'atasehir', 'sarnic', 'kopru', 'eyup', 'sile', 'sanayi', 'camlica', 'umraniye']`.
+  `WORLD_AMB` ve bölüm bazlı ses listesi de yeni dünyalara ve bölümlere göre düzenlenir.
+- [ ] Kapalıçarşı (`carsi`, akorları şu an D–E♭, yani Hicaz) ve Yerebatan (`sarnic`) şarkılarındaki Hicaz değişir.
+  Makamların kendisi sorun değil; "burası Doğu" işareti olarak kullanılmaları klişe. Bu dünyalar diğerleriyle
+  aynı müzik dilinde kalır, farkı mekânın gerçek sesleri verir.
+- [ ] Şehir sesleri:
+  - Kapalıçarşı: kepenkler, esnaf konuşmaları, pazarlık, çaycının bardakları, uzaktan tramvay.
+  - Şişli: metrobüs, kalabalık, trafik.
+  - Üsküdar: vapur düdüğü, martılar, sahil kalabalığı, çay bardakları.
+  - Eyüp: 8-1 ve 8-2'de sadeleşmiş müzik; 8-3'te müzik yok, sadece rüzgâr ve uzak şehir sesi.
+  - Şile: rüzgâr, dalga, uzaktan geçen tek tük araba; fenerde fırtına.
+  - Sanayi: torna, kaynak, kepenk, uzak otoyol uğultusu.
+
+### Kod: dünya sırasına bağlı yerler
+
+- [ ] `tools/bolumler.py`: `WORLDS` yeni sırayla; `name`, `sub`, `sections`, `boss`, `boss_name`, `enemies`, `seed`,
+  `dpos` (zorluk sıraya göre artar, Eyüp sakin), binişler, bölüm saatleri, Eyüp 8-3 kuralları. Düşman harfleri:
+  Şişli `es`, Üsküdar `ems`, Eyüp 8-1 ve 8-2 sadece `e` ve az, Şile `emv`, Sanayi `esvo`; diğer dünyalar kendi
+  harflerini korur. `python3 tools/bolumler.py` ile `src/levels.js` yeniden üretilir.
+- [ ] `src/core.js`: Eyüp 8-3 için patronsuz, düşmansız, süresiz ve DEPLOY antenisiz bölüm sonu (tepedeki banka varınca biter).
+- [ ] `src/scenes.js`: dünyaların ilk bölüm çizimleri ve `SKY` yeni sıraya; başlık ekranı; ay çizimi; `cat`,
+  `flag` ve gereksiz cami çağrıları.
+- [ ] `src/places.js`: `PLACES` (yer = dünya × 3 + bölüm) yeni sıraya; yeni bölümler mevcut çizimlerin farklı ışıklı hâlleriyle.
+- [ ] `src/art.js`: her mekânın zemin ve karo teması yeni sıraya; `PIECES` ve yeni parça çizimleri; Glitch hiçbir bölümde yok.
+- [ ] `src/rides.js`: Marmaray (metro çizimi, yeni hat adı ve rengi), gece dolmuşu, T1 Sirkeci → Sultanahmet;
+  tramvay arka planındaki camiler çıkar; füniküler kullanılmaz.
+- [ ] `src/story.js`: Hikâye sahneleri tablosundaki değişiklikler.
+- [ ] `src/audio.js`: Müzik ve ses bölümündeki maddeler.
+- [ ] `src/main.js`: `STORY_AFTER`; `ROUTE` (İstanbul haritasında yeni dünyaların yerleri; Şile haritanın doğu
+  kenarının dışında kalıyor: harita doğuya genişletilir ya da Şile kenarda yön okuyla gösterilir);
+  Eyüp 8-3'te HUD'da süre gizlenir.
+- [ ] Kayıt: `ba-kayit-surum` 4'e çıkar. Dünya sırası ve parçalar değiştiği için `ba-ilerleme` ve `ba-parcalar`
+  sıfırlanır, `ba-rekor` kalır.
+- [ ] `tools/onizle.html`: yeni çizimler eklenir, silinenler çıkar.
+- [ ] Testler: `core.test.js` 11 patron (Glitch yok) ve Eyüp 8-3 kuralları; `levels.test.js` 36 bölümün hepsi
+  geçilebilir (8-3 dahil); yeni `moon.test.js`. Üçü de GitHub Actions'ta çalışır.
+- [ ] README: giriş paragrafları (kediler, cami listesi), Hikâye, Dünyalar tablosu, binişler tablosu, Bölümlerde gizli
+  şeyler (Galata'nın merdivenleri gibi silinen yerler), Geliştirme (Hicaz satırı, dosya açıklamaları), Sürümler'e v2.0;
+  bu plan bölümü kaldırılır.
+- [ ] Repo dışı: oyun salonu sayfasındaki Bug Avcısı kartı (şu an "9 dünya · 27 bölüm · 9 patron" yazıyor) ve
+  haritalar sayfası yeni dünyalara göre güncellenir.
+
+### Uygulama sırası
+
+1. Kesin kurallar: kedi, bayrak, gereksiz camiler (küçük ve bağımsız).
+2. Ay modülü ve testi.
+3. Dünya sırası, bölüm üretimi, patronlar ve Eyüp kuralları; testler geçer.
+4. Yeni dünyaların mevcut çizimlerden kurulması (Şişli, Üsküdar, Eyüp, Şile, Sanayi) ve ışık değişiklikleri (Köprü, Yeni Plazalar).
+5. Kapalıçarşı'nın yeniden ele alınması ve müzik.
+6. Binişler.
+7. Hikâye sahneleri.
+8. Hatıra parçaları.
+9. Harita, kayıt, önizleme, README ve oyun salonu kartı.
+
+Her adım ayrı bir commit'tir. Her commit'te `node tests/core.test.js` ve `node tests/levels.test.js` (ay modülünden
+sonra `node tests/moon.test.js` de) geçer; oyun tarayıcıda açılıp bakılır.
+
 ## Lisans
 
 Kod MIT lisanslıdır (`LICENSE`). Fredoka yazı tipi SIL Open Font License ile gelir
