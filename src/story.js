@@ -332,10 +332,10 @@
     g.restore();
   }
 
-  // 2 — Kadıköy'den sonra: iskelede bankta laptop ve simit. Yan taraftaki kafenin camının ardında
-  // herkes tek başına. Laptoptan çıkan zarflar martılarla birlikte karşı kıyıya uçar.
+  // Üsküdar'dan sonra: sahilde bankta laptop ve simit. Yan taraftaki kafenin camının ardında herkes tek başına.
+  // Laptoptan çıkan zarflar martılarla birlikte karşı kıyıya uçar; denizde Kız Kulesi, önünden vapur geçer.
   SCENES.ara2 = {
-    dur: 10.5, amb: 'iskele',
+    dur: 10.5, amb: 'uskudar',
     draw(g, t) {
       const z = lerp(1, 1.08, seg(t, 0, 10)), fx = 186, fy = 196;
       const back = layer('ara2b', VW, 152, (b) => {
@@ -373,6 +373,10 @@
       g.translate(fx, fy); g.scale(z, z); g.translate(-fx, -fy);
       img(g, back, 0, 0);
       seaBand(g, 152, 196, '#7a8ab8', '#3e5a8a', t, 214);
+      // Kız Kulesi (bayraksız), gün batımında
+      SC.pen('rgba(30,20,50,0.4)', 0.4);
+      SC.maidensTower(g, 138, 172, 0.62, { wall: '#e8d4cc', wallD: '#c8b0b0', roof: '#6a6a8a', trim: '#d8c4bc', win: '#6a5a7a', lit: '#ffe0a0', rock: '#5a4a64' });
+      SC.pen(null);
       // karşıdan geçen vapur
       SC.pen('rgba(30,20,50,0.4)', 0.4); SC.ferry(g, 300 - t * 9, 156, 0.32, { hull: '#3a3058', white: '#f6e6da', win: '#7a6a8a', funnel: '#f2c87a' }); SC.pen(null);
       img(g, base, 0, 0);
@@ -397,83 +401,38 @@
         A.drawMarti(g, gx, gy + 6, t, k < 0.33 ? -1 : -1, false);
         if (stolen) A.drawSimit(g, gx - 2, gy + 6, 0, 3.4);
       }
-      // martıdan bir tüy süzülüp kahramanın yanına düşer (Kadıköy'ün hatırası)
-      if (t > 7.6) { const k = clamp01((t - 7.6) / 2.6); A.drawPiece(g, 1, lerp(150, 174, k) + Math.sin(t * 4) * 5 * (1 - k), lerp(118, 176, k), 0.5); }
       g.restore();
     },
   };
 
-  // 3 — Vapurdan sonra: güvertede, iki kıyının ortasında. Kahraman küpeşteye yaslanmış Kız Kulesi'ne bakıyor.
-  SCENES.ara3 = {
-    dur: 10, amb: 'vapur',
-    draw(g, t) {
-      const bob = Math.sin(t * 1.3) * 1.2, slide = t * 4;
-      g.fillStyle = grad(g, 0, 0, 0, 150, [[0, '#6c86c4'], [0.65, '#f0b490'], [1, '#fbd6a6']]); g.fillRect(0, 0, VW, 150);
-      glow(g, 70, 120, 60, 'rgba(255,220,170,A)', 0.55);
-      const far = layer('ara3far', 420, 60, (b) => {
-        SC.pen(null);
-        b.fillStyle = '#8e7c9e'; b.beginPath(); b.moveTo(0, 60); b.lineTo(0, 44); b.quadraticCurveTo(80, 36, 150, 46); b.lineTo(150, 60); b.closePath(); b.fill();
-        b.fillStyle = '#7a6c94'; b.beginPath(); b.moveTo(260, 60); b.quadraticCurveTo(330, 30, 420, 40); b.lineTo(420, 60); b.closePath(); b.fill();
-        K.camlicaTower(b, 360, 46, 0.18, { wall: '#6a5c88', wallD: '#5e5080', glass: '#6a5c88', band: '#7a6c98' });
-      });
-      img(g, far, -slide * 0.4, 96 + bob * 0.3);
-      seaBand(g, 152, 240, '#8a8ab8', '#3a4a7a', t, 70);
-      SC.pen('rgba(30,20,50,0.5)', 0.5);
-      SC.maidensTower(g, 186 - slide, 160 + bob * 0.5, 0.95, { wall: '#f2ece0', wallD: '#d0c8bc', roof: '#7e8a9e', trim: '#d2c8b6', win: '#5a6a86', rock: '#5a5660' });
-      SC.pen(null);
-      g.save(); g.translate(0, bob);
-      // güverte çatısı ve direkleri: kadraj
-      rect(g, 0, 0, VW, 22, '#f2f0ea'); rect(g, 0, 22, VW, 3, '#c8c4bc');
-      for (const x of [6, 250]) rect(g, x - 3, 22, 6, 150, '#e8e4dc');
-      // köpük izi
-      g.fillStyle = 'rgba(255,255,255,0.5)';
-      for (let k = 0; k < 6; k++) { const yy = 196 + k * 7, w = 60 + k * 30; g.fillRect(VW / 2 - w / 2 + Math.sin(t * 3 + k) * 4, yy, w, 1.2); }
-      // küpeşte (kahramanın kolları hizasında)
-      rect(g, 0, 182, VW, 4, '#f6f4ee'); rect(g, 0, 186, VW, 1, '#a8a49c');
-      for (let x = 4; x < VW; x += 14) rect(g, x, 186, 1.6, 30, '#e8e4dc');
-      rect(g, 0, 200, VW, 1.6, '#e8e4dc');
-      // güverte
-      rect(g, 0, 214, VW, 26, '#9a6a42');
-      for (let y = 218; y < 240; y += 6) rect(g, 0, y, VW, 0.6, '#7a5232');
-      // öteki yolcular, her biri ayrı bankta
-      A.box(g, 16, 212, 40, 3, 1, '#6a4a2a'); A.box(g, 200, 212, 40, 3, 1, '#6a4a2a');
-      figure(g, 30, 232, 34, { pose: 'sit', dir: 1, shirt: '#3a4a6a', hair: '#8a8a8a' });
-      rect(g, 40, 206, 10, 12, '#f2ece0');
-      figure(g, 226, 232, 34, { pose: 'sit', dir: -1, shirt: '#8a3a3a', hair: '#2a1a14' });
-      rect(g, 214, 210, 3, 5, '#2a2e38'); glow(g, 215, 212, 6, 'rgba(160,220,255,A)', 0.4);
-      // kahraman küpeşteye yaslanmış; çay bardağı
-      hero(g, 112, 216, 64, { pose: 'lean', dir: 1, bag: true });
-      A.poly(g, [150, 182, 154, 182, 153, 176, 154, 172, 150, 172, 151, 176], '#c8401e', A.K, 0.5);
-      g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(152, 170); g.quadraticCurveTo(150, 166 - Math.sin(t * 3) * 1.5, 153, 162); g.stroke();
-      g.restore();
-      // vapurun peşindeki martı
-      A.drawMarti(g, 200 + Math.sin(t * 0.8) * 10, 112 + Math.sin(t * 1.7) * 4, t, -1, false);
-    },
-  };
-
-  // 4 — Kapalıçarşı'dan sonra: tek lambanın altında oyma yapan yaşlı bir usta. Duvarda oyma aletleri.
-  // Usta başını kaldırır ve kahramana bir keski uzatır.
+  // Kapalıçarşı'dan sonra: Han'da, tek lambanın altında gümüşe kalemle desen işleyen yaşlı bir usta. Duvarda kalemler
+  // ve çekiçler. Usta başını kaldırır ve kahramana bir keski uzatır.
   SCENES.ara4 = {
-    dur: 11.5, amb: 'carsi',
-    cues: [[7.4, 'bell']],
+    dur: 11.5, amb: 'han',
+    cues: [[7.4, 'glass']],
     draw(g, t) {
       const base = layer('ara4', VW, VH, (b) => {
         rect(b, 0, 0, VW, VH, '#1a1220');
-        // kemerli koridor, karanlıkta
-        for (const x of [-40, 216]) { b.fillStyle = '#251a26'; b.beginPath(); b.moveTo(x, 240); b.lineTo(x, 70); b.arc(x + 40, 70, 40, Math.PI, 0); b.lineTo(x + 80, 240); b.closePath(); b.fill(); }
+        // hanın karanlık revakları: taş ve tuğla sıraları
+        for (const x of [-40, 216]) {
+          b.save(); b.beginPath(); b.moveTo(x, 240); b.lineTo(x, 70); b.arc(x + 40, 70, 40, Math.PI, 0); b.lineTo(x + 80, 240); b.closePath(); b.clip();
+          rect(b, x, 20, 80, 220, '#2a2026'); for (let y = 26; y < 240; y += 12) rect(b, x, y, 80, 4, '#3a2226');
+          b.restore();
+        }
         // tezgâh ve dükkân
         rect(b, 40, 52, 176, 150, '#3a2618');
         rect(b, 46, 58, 164, 98, '#4a3020');
-        // duvarda oyma aletleri (keski, oluklu oyma)
+        // duvarda kalemler (keski) ve küçük çekiçler
         for (let k = 0; k < 11; k++) {
           const x = 62 + k * 13, l = 22 + (k % 3) * 4;
-          A.box(b, x - 1.6, 70, 3.2, l * 0.55, 1.2, '#b07a42', A.K, 0.5);
+          if (k % 4 === 3) { A.lin(b, x, 70, x, 70 + l, '#8a5a34', 1.6); A.box(b, x - 4, 68, 8, 4, 1, '#8a8e98', A.K, 0.4); continue; }
+          A.box(b, x - 1.6, 70, 3.2, l * 0.55, 1.2, '#8a5a34', A.K, 0.5);
           A.box(b, x - 0.9, 70 + l * 0.55, 1.8, l * 0.45, 0.4, '#c8ccd4', A.K, 0.4);
           if (k % 2) A.poly(b, [x - 1.2, 70 + l, x + 1.2, 70 + l, x, 72 + l], '#c8ccd4', null);
         }
         A.lin(b, 56, 68, 202, 68, '#2a1c12', 1.4);
-        // oyulmuş tahta işler
-        for (const [x, y] of [[74, 112], [110, 116], [180, 112]]) { A.ellipse(b, x, y, 8, 5, '#c89a5a', A.K, 0.5); A.ellipse(b, x, y, 4, 2.4, '#a87a3a', null); }
+        // desen işlenmiş gümüş tabaklar
+        for (const [x, y] of [[74, 112], [110, 116], [180, 112]]) { A.ellipse(b, x, y, 8, 5, '#c8ccd4', A.K, 0.5); A.ellipse(b, x, y, 4.6, 2.6, null, '#8a8e98', 0.5); }
         // tezgâh
         rect(b, 40, 156, 176, 12, '#6a4428'); rect(b, 40, 156, 176, 2, '#8a5a34');
         rect(b, 44, 168, 168, 72, '#2e1e14');
@@ -493,10 +452,10 @@
       if (give > 0) master.reach = [lerp(16, 34, give), lerp(-40, -52, give)];
       else master.reach = [16 + Math.sin(t * 6) * 3, -40];
       figure(g, 96, 214, 54, master);
-      // elindeki iş ve talaş
+      // elindeki gümüş tabak, kalemin altından parlayan kırıntılar
       if (give <= 0) {
-        A.ellipse(g, 116, 192, 9, 4, '#d8a868', A.K, 0.5);
-        for (let i = 0; i < 6; i++) { const k = ((t * 0.9 + i / 6) % 1); A.circle(g, 112 + i * 1.6, 192 + k * 22, 0.9, `rgba(230,190,120,${1 - k})`, null); }
+        A.ellipse(g, 116, 192, 9, 4, '#d8dce4', A.K, 0.5);
+        for (let i = 0; i < 6; i++) { const k = ((t * 0.9 + i / 6) % 1); A.circle(g, 112 + i * 1.6, 192 + k * 22, 0.7, `rgba(235,240,255,${1 - k})`, null); }
       } else {
         const hx = 96 + lerp(16, 34, give) * 0.54, hy = 214 + lerp(-40, -52, give) * 0.54;
         A.box(g, hx, hy - 1, 9, 2, 0.8, '#b07a42', A.K, 0.4); A.box(g, hx + 9, hy - 0.6, 6, 1.2, 0.3, '#d8dce4', null);
@@ -563,48 +522,6 @@
     },
   };
 
-  // 6 — Galata'dan sonra: kulenin balkonundan gün batımı. Şehrin ışıkları teker teker yanar,
-  // en son karşı kıyıda Çamlıca'nın ışığı.
-  SCENES.ara6 = {
-    dur: 11.5, amb: 'galata',
-    draw(g, t) {
-      const dusk = seg(t, 0, 10);
-      g.fillStyle = grad(g, 0, 0, 0, 150, [[0, A.shade('#5a4a9a', -dusk * 0.4)], [0.55, dusk > 0.5 ? '#c86a7a' : '#e2807a'], [1, '#f8b47a']]); g.fillRect(0, 0, VW, 150);
-      const sunY = lerp(92, 150, dusk);
-      glow(g, 96, sunY, 70, 'rgba(255,200,140,A)', 0.7 * (1 - dusk * 0.5));
-      A.circle(g, 96, sunY, 13, '#ffd890', null);
-      const city = layer('ara6city', VW, 110, (b) => {
-        SC.pen(null);
-        b.fillStyle = '#5e3e62'; b.beginPath(); b.moveTo(0, 110); b.lineTo(0, 46); b.quadraticCurveTo(70, 30, 150, 44); b.lineTo(150, 110); b.closePath(); b.fill();
-        b.fillStyle = '#4a3a62'; b.beginPath(); b.moveTo(150, 110); b.lineTo(150, 60); b.quadraticCurveTo(210, 30, 256, 36); b.lineTo(256, 110); b.closePath(); b.fill();
-        K.camlicaTower(b, 226, 40, 0.2, { wall: '#5a4a72', wallD: '#4e3e66', glass: '#5a4a72', band: '#6a5a82' });
-        b.fillStyle = '#3e2c48'; b.fillRect(0, 70, VW, 40);
-        const r = A.rng(4); for (let x = 0; x < VW; x += 4 + r() * 4) { const h = 6 + r() * 14; b.fillRect(x, 70 - h, 3 + r() * 3, h); }
-      });
-      img(g, city, 0, 92);
-      // Haliç ve Boğaz
-      seaBand(g, 158, 176, '#a86a8a', '#5a4a7a', t, 96);
-      rect(g, 0, 176, VW, 50, '#3a2836');
-      const rr2 = A.rng(9); for (let x = 0; x < VW; x += 5 + rr2() * 5) { const h = 8 + rr2() * 20; rect(g, x, 176 + 20 - h, 4 + rr2() * 4, h + 30, '#4a3442'); if (t > 3 + rr2() * 6) rect(g, x + 1.5, 182 + rr2() * 10, 1, 1, '#ffd27a'); }
-      // ışıklar yanar
-      const r = A.rng(21);
-      for (let i = 0; i < 70; i++) {
-        const x = r() * VW, y = 120 + r() * 50, on = 2 + r() * 7, c = r() < 0.5 ? '#ffd27a' : '#fff0c0';
-        if (t > on && y < 162) rect(g, x, y, 1, 1, c);
-      }
-      // Çamlıca'nın ışığı en son
-      if (t > 8.6) { glow(g, 226, 132 - 0.2 * 172 + 1, 10, 'rgba(255,80,60,A)', Math.floor(t * 2) % 2 ? 0.9 : 0.4); A.circle(g, 226, 132 - 0.2 * 172 + 1, 1, '#ff4a3a', null); }
-      // ön plan: kulenin taş kemeri ve korkuluk (kadraj)
-      g.fillStyle = '#2e2028';
-      g.beginPath(); g.moveTo(0, 0); g.lineTo(VW, 0); g.lineTo(VW, 240); g.lineTo(232, 240); g.lineTo(232, 60); g.arc(128, 60, 104, 0, Math.PI, true); g.lineTo(24, 240); g.lineTo(0, 240); g.closePath(); g.fill();
-      rect(g, 24, 188, 208, 6, '#4a3a40'); for (let x = 30; x < 230; x += 10) rect(g, x, 194, 2.4, 30, '#4a3a40');
-      rect(g, 0, 224, VW, 16, '#3a2a32');
-      // kahraman arkadan, korkulukta
-      hero(g, 128, 224, 64, { pose: 'back', bag: true });
-      birds(g, t, 70, 3, '#2a1a2a', 9);
-    },
-  };
-
   // plazanın giriş kartı: mavi başlıkta cam kule, fotoğrafta kahramanın kendisi, altta yeşil şerit (kapı artık açık)
   function badge(g, x, y) {
     const L = x - 10, T = y - 12;
@@ -659,8 +576,8 @@
     g.restore();
   }
 
-  // 7 — Köprüden sonra: gece otobüsü Anadolu yakasına geçiyor. Kahraman geriye dönük oturmuş, laptopta yazıyor.
-  // Kadıköy'de yolladığı zarflardan biri geri döner: plazanın giriş kartı, üstünde kendi fotoğrafı (Maslak'taki kapı artık açık).
+  // Köprüden sonra: gece otobüsü Anadolu yakasına geçiyor. Kahraman geriye dönük oturmuş, laptopta yazıyor.
+  // Üsküdar'da yolladığı zarflardan biri geri döner: plazanın giriş kartı, üstünde kendi fotoğrafı (Maslak'taki kapı artık açık).
   // Karta bakar; sonra camdan Anadolu yakasının ışıklarına, tepede yanıp sönen Çamlıca'ya bakar. Laptopu kapatır,
   // çantasını alıp ayağa kalkar, yüzünü gidilen yöne çevirir ve durak düğmesine basar: kendi yakasında inecek.
   SCENES.ara7 = {
@@ -743,7 +660,7 @@
         hero(g, 148, 189, 46, { pose: 'stand', dir: 1, bag: true, reach: [26, lerp(-72, -91, press)] });
       }
       g.restore();
-      // Kadıköy'de yolladığı zarflardan biri geri döner, kanat çırparak laptopa iner
+      // Üsküdar'da yolladığı zarflardan biri geri döner, kanat çırparak laptopa iner
       const ke = (t - 1.9) / 1.4;
       if (ke > 0 && ke < 1) {
         const es = ke < 0.75 ? lerp(0.6, 1.5, ke / 0.75) : lerp(1.5, 0.5, (ke - 0.75) / 0.25);
@@ -756,39 +673,58 @@
     },
   };
 
-  // 8 — Çatılardan sonra: karşı binanın her penceresinde gece çalışan biri. Biri kahramana el sallar.
+  // Şişli'den sonra — akşam: kahraman boşalmış ofiste tek başına. Cam cephenin ardında karşı plaza; pencerelerinde
+  // hâlâ çalışanlar var, ışıklar yanıp söner. Biri başını kaldırıp kahramana el sallar; kahraman da sallar.
   SCENES.ara8 = {
-    dur: 11.5, amb: 'catilar',
+    dur: 11.5, amb: 'mesai',
     draw(g, t) {
       const base = layer('ara8' + dayKey(), VW, VH, (b) => {
-        b.fillStyle = grad(b, 0, 0, 0, 80, [[0, '#060a24'], [1, '#1a2056']]); b.fillRect(0, 0, VW, 80);
-        const r = A.rng(8); for (let i = 0; i < 40; i++) A.circle(b, r() * VW, r() * 60, 0.4 + r() * 0.5, `rgba(255,255,240,${0.4 + r() * 0.6})`, null);
-        moonIn(b, 'gece', 220, 80, 14, 10);
-        // karşı bina
-        rect(b, 20, 30, 236, 210, '#3a3058');
-        rect(b, 16, 26, 244, 6, '#2a2244');
+        b.fillStyle = grad(b, 0, 0, 0, 120, [[0, '#1a2050'], [0.6, '#6a5a8a'], [1, '#e8907a']]); b.fillRect(0, 0, VW, 120);
+        moonIn(b, 'aksamustu', 222, 110, 14, 9);
+        // karşı plaza: cam cephe, akşamın son ışığı
+        rect(b, 18, 22, 222, 218, '#2a3456');
+        b.fillStyle = grad(b, 18, 22, 240, 22, [[0, 'rgba(255,170,120,0.25)'], [0.5, 'rgba(255,170,120,0)'], [1, 'rgba(90,120,200,0.15)']]); b.fillRect(18, 22, 222, 218);
+        rect(b, 14, 18, 230, 6, '#1e2644');
       });
       img(g, base, 0, 0);
-      // pencereler: çoğunda masada biri; ışıklar yanıp söner
+      // karşı plazanın pencereleri: çoğunda masasında biri; ışıklar yanıp söner
       const r = A.rng(31);
       for (let row = 0; row < 4; row++) for (let col = 0; col < 5; col++) {
-        const x = 34 + col * 44, y = 44 + row * 44, on = (r() < 0.75) && !(Math.floor(t / 2.7 + row * 3 + col) % 7 === 0);
-        const w = 30, h = 28;
-        rect(g, x - 2, y - 2, w + 4, h + 4, '#2a2244');
-        rect(g, x, y, w, h, on ? '#f2c870' : '#1e1a36');
+        const x = 30 + col * 42, y = 34 + row * 40, on = (r() < 0.7) && !(Math.floor(t / 2.7 + row * 3 + col) % 7 === 0);
+        const w = 32, h = 28;
+        rect(g, x - 2, y - 2, w + 4, h + 4, '#1e2644');
+        rect(g, x, y, w, h, on ? '#f2e2b0' : '#18203c');
         if (on) {
-          glow(g, x + 15, y + 14, 22, 'rgba(255,210,130,A)', 0.25);
-          const special = row === 2 && col === 3;
-          rect(g, x + 2, y + 19, 18, 1.6, '#6a4a2a');
+          glow(g, x + 15, y + 14, 22, 'rgba(255,236,190,A)', 0.2);
+          const special = row === 1 && col === 3;
+          rect(g, x + 2, y + 19, 18, 1.6, '#6a6a72');
           figure(g, x + 22, y + h, 20, { pose: special && t > 5.4 && t < 8.6 ? 'stand' : 'desk', dir: -1, shirt: ['#5a6a8a', '#8a4a3a', '#6a7a5a', '#d8c8a0'][(row + col) % 4], hair: ['#2a2020', '#6a4a2a', '#1a1a1a'][(row * 2 + col) % 3], wave: special && t > 5.4 && t < 8.6, phase: t, typing: true });
           rect(g, x + 5, y + 14, 6, 5, '#2a2e38'); rect(g, x + 6, y + 15, 4, 3, '#9ad0f0');
         }
       }
-      // ön plan: kiremit çatı, kahraman laptopuyla
-      K.roofTiles(g, -10, 240, 150, 46, '#a84e34');
-      hero(g, 60, 214, 46, { pose: 'sit', dir: 1, wave: t > 7.4 && t < 9.6, typing: !(t > 7.4 && t < 9.6), phase: t });
-      A.box(g, 70, 194, 12, 2, 0.6, '#c9ccd4', A.K, 0.5); A.poly(g, [72, 194, 82, 194, 84, 185, 74, 185], '#2a2e38', A.K, 0.5);
-      glow(g, 76, 190, 14, 'rgba(160,220,255,A)', 0.5);
+      // bu taraf: boşalmış ofis; cam cephenin dikmeleri, masa, kapanmış ekranlar, tek masa lambası
+      const fl = layer('ara8on', VW, VH, (b) => {
+        for (const x of [0, 128, 252]) rect(b, x, 0, 6, 196, '#3a4050');
+        rect(b, 0, 0, VW, 10, '#4a5060'); rect(b, 0, 194, VW, 4, '#4a5060');
+        rect(b, 0, 198, VW, 42, '#5a5a66'); rect(b, 0, 198, VW, 1.4, '#7a7a86');
+        // masa
+        rect(b, 20, 186, 150, 5, '#c8ccd4'); for (const x of [24, 164]) A.lin(b, x, 191, x, 230, '#8a909c', 2);
+        for (const x of [120, 146]) { A.box(b, x, 166, 18, 14, 1, '#141822', A.K, 0.5); rect(b, x + 7, 180, 3, 6, '#5a6070'); }
+        // boş sandalyeler, geri itilmiş
+        for (const x of [190, 226]) { A.box(b, x, 196, 16, 4, 1.4, '#2a2e38', A.K, 0.5); A.box(b, x + 12, 178, 4, 18, 1.4, '#2a2e38', A.K, 0.5); A.lin(b, x + 8, 200, x + 8, 222, '#2a2e38', 1.4); }
+      });
+      // camda odanın soluk yansıması
+      g.fillStyle = 'rgba(200,220,255,0.06)'; g.fillRect(0, 0, VW, 196);
+      img(g, fl, 0, 0);
+      // masa lambası
+      A.lin(g, 40, 186, 36, 172, '#2a2e38', 1.2); A.lin(g, 36, 172, 44, 166, '#2a2e38', 1.2); A.poly(g, [42, 162, 52, 165, 50, 170, 40, 167], '#2a3a5a', A.K, 0.4);
+      glow(g, 50, 178, 34, 'rgba(255,214,140,A)', 0.55);
+      // kahraman laptopunun başında; el sallanınca o da sallar
+      const waving = t > 7.4 && t < 9.6;
+      A.box(g, 52, 206, 22, 4, 1.4, '#2a2e38', A.K, 0.5); A.lin(g, 63, 210, 63, 230, '#2a2e38', 1.6);
+      hero(g, 62, 208, 46, { pose: 'desk', dir: 1, wave: waving, typing: !waving, phase: t });
+      A.box(g, 80, 184, 12, 2, 0.6, '#c9ccd4', A.K, 0.5); A.poly(g, [82, 184, 92, 184, 94, 175, 84, 175], '#2a2e38', A.K, 0.5);
+      glow(g, 86, 180, 14, 'rgba(160,220,255,A)', 0.5);
     },
   };
 
@@ -899,48 +835,150 @@
     },
   };
 
-  // Haliç'ten sonra — Balat'ta akşam: kahraman dik yokuşu çıkar; üst kattaki pencereden yaşlı bir teyze
-  // ipe bağlı sepeti sarkıtır, içinde simit ve çay. Kahraman alır, yukarı bakar, iki el birbirine sallanır.
-  SCENES.halic = {
-    dur: 11, amb: 'balat', cues: [[2.2, 'bell']],
+  // ince belli çay bardağı (by: dibi), buharıyla
+  function teaGlass(g, x, by, s, t, steam) {
+    A.poly(g, [x - 2 * s, by, x + 2 * s, by, x + 1.2 * s, by - 5 * s, x + 2.2 * s, by - 9 * s, x - 2.2 * s, by - 9 * s, x - 1.2 * s, by - 5 * s], 'rgba(190,60,24,0.92)', A.K, 0.4);
+    rect(g, x - 2.2 * s, by - 9 * s, 4.4 * s, 1 * s, 'rgba(255,255,255,0.5)');
+    if (steam) {
+      g.strokeStyle = `rgba(255,255,255,${0.35 * steam})`; g.lineWidth = 0.6;
+      for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(x - 0.6 + k * 1.2, by - 10 * s); g.quadraticCurveTo(x - 2 + k * 2 + Math.sin(t * 2.2 + k) * 1.6, by - 14 * s, x + Math.sin(t * 1.7 + k * 2) * 1.4, by - 18 * s); g.stroke(); }
+    }
+  }
+
+  // Eyüp'ten sonra — oyunun kalbi. Gece yarısı tepede iki kişilik bir bank; aşağıda Haliç ve şehrin ışıkları.
+  // Kahraman elinde iki ince belli çayla gelir, birini bankın öbür ucuna koyar, bir ucuna oturur. Rüzgâr, bir yaprak.
+  // Bir süre oturur; sonra kalkar ve yürür. İkinci bardak bankta, buharı tüterek kalır. Müzik yok.
+  SCENES.eyup = {
+    dur: 15, amb: 'eyupTepe', cues: [[3.3, 'glass']],
     draw(g, t) {
-      const base = layer('halic', VW, VH, (b) => {
-        b.fillStyle = grad(b, 0, 0, 0, 120, [[0, '#4a3a8a'], [0.6, '#d8708a'], [1, '#f8a870']]); b.fillRect(0, 0, VW, 120);
-        // karşıda Haliç ve Fener Rum Lisesi
-        b.fillStyle = '#8a5a7a'; b.beginPath(); b.moveTo(0, 120); b.quadraticCurveTo(80, 70, 180, 86); b.quadraticCurveTo(220, 92, 256, 80); b.lineTo(256, 120); b.closePath(); b.fill();
-        A.box(b, 70, 66, 50, 20, 0, '#b8442a'); b.fillStyle = '#9a3a24'; b.beginPath(); b.ellipse(95, 66, 9, 7, 0, Math.PI, 0); b.fill();
-        // renkli evler: yakın plan cepheler
-        const cols = ['#e2483a', '#f4c531', '#3aa86a', '#3a7ad8', '#a85ad8'];
-        for (let i = 0; i < 5; i++) {
-          const x = -10 + i * 56, top = 40 + (i % 2) * 18;
-          rect(b, x, top, 54, 240 - top, cols[i]);
-          rect(b, x, top, 54, 240 - top, 'rgba(60,20,40,0.12)');
-          rect(b, x - 2, top - 4, 58, 5, A.shade(cols[i], -0.35));
-          for (let f = 0; f < 4; f++) for (let k = 0; k < 2; k++) { const wx = x + 8 + k * 24, wy = top + 14 + f * 40; rect(b, wx, wy, 14, 22, '#2a2a46'); rect(b, wx - 1.5, wy - 1.5, 17, 1.5, '#f4ecdc'); rect(b, wx - 1.5, wy + 22, 17, 2, '#f4ecdc'); }
-        }
-        // kaldırım taşları
-        b.fillStyle = '#6a5a5a'; b.fillRect(0, 214, VW, 26);
-        for (let x = 0; x < VW; x += 8) for (let y = 216; y < 240; y += 6) A.ellipse(b, x + ((y / 6) % 2) * 4, y, 3.4, 2.2, '#7a6a68', null);
+      const base = layer('eyup' + dayKey(), VW, VH, (b) => {
+        b.fillStyle = grad(b, 0, 0, 0, 150, [[0, '#04061a'], [0.7, '#10183e'], [1, '#22285a']]); b.fillRect(0, 0, VW, 150);
+        const r = A.rng(81); for (let i = 0; i < 110; i++) A.circle(b, r() * VW, r() * 110, 0.3 + r() * 0.5, `rgba(255,255,240,${0.3 + r() * 0.7})`, null);
+        moonIn(b, 'geceyarisi', 196, 130, 16, 9);
+        // karşı kıyı: tepeler ve yanan pencereler, tepede bir kubbe ve iki ince minare (Eyüp'ün kendisi)
+        b.fillStyle = '#0c1032'; b.beginPath(); b.moveTo(0, 150); b.quadraticCurveTo(70, 118, 150, 132); b.quadraticCurveTo(210, 140, 256, 122); b.lineTo(256, 160); b.lineTo(0, 160); b.closePath(); b.fill();
+        for (let i = 0; i < 260; i++) { const x = r() * VW, y = 128 + Math.pow(r(), 0.7) * 30; if (y < 120 + Math.abs(x - 150) * 0.05) continue; b.fillStyle = ['#ffd27a', '#fff0c0', '#ffb070'][Math.floor(r() * 3)]; b.globalAlpha = 0.3 + r() * 0.6; b.fillRect(x, y, 0.9, 0.9); }
+        b.globalAlpha = 1;
+        SC.pen(null);
+        K.dome(b, 60, 128, 6, { roof: '#141842', alem: '#141842' }, 0.9);
+        for (const mx of [50, 70]) K.minaret(b, mx, 128, 22, 1.4, { wall: '#141842', roof: '#141842', trim: '#141842' }, 1);
+        // Haliç: karanlık su, köprünün ışık çizgisi ve yansımalar
+        b.fillStyle = grad(b, 0, 158, 0, 196, [[0, '#14183e'], [1, '#080a20']]); b.fillRect(0, 158, VW, 40);
+        for (let x = 90; x < 230; x += 3) rect(b, x, 158, 1.6, 0.8, '#fff0c0');
+        for (let i = 0; i < 70; i++) { const x = r() * VW, y = 162 + r() * 30; b.fillStyle = `rgba(255,214,140,${0.12 + r() * 0.2})`; b.fillRect(x, y, 2 + r() * 5, 0.7); }
+        // tepe: çimen, iki servi
+        b.fillStyle = '#060818'; b.beginPath(); b.moveTo(0, 240); b.lineTo(0, 196); b.quadraticCurveTo(128, 186, 256, 198); b.lineTo(256, 240); b.closePath(); b.fill();
+        for (const [x, h] of [[18, 92], [232, 70], [246, 54]]) { b.fillStyle = '#04050f'; b.beginPath(); b.ellipse(x, 200 - h / 2, h * 0.13, h / 2, 0, 0, TAU); b.fill(); }
+        // iki kişilik bank
+        for (const x of [100, 166]) { A.lin(b, x, 214, x, 202, '#1a1c28', 2.2); A.lin(b, x, 202, x - 2, 182, '#1a1c28', 1.8); }
+        A.box(b, 90, 199, 86, 4, 1, '#5a4030', A.K, 0.6);
+        for (const y of [184, 190]) A.box(b, 92, y, 82, 3.4, 1, '#644634', A.K, 0.5);
       });
       img(g, base, 0, 0);
-      // üst kat penceresinde teyze (pencerenin içi ılık)
-      const wx = 186, wy = 94;
-      rect(g, wx, wy, 14, 22, '#f2c870'); glow(g, wx + 7, wy + 10, 22, 'rgba(255,210,130,A)', 0.4);
-      figure(g, wx + 7, wy + 24, 30, { pose: 'stand', dir: -1, shirt: '#8a3a5a', hair: '#d8d8d8', skin: '#e8b896', wave: t > 8.2 && t < 10.5, phase: t });
-      rect(g, wx - 1.5, wy + 22, 17, 2, '#f4ecdc');
-      // ip ve sepet: iner, bekler, boş olarak geri çıkar
-      const down = seg(t, 2.4, 5) - seg(t, 7.2, 9.2);
-      const by = lerp(wy + 26, 176, down), bx = wx + 4;
-      A.lin(g, bx, wy + 20, bx, by, '#c8a878', 0.6);
-      A.poly(g, [bx - 7, by, bx + 7, by, bx + 5.4, by + 9, bx - 5.4, by + 9], '#c8904a', A.K, 0.6);
-      for (let k = 1; k < 4; k++) A.lin(g, bx - 6.6 + k * 0.4, by + k * 2.2, bx + 6.6 - k * 0.4, by + k * 2.2, '#8a5a26', 0.5);
-      if (t < 6.4) { A.drawSimit(g, bx - 2, by - 1.6, 0, 3); A.poly(g, [bx + 2, by - 4, bx + 5, by - 4, bx + 4.4, by + 1, bx + 2.6, by + 1], 'rgba(200,40,20,0.9)', A.K, 0.4); }
-      // kahraman yokuştan gelir, durur, yukarı bakar, uzanıp alır
-      const walk = seg(t, 0, 2.6);
-      const hx = lerp(-20, bx - 16, walk);
-      const reach = t > 5.4 && t < 6.6;
-      hero(g, hx, 214, 58, walk < 1 ? { pose: 'walk', dir: 1, phase: t * 1.3, bag: true } : { pose: 'stand', dir: 1, look: 'up', bag: true, reach: reach ? [(bx - 2 - hx) / 0.58, (by + 4 - 214) / 0.58] : undefined, wave: t > 8.2 && t < 10.5, phase: t });
-      if (t > 6.4) { A.drawSimit(g, hx + 12, 180, 0, 2.6); }
+      // gece rüzgârı: servilerin ucu hafifçe sallanır
+      const sit = t >= 3 && t < 10.6;
+      // ikinci bardak: bankın öbür ucunda
+      if (t >= 3.2) teaGlass(g, 160, 199, 1.1, t, 1 - seg(t, 13, 15) * 0.4);
+      if (t < 3) {
+        const k = clamp01(t / 2.9);
+        hero(g, lerp(-24, 112, k), 214, 46, { pose: 'walk', dir: 1, phase: t * 1.2, reach: [14, -50] });
+        const hx = lerp(-24, 112, k) + 5;
+        teaGlass(g, hx + 2, 194, 1, t, 0.8); teaGlass(g, hx + 6, 195, 1, t, 0.8);
+      } else if (sit) {
+        hero(g, 108, 214, 46, { pose: 'sit', dir: 1, reach: [20, -36] });
+        teaGlass(g, 117, 197, 1, t, 0.9);
+      } else {
+        const k = clamp01((t - 10.6) / 3.6);
+        hero(g, lerp(118, 290, k), 214, 46, k <= 0.02 ? { pose: 'stand', dir: 1 } : { pose: 'walk', dir: 1, phase: t * 1.2 });
+      }
+      // rüzgârda bir yaprak
+      if (t > 5 && t < 10) {
+        const k = (t - 5) / 5, lx = lerp(-10, 270, k), ly = 150 + k * 40 + Math.sin(t * 3) * 8;
+        A.ellipse(g, lx, ly, 2.2, 1, '#8a6a3a', null, 0, t * 4);
+      }
+    },
+  };
+
+  // Şile'den sonra — gece fener: dönen ışık denizi tarar. Kahraman kayalıkta oturmuş, denize bakar; ışık her
+  // dönüşte üstünden geçer.
+  SCENES.sile = {
+    dur: 11, amb: 'sile',
+    draw(g, t) {
+      const base = layer('sile' + dayKey(), VW, VH, (b) => {
+        b.fillStyle = grad(b, 0, 0, 0, 140, [[0, '#03061a'], [0.7, '#0c1236'], [1, '#1a2450']]); b.fillRect(0, 0, VW, 140);
+        const r = A.rng(91); for (let i = 0; i < 160; i++) A.circle(b, r() * VW, r() * 120, 0.3 + r() * 0.5, `rgba(255,255,240,${0.3 + r() * 0.7})`, null);
+        moonIn(b, 'geceyarisindanSonra', 70, 136, 16, 8);
+        b.fillStyle = grad(b, 0, 140, 0, 240, [[0, '#121a40'], [1, '#04071a']]); b.fillRect(0, 140, VW, 100);
+        for (let i = 0; i < 40; i++) { const y = 146 + i * 2.2, w = 4 + r() * 16; b.fillStyle = 'rgba(160,180,230,0.12)'; b.fillRect(r() * VW, y, w, 0.6); }
+        // kayalık burun ve fener
+        b.fillStyle = '#05060f'; b.beginPath(); b.moveTo(256, 240); b.lineTo(256, 120); b.lineTo(214, 128); b.lineTo(180, 156); b.lineTo(120, 196); b.lineTo(70, 214); b.lineTo(40, 240); b.closePath(); b.fill();
+        A.poly(b, [212, 128, 230, 128, 227, 64, 215, 64], '#d8d4ca', null);
+        rect(b, 214, 50, 14, 14, '#ffeeb0'); A.poly(b, [212, 50, 230, 50, 221, 40], '#1a1a22', null); rect(b, 211, 62, 20, 3, '#1a1a22');
+      });
+      img(g, base, 0, 0);
+      // dönen ışık
+      const fx = 221, fy = 57, a = t * 0.85, side = Math.cos(a), k = Math.abs(side);
+      if (k > 0.06) {
+        const dir = side > 0 ? 1 : -1, len = 320 * k;
+        const gr = g.createLinearGradient(fx, fy, fx + dir * len, fy + 20);
+        gr.addColorStop(0, `rgba(255,244,190,${0.45 * k})`); gr.addColorStop(1, 'rgba(255,244,190,0)');
+        g.fillStyle = gr; g.beginPath(); g.moveTo(fx, fy - 3); g.lineTo(fx + dir * len, fy + 4 - 30 * k); g.lineTo(fx + dir * len, fy + 40 + 30 * k); g.lineTo(fx, fy + 3); g.closePath(); g.fill();
+        // ışığın denizde bıraktığı iz
+        if (dir < 0) { g.fillStyle = `rgba(255,240,190,${0.18 * k})`; g.fillRect(fx - len, 150, len * 0.9, 1.4); }
+      }
+      glow(g, fx, fy, 26, 'rgba(255,240,170,A)', 0.8);
+      // kahraman kayada oturmuş, denize (sola) bakıyor
+      hero(g, 132, 196, 36, { pose: 'sit', dir: -1, bag: true });
+      // ışık üstünden geçince bir an aydınlanır
+      const lit = side < -0.6 ? (Math.abs(side) - 0.6) * 1.4 : 0;
+      if (lit > 0) glow(g, 128, 178, 24, 'rgba(255,240,190,A)', lit * 0.5);
+    },
+  };
+
+  // Sanayi'den sonra — şafak öncesi: sanayide açık kalan tek çay ocağı. Floresan ışık, camın ardında iki kişi:
+  // çaycı ve kahraman. Komşu dükkânların kepenkleri teker teker iner; çay ocağınınki yarıda kalır, ışık kaldırıma düşer.
+  SCENES.sanayi = {
+    dur: 11, amb: 'kadosan', cues: [[3, 'shutter'], [4.6, 'shutter'], [6.2, 'shutter'], [8.4, 'shutter']],
+    draw(g, t) {
+      const dawn = seg(t, 0, 11);
+      g.fillStyle = grad(g, 0, 0, 0, 90, [[0, A.shade('#0c1236', dawn * 0.3)], [1, A.shade('#3a3a6a', dawn * 0.4)]]); g.fillRect(0, 0, VW, 90);
+      const base = layer('sanayiS', VW, VH, (b) => {
+        // testere dişi çatılar
+        for (let x = 0; x < VW; x += 32) A.poly(b, [x, 90, x + 32, 90, x + 32, 74], '#1a1830', null);
+        rect(b, 0, 90, VW, 124, '#2a2838'); rect(b, 0, 88, VW, 3, '#1a1828');
+        // kaldırım
+        rect(b, 0, 214, VW, 26, '#3a3a46'); rect(b, 0, 214, VW, 1.4, '#5a5a66');
+      });
+      img(g, base, 0, 0);
+      // komşu dükkânlar: kepenk teker teker iner
+      const shopsX = [6, 70, 196];
+      shopsX.forEach((x, i) => {
+        const down = seg(t, 2.6 + i * 1.6, 3.6 + i * 1.6);
+        rect(g, x, 120, 54, 94, '#1a1622');
+        g.fillStyle = `rgba(255,170,90,${0.35 * (1 - down)})`; g.fillRect(x, 120, 54, 94);
+        const h = lerp(40, 94, down);
+        rect(g, x, 120, 54, h, '#5a5e6a'); for (let y = 122; y < 120 + h; y += 3) rect(g, x, y, 54, 0.8, '#454852');
+      });
+      // çay ocağı: floresan, cam, içeride iki kişi
+      const cx = 132;
+      rect(g, cx, 116, 58, 98, '#141a1e');
+      glow(g, cx + 29, 150, 60, 'rgba(225,245,255,A)', 0.35);
+      rect(g, cx + 3, 124, 52, 60, '#d8ecee');
+      rect(g, cx + 3, 124, 52, 60, 'rgba(160,210,200,0.25)');
+      rect(g, cx + 10, 126, 38, 2, '#ffffff');
+      // tezgâh, çaydanlık
+      rect(g, cx + 3, 164, 52, 20, '#5a4a3a'); A.box(g, cx + 8, 154, 9, 10, 2.4, '#c8ccd4', A.K, 0.4);
+      figure(g, cx + 14, 168, 30, { pose: 'stand', dir: 1, shirt: '#e8e4dc', pants: '#3a3a44', hair: '#8a8a8a', skin: '#d8a880' });
+      hero(g, cx + 42, 176, 30, { pose: 'sit', dir: -1, reach: [16, -40] });
+      teaGlass(g, cx + 33, 165, 0.8, t, 0.8); teaGlass(g, cx + 24, 165, 0.8, t, 0.8);
+      rect(g, cx + 28, 124, 1.4, 60, '#3a4048');
+      // en son çay ocağının kepengi yarıya kadar iner ve orada kalır; ışık altından kaldırıma düşer
+      const half = seg(t, 8.2, 9.6), sh = lerp(0, 50, half);
+      if (sh > 0) { rect(g, cx, 116, 58, sh, '#6a6e7a'); for (let y = 118; y < 116 + sh; y += 3) rect(g, cx, y, 58, 0.8, '#50545e'); }
+      g.fillStyle = 'rgba(225,245,255,0.18)'; g.beginPath(); g.moveTo(cx, 214); g.lineTo(cx + 58, 214); g.lineTo(cx + 80, 240); g.lineTo(cx - 22, 240); g.closePath(); g.fill();
+      // dolaşık kablolar
+      g.strokeStyle = 'rgba(10,10,20,0.8)'; g.lineWidth = 0.6;
+      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(-10, 60 + k * 5); g.quadraticCurveTo(128, 90 + k * 7, 266, 58 + k * 6); g.stroke(); }
     },
   };
 
@@ -975,8 +1013,8 @@
     },
   };
 
-  // 9 — Son: şafakta Çamlıca'dan iniş, sonra atölye sabah ışığında. Örs ile laptop yan yana,
-  // kapının üstünde kendi tabelası, rafta yolda toplanan parçalar.
+  // Son: şafakta Çamlıca'dan iniş, sonra atölye sabah ışığında. Örs ile laptop yan yana, kapının üstünde kendi
+  // tabelası, rafta yolda toplanan parçalar, yanında boş bir sandalye.
   SCENES.son = {
     dur: 17, amb: 'safak', music: 'son',
     cues: [[12.2, 'forge'], [12.9, 'forge']],
@@ -1051,6 +1089,9 @@
       g.fillStyle = '#7cff6a'; g.font = '600 11px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('</>', 152, 42.6);
       rect(g, 0, 200, VW, 40, '#9a948e'); rect(g, 0, 200, VW, 1.4, '#c8c2ba');
       g.fillStyle = 'rgba(255,230,170,0.25)'; g.beginPath(); g.moveTo(20, 200); g.lineTo(236, 200); g.lineTo(256, 240); g.lineTo(0, 240); g.closePath(); g.fill();
+      // rafın altında, tezgâhın yanında boş bir sandalye
+      A.box(g, 100, 186, 15, 3, 1, '#8a5a34', A.K, 0.5); A.lin(g, 102, 189, 101, 214, '#5a3a24', 1.6); A.lin(g, 113, 189, 114, 214, '#5a3a24', 1.6);
+      A.lin(g, 113.6, 187, 115, 166, '#5a3a24', 1.8); A.box(g, 111.4, 164, 5, 12, 1.2, '#8a5a34', A.K, 0.5);
       // kahraman gelir: örse bir vurur, sonra laptopun başına geçer
       if (tb < 3.8) { const k = clamp01((tb - 1.2) / 2.6); hero(g, lerp(-20, 116, k), 214, 46, { pose: 'walk', dir: 1, phase: tb * 1.3, bag: true }); }
       else if (tb < 6.2) {

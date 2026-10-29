@@ -420,7 +420,7 @@ bayraktaki hilale benziyor; yeri de sabit (`SKY` ve `places.js`'teki `moon: [x, 
 - [ ] `src/art.js`: her mekânın zemin ve karo teması yeni sıraya; `PIECES` ve yeni parça çizimleri; Glitch hiçbir bölümde yok.
 - [x] `src/rides.js`: Marmaray (metro çizimi, yeni hat adı ve rengi), gece dolmuşu, T1 Sirkeci → Sultanahmet;
   tramvay arka planındaki camiler çıkar; füniküler kullanılmaz.
-- [ ] `src/story.js`: Hikâye sahneleri tablosundaki değişiklikler.
+- [x] `src/story.js`: Hikâye sahneleri tablosundaki değişiklikler.
 - [x] `src/audio.js`: Müzik ve ses bölümündeki maddeler.
 - [ ] `src/main.js`: `STORY_AFTER`; `ROUTE` (İstanbul haritasında yeni dünyaların yerleri; Şile haritanın doğu
   kenarının dışında kalıyor: harita doğuya genişletilir ya da Şile kenarda yön okuyla gösterilir);
