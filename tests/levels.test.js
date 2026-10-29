@@ -68,6 +68,18 @@ function analyse(idx, revealHidden) {
       // vapur ve kayık: iki iskele arasındaki yolu boyunca (üst güverte de)
       const b = p.boat, off = p.upper ? 3 : 0;
       statics.push({ x: b.a + off, y: p.y, w: b.b - b.a + p.w, h: 0.5, dy: 0 });
+    } else if (p.kind === 'pater') {
+      // dolap asansör: çıkan sütun, tepe, inen sütun boyunca taşır (her döngü bir kez)
+      const pt = p.pt;
+      if (pt.cars[0] === p) {
+        const pts = [];
+        for (let y = pt.bot; y >= pt.top; y -= 1.5) pts.push({ x: pt.x, y, w: pt.w, h: 0.5, dy: 0 });
+        pts.push({ x: pt.x, y: pt.top, w: pt.w, h: 0.5, dy: 0 }, { x: pt.x + pt.gap / 2, y: pt.top, w: pt.w, h: 0.5, dy: 0 }, { x: pt.x + pt.gap, y: pt.top, w: pt.w, h: 0.5, dy: 0 });
+        for (let y = pt.top + 1.5; y <= pt.bot; y += 1.5) pts.push({ x: pt.x + pt.gap, y, w: pt.w, h: 0.5, dy: 0 });
+        pts.push({ x: pt.x + pt.gap, y: pt.bot, w: pt.w, h: 0.5, dy: 0 }, { x: pt.x + pt.gap / 2, y: pt.bot, w: pt.w, h: 0.5, dy: 0 });
+        statics.push(...pts);
+        for (let k = 0; k < pts.length; k++) rides.push([pts[k], pts[(k + 1) % pts.length]]);
+      }
     } else if (p.kind === 'press') {
       // pres: kafası tepede ve dipte durur; kalkarken üstündekini taşır
       const a = { x: p.pr.x, y: p.pr.top, w: p.pr.w, h: 0.5, dy: 0 }, z = { x: p.pr.x, y: p.pr.bot, w: p.pr.w, h: 0.5, dy: 0 };
@@ -268,6 +280,21 @@ function analyse(idx, revealHidden) {
     // aynı sıradaki komşu parçaya yürüyerek (tek karo engelsiz) — zaten bitişikse aynı parça
   }
   for (const [a, z] of rides) { edges[a.seg.id].add(z.seg.id); edges[z.seg.id].add(a.seg.id); }
+  // yayın vericisi: üstünde duranı dimdik, yanındakini yana fırlatır
+  for (const w of G.waves) {
+    for (const s of segs) {
+      if (s.plat || s.x1 < w.x - 3 || s.x0 > w.x + 3 || Math.abs(s.y + 1 - w.y) > 1.2) continue;
+      for (const off of [0, 0.6, 1.1, -0.6, -1.1]) {
+        const x = Math.max(s.x0, Math.min(s.x1 + 1 - PW, w.x + off - PW / 2));
+        if (Math.abs(x + PW / 2 - w.x) > 1.6) continue;
+        const cx = x + PW / 2, cy = s.y + 1 - BIG_H / 2, d = Math.hypot(cx - w.x, cy - w.y) || 1, nx = (cx - w.x) / d, ny = (cy - w.y) / d, k = w.force;
+        for (const dir of [-1, 1]) for (const speed of [PH.walk, PH.run]) {
+          const r = sim(x, s.y + 1 - BIG_H - 0.0001, dir, speed, 0, 0, 0.05, 3.5, { launch: -(ny * k - 6), carry: nx * k * 0.8 });
+          if (r && r !== s) edges[s.id].add(r.id);
+        }
+      }
+    }
+  }
   // şahmerdan: vurduğu an zıplayan çok yükseğe uçar
   for (const pr of G.presses) {
     if (!pr.shock) continue;

@@ -677,6 +677,7 @@
       else if (pl.kind === 'cabin') HD.drawCabin3(ctx, pl);                       // teleferik kabini
       else if (pl.kind === 'brush') HD.drawBrush(ctx, pl.br, app.t);              // oto yıkama fırçası
       else if (pl.kind === 'press') HD.drawPress(ctx, pl.pr, app.t);              // pres, şahmerdan
+      else if (pl.kind === 'pater') HD.drawPater(ctx, pl);                        // dolap asansör kabini
       else if (pl.kind === 'crate') ctx.drawImage(HD.crate(), pl.x * TS - 1, pl.y * TS - 1, 16, 16);   // bantta koli
       else if (pl.kind === 'iron') HD.drawIron(ctx, pl, app.t);                   // kızgın demir
       else if (pl.kind === 'bubble') HD.drawBubble(ctx, pl, app.t);               // köpük baloncuğu
@@ -733,6 +734,7 @@
     for (const d of G.tides) if (onScreen(G, d.x0, d.x1 - d.x0)) HD.drawTide(ctx, d, app.t, (G.camY + BA.VHT + 1) * TS);
     for (const d of G.floods) if (onScreen(G, d.x0, d.x1 - d.x0)) HD.drawFlood(ctx, d, app.t, (G.camY + BA.VHT + 1) * TS);
     for (const w of G.winds) if (onScreen(G, w.x0, w.x1 - w.x0)) HD.drawWind(ctx, w, app.t, G.cam);
+    for (const f of G.fogs) if (onScreen(G, f.x - 2, f.w + 4)) HD.drawFog(ctx, f, app.t);
     // alarm: ekranın kenarları kırmızı nabız gibi atar
     if (G.alarm > 0) {
       const a = (0.5 + 0.5 * Math.sin(app.t * 11)) * Math.min(1, G.alarm / 0.5), X0 = G.cam * TS, Y0 = G.camY * TS, Wd = BA.VW * TS, Ht = BA.VHT * TS;
@@ -800,6 +802,17 @@
       else if (d.k === 'direk') HD.drawPylon(ctx, d);
     }
     for (const f of G.fans) if (onScreen(G, f.x)) HD.drawAir(ctx, f.x * TS, f.y * TS, f.reach, app.t + f.x * 0.13, f.spin);
+    // Çamlıca: dolap asansör kuyuları, cam teraslar (sisle belirir), vericiler
+    for (const pt of G.paters) if (onScreen(G, pt.x - 1, pt.gap + 4)) HD.drawPaterShaft(ctx, pt);
+    if (G.fogs.length) {
+      const T = BA.T, x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
+      for (let ty = 0; ty < G.H; ty++) for (let tx = x0; tx <= x1; tx++) {
+        const i = ty * G.W + tx;
+        if (G.grid[i] !== T.FROST) continue;
+        HD.drawFrost(ctx, tx * TS, ty * TS, BA.fogAt(G, tx + 0.5, ty + 0.5), app.t, G.grid[i - 1] !== T.FROST, G.grid[i + 1] !== T.FROST);
+      }
+    }
+    for (const w of G.waves) if (onScreen(G, w.x - w.max, w.max * 2)) HD.drawEmitter(ctx, w, app.t);
     // Sanayi: bantlar, ocaklar
     for (const bt of G.belts) if (onScreen(G, bt.x0, bt.x1 - bt.x0 + 1)) HD.drawBelt(ctx, bt, app.t);
     for (const sp of G.ironSp) if (onScreen(G, sp.x0 - 2, sp.x1 - sp.x0 + 5)) HD.drawForge(ctx, sp, app.t);

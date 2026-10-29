@@ -26,9 +26,9 @@
   // kapağı, yerdeki soğutma fanı, sıcak (dokununca yakar) ve soğumuş kabin, cam cephe, saksı, turnike, simitçi tezgâhı.
   const T = { EMPTY: 0, GROUND: 1, SOLID: 2, ONEWAY: 3, BLOCK: 4, USED: 5, CRACK: 6, SPIKE: 7, WALL: 8, HIDDEN: 9, MULTI: 10,
     DOOR: 11, DOOROPEN: 12, PANEL: 13, FAN: 14, HOT: 15, COOL: 16, GLASS: 17, PLANTER: 18, TURN: 19, CART: 20,
-    CRUMBLE: 21, SHUTTER: 22, PANO: 23, GATE: 24, ZAP: 25, LEVER: 26, STONE: 27, PUMP: 28, BELT: 29, CRATE: 30 };
+    CRUMBLE: 21, SHUTTER: 22, PANO: 23, GATE: 24, ZAP: 25, LEVER: 26, STONE: 27, PUMP: 28, BELT: 29, CRATE: 30, FROST: 31 };
   const SOLID = [false, true, true, false, true, true, true, false, true, false, true,
-    true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true];
+    true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true];
   // fan: üstündeki hava sütununda yukarı iter (sütun en çok 10 karo, katı karoda biter; tepesine yakın zayıflar)
   // f fanları 4 saniyede bir 2,4 saniye çalışır; patronun ikinci evresinde bütün fanlar kısa kısa çalışır
   const FAN = { lift: 90, grav: 30, cap: 6.5, reach: 10, period: 4, on: 2.4, pPeriod: 1.7, pOn: 0.95 };
@@ -107,6 +107,7 @@
       winds: [], trolleys: [], swings: [], ropes: [], lines: [],
       brushes: [], foams: [], bubbles: [], beams: [],
       belts: [], beltAt: new Map(), crateSp: [], crates: [], presses: [], irons: [], ironSp: [], shake: 0,
+      fogs: [], paters: [], waves: [],
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -536,6 +537,21 @@
     } else if (o.k === 'demir') {
       // ocak: arada bir kızgın demir çubuk çıkarır; çubuk makaralarda ilerler, zamanla soğur (kızgınken yakar)
       G.ironSp.push({ x0: o.x0, x1: o.x1, y: o.y, every: o.every || 3, t: o.t0 || 0, v: o.v || 2, cool: o.cool || 3, w: o.w || 3 });
+    } else if (o.k === 'cam') {
+      // cam teras: katı ama neredeyse görünmez; üstünden sis geçerken çiy tutup belirir
+      for (let x = o.x0; x <= o.x1; x++) G.grid[o.y * G.W + x] = T.FROST;
+    } else if (o.k === 'sis') {
+      // sis bulutu: x0 ile x1 arasında yavaşça gidip gelir (genişlik w); içinden geçtiği cam basamakları gösterir
+      G.fogs.push({ x0: o.x0, x1: o.x1, w: o.w || 8, per: o.per || 10, ph: o.ph || 0, y0: o.y0 === undefined ? 0 : o.y0, y1: o.y1 === undefined ? 14 : o.y1, x: o.x0 });
+    } else if (o.k === 'dolap') {
+      // dolap asansör (paternoster): kabinler kesintisiz döner; x sütununda yukarı çıkar, x + gap sütununda aşağı iner
+      const pt = { x: o.x, gap: o.gap || 4, top: o.top, bot: o.bot, v: o.v || 1.6, n: o.n || 4, w: o.w || 2, cars: [] };
+      pt.L = 2 * (pt.bot - pt.top) + 2 * pt.gap;
+      for (let k = 0; k < pt.n; k++) { const c = { kind: 'pater', s: (pt.L * k) / pt.n, x: 0, y: 0, w: pt.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, pt, a: 0, b: 0 }; placePater(c); pt.cars.push(c); G.plats.push(c); }
+      G.paters.push(pt);
+    } else if (o.k === 'verici') {
+      // yayın vericisi: belli aralıkla genişleyen dalga halkası; halka değeni dışarı doğru iter (bug'ları devirir)
+      G.waves.push({ x: o.x, y: o.y, per: o.per || 2.5, v: o.v || 7, max: o.max || 9, force: o.force || 14, ph: o.ph || 0, r: -1, hit: false });
     } else if (o.k === 'kepenk') {
       // dükkân kepengi: belli aralıkla iner (katı), bir süre kapalı kalır, kalkar
       G.shutters.push({ x: o.x, y0: o.y0, y1: o.y1, ph: o.ph || 0, per: o.per || 4, open: o.open || 2, k: 1, solid: false });
@@ -1215,6 +1231,47 @@
       if (ir.y > G.H + 1) { G.plats.splice(G.plats.indexOf(ir), 1); if (p.plat === ir) p.plat = null; return false; }
       return true;
     });
+  }
+  // ---------------- Çamlıca: sis ve cam teras, dolap asansör, yayın dalgaları ----------------
+  function fogX(G, f) { return f.x0 + (f.x1 - f.x0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (G.t / f.per + f.ph))); }
+  // bir noktadaki sis yoğunluğu (0..1)
+  function fogAt(G, x, y) {
+    let d = 0;
+    for (const f of G.fogs) {
+      if (y < f.y0 || y > f.y1) continue;
+      const u = Math.abs(x - (f.x + f.w / 2)) / (f.w / 2);
+      if (u < 1) d = Math.max(d, 1 - u * u);
+    }
+    return d;
+  }
+  function placePater(c) {
+    const pt = c.pt, H2 = pt.bot - pt.top, s2 = ((c.s % pt.L) + pt.L) % pt.L;
+    // yol: sol sütunda aşağıdan yukarı, tepede sağa, sağ sütunda yukarıdan aşağı, dipte sola
+    if (s2 < H2) { c.x = pt.x; c.y = pt.bot - s2; }
+    else if (s2 < H2 + pt.gap) { c.x = pt.x + (s2 - H2); c.y = pt.top; }
+    else if (s2 < 2 * H2 + pt.gap) { c.x = pt.x + pt.gap; c.y = pt.top + (s2 - H2 - pt.gap); }
+    else { c.x = pt.x + pt.gap - (s2 - 2 * H2 - pt.gap); c.y = pt.bot; }
+  }
+  function updateWaves(G, dt) {
+    const p = G.player;
+    for (const w of G.waves) {
+      const t = (((G.t / w.per + w.ph) % 1) + 1) % 1 * w.per, r = t * w.v;
+      if (r < w.r) { w.hit = false; w.hitE = new Set(); if (Math.abs(w.x - p.x) < 16) ev(G, 'wave2'); }
+      w.r = r;
+      if (r > w.max) continue;
+      const hitAt = (b) => { const dx = b.x + b.w / 2 - w.x, dy = b.y + b.h / 2 - w.y, d = Math.hypot(dx, dy); return Math.abs(d - r) < 0.6 ? [dx / (d || 1), dy / (d || 1)] : null; };
+      if (!p.dead && !w.hit) {
+        const n = hitAt(p);
+        if (n) {
+          w.hit = true;
+          const k = w.force * (1 - 0.4 * r / w.max);
+          p.vx = n[0] * k * 0.8; p.vy = Math.min(p.vy, n[1] * k - 6); p.onGround = false; p.plat = null; p.bounce = true;
+          G.fx.push({ k: 'spark', x: p.x + p.w / 2, y: p.y + p.h / 2, t: 0 }); ev(G, 'boing');
+        }
+      }
+      if (!w.hitE) w.hitE = new Set();
+      for (const e of G.ents) if (!e.dead && !e.harmless && e.kind !== 'boss' && !w.hitE.has(e) && hitAt(e)) { w.hitE.add(e); killEnemy(G, e, true, 100); }
+    }
   }
   // çürük tahtalar: oyuncu basınca yarım saniye sonra çöker, beş saniye sonra yerine gelir
   function updateCrumbles(G, dt) {
@@ -2536,6 +2593,8 @@
         pl.y = chartY(G, pl);
       } else if (pl.kind === 'sandal') {
         updateSandal(G, pl.boat, dt); pl.x = pl.boat.x;
+      } else if (pl.kind === 'pater') {
+        pl.s += pl.pt.v * dt; placePater(pl);
       } else if (pl.kind === 'press') {
         updatePress(G, pl.pr, dt);
       } else if (pl.kind === 'crate' || pl.kind === 'iron') {
@@ -2596,6 +2655,8 @@
     if (G.winds.length) updateWinds(G, dt);
     if (G.levers.length) updateLevers(G, dt);
     if (G.foams.length || G.bubbles.length) updateFoams(G, dt);
+    for (const f of G.fogs) f.x = fogX(G, f);
+    if (G.waves.length) updateWaves(G, dt);
     if (G.crateSp.length || G.crates.length) updateCrates(G, dt);
     if (G.ironSp.length || G.irons.length) updateIrons(G, dt);
     if (G.medusas.length) updateMedusas(G, dt);
@@ -2783,6 +2844,6 @@
     rng, newRun, loadStage, step, tile, solid, afterClear, afterDeath, overlap,
     levels, moveX, moveY, runUpSpeed, jumpSpeed,
     FAN, CART_V, fanAt, fanVy, cartUnder, updateFans, updateShutters, CAR, greenNow,
-    updateBoards, chartY, laserBox, zapUnder, gazeBox, windAt, beamLit, beamAngle, pressY,
+    updateBoards, chartY, laserBox, zapUnder, gazeBox, windAt, beamLit, beamAngle, pressY, fogAt,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

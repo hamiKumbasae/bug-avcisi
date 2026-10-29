@@ -1340,6 +1340,42 @@ const mkBug = (x, y, vx) => ({ kind: 'bug', x, y: y + 0.125, w: 0.875, h: 0.875,
   ok(S.power === 1 && p.plat === ir, 'soğuyan çubuğa basıldı, taşıdı');
 }
 
+// ================= Çamlıca: sis ve cam teras, dolap asansör, yayın dalgaları =================
+{
+  const i = custom(['..P.........................', '#####.............##########', '#####.............##########'].map((r) => r.slice(0, 28)), { hand: true, objs: [{ k: 'cam', x0: 5, x1: 17, y: 12 }, { k: 'sis', x0: 0, x1: 20, w: 8, per: 6 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  ok(BA.tile(G, 10, 12) === BA.T.FROST && BA.SOLID[BA.T.FROST], 'cam teras katı');
+  run(G, { right: true }, 3.5);
+  ok(!p.dead && p.x > 17 && p.y + p.h <= 12.01, `görünmez cam köprüden yüründü (${p.x.toFixed(1)})`);
+  run(G, NONE, 0.1);
+  let lo = 1, hi = 0;
+  run(G, NONE, 6, () => { const d = BA.fogAt(G, 10, 8); lo = Math.min(lo, d); hi = Math.max(hi, d); return false; });
+  ok(hi > 0.8 && lo < 0.05, `sis gelip gidiyor (${lo.toFixed(2)}..${hi.toFixed(2)})`);
+}
+{
+  const i = custom(['..P.........................', '#'.repeat(28), '#'.repeat(28)], { hand: true, objs: [{ k: 'dolap', x: 8, gap: 4, top: 4, bot: 11, n: 4, v: 2 }] });
+  const G = BA.loadStage(BA.newRun(), i), pt = G.paters[0];
+  const c0 = pt.cars[0];
+  ok(c0.x === 8 && c0.y === 11, 'ilk kabin çıkan sütunun dibinde');
+  let up = false, across = false, down = false;
+  run(G, () => { G.player.inv = 99; G.player.x = 1; return {}; }, 9, () => { if (c0.x === 8 && c0.y < 6) up = true; if (c0.y === 4 && c0.x > 9) across = true; if (c0.x === 12 && c0.y > 9) down = true; return up && across && down; });
+  ok(up && across && down, 'kabin çıktı, tepede yana geçti, öbür sütunda indi');
+}
+{
+  const i = custom(['..P.........................', '#'.repeat(28), '#'.repeat(28)], { hand: true, objs: [{ k: 'verici', x: 10.5, y: 12, per: 3, v: 7, max: 8, force: 14 }] });
+  const G = BA.loadStage(BA.newRun(), i), p = G.player;
+  place(G, 10, 12); p.onGround = true;
+  let top = 99;
+  run(G, () => { p.inv = 99; return {}; }, 1.6, () => { top = Math.min(top, p.y + p.h); return false; });
+  ok(12 - top > 6, `vericinin üstündeki dimdik fırladı (${(12 - top).toFixed(1)})`);
+  const G2 = BA.loadStage(BA.newRun(), i), p2 = G2.player;
+  place(G2, 13, 12); p2.onGround = true;
+  G2.ents.push(mkBug(7, 11, 0)); const bug = G2.ents[0];
+  let vx = 0;
+  run(G2, () => { p2.inv = 99; bug.vx = 0; return {}; }, 1, () => { vx = Math.max(vx, p2.vx); return false; });
+  ok(vx > 6 && bug.dead, `yanındaki yana savruldu, bug devrildi (${vx.toFixed(1)})`);
+}
+
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
 {
   for (let k = 0; k < NL; k++) {

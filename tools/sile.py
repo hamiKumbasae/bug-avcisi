@@ -38,7 +38,8 @@ def bolum_9_1(room):
         lamp(x)
 
     # ---- GELİŞTİR: arkadan gelen araçlar; çivili çukurların üstünden bir aracın tavanında geç
-    yol(62, 116, 1, every=3.2, v=8, kinds=['dolmus', 'taksi', 'otobus'])
+    yol(64, 99, 1, every=3.6, v=6.5, kinds=['dolmus', 'taksi', 'otobus'])
+    c.row(9, range(70, 74), '-')
     c.row(FL - 1, range(80, 94), '^')
     c.put(87, 6, 'g')                            # altın 1: çukurların üstünde, tavandan zıplayınca
     c.row(7, range(81, 94, 3), 'b')
@@ -48,6 +49,7 @@ def bolum_9_1(room):
     # ---- TERS KÖŞE: dolmuş durakta bekler; tavanına bin, çukurların üstünden götürsün, sonraki durakta in
     c.put(118, FL - 1, 'Q')
     yol(116, 158, 1, every=5, v=6, kinds=['dolmus'], light={'x': 124, 'w': 1, 'per': 7, 'green': 3})
+    c.row(8, range(119, 123), '-')
     c.row(FL - 1, range(128, 150), '^')
     c.row(8, range(130, 149, 3), 'b')
     for x in (122, 138, 154):

@@ -1206,6 +1206,55 @@
     ellipse(g, x - 14, y + 1, 6, 4 * f, '#ff8a2a', null); ellipse(g, x - 14, y + 2, 3, 2 * f, '#ffe08a', null);
   }
 
+  // ---------------- Çamlıca ----------------
+  // cam teras karosu: neredeyse görünmez; sis değince çiy tutar (beyaz buğu, kenar çizgisi)
+  function drawFrost(g, x, y, d, t, edgeL, edgeR) {
+    const a = 0.1 + 0.85 * d;
+    g.fillStyle = `rgba(200,230,245,${a * 0.35})`; g.fillRect(x, y, 16, 5);
+    g.strokeStyle = `rgba(235,248,255,${a})`; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x, y + 0.5); g.lineTo(x + 16, y + 0.5); g.stroke();
+    if (edgeL) { g.beginPath(); g.moveTo(x + 0.5, y); g.lineTo(x + 0.5, y + 5); g.stroke(); }
+    if (edgeR) { g.beginPath(); g.moveTo(x + 15.5, y); g.lineTo(x + 15.5, y + 5); g.stroke(); }
+    if (d > 0.3) for (let k = 0; k < 3; k++) circle(g, x + 3 + k * 5 + Math.sin(t + x) * 0.5, y + 2.5, 0.9, `rgba(255,255,255,${d * 0.8})`, null);
+  }
+  // sis bulutu: yumuşak beyaz kümeler
+  function drawFog(g, f, t) {
+    const cx = (f.x + f.w / 2) * 16, w = f.w * 16, y0 = Math.max(0, f.y0) * 16, y1 = Math.min(14, f.y1) * 16;
+    for (let k = 0; k < 9; k++) {
+      const px = cx + Math.sin(k * 2.1 + t * 0.4) * w * 0.38, py = y0 + (y1 - y0) * ((k * 0.37) % 1), r = 26 + (k % 3) * 10;
+      const gr = g.createRadialGradient(px, py, 2, px, py, r);
+      gr.addColorStop(0, 'rgba(225,232,240,0.34)'); gr.addColorStop(1, 'rgba(225,232,240,0)');
+      g.fillStyle = gr; g.fillRect(px - r, py - r, 2 * r, 2 * r);
+    }
+  }
+  // dolap asansör: iki sütunlu kuyu ve zincir; kabinler açık önlü küçük odalar
+  function drawPaterShaft(g, pt) {
+    const x0 = pt.x * 16 - 3, x1 = (pt.x + pt.gap + pt.w) * 16 + 3, y0 = (pt.top - 2.4) * 16, y1 = (pt.bot + 1) * 16;
+    box(g, x0, y0, x1 - x0, y1 - y0, 3, 'rgba(30,36,48,0.55)', '#4a5266', 1);
+    for (const cx of [(pt.x + pt.w / 2) * 16, (pt.x + pt.gap + pt.w / 2) * 16]) { lin(g, cx, y0 + 4, cx, y1 - 2, '#6a7286', 1.2); }
+    circle(g, (pt.x + pt.w / 2) * 16, y0 + 8, 4, '#8a92a6', K, 0.6); circle(g, (pt.x + pt.gap + pt.w / 2) * 16, y0 + 8, 4, '#8a92a6', K, 0.6);
+    poly(g, [(pt.x + pt.w / 2) * 16 - 3, y1 - 10, (pt.x + pt.w / 2) * 16 + 3, y1 - 10, (pt.x + pt.w / 2) * 16, y1 - 16], '#5dff7a', null);
+    poly(g, [(pt.x + pt.gap + pt.w / 2) * 16 - 3, y0 + 18, (pt.x + pt.gap + pt.w / 2) * 16 + 3, y0 + 18, (pt.x + pt.gap + pt.w / 2) * 16, y0 + 24], '#ff6a5a', null);
+  }
+  function drawPater(g, c) {
+    const x = c.x * 16, y = c.y * 16, w = c.w * 16;
+    box(g, x - 1, y - 26, w + 2, 3, 0.8, '#8a6a4a', K, 0.6);
+    lin(g, x + 1, y - 24, x + 1, y, '#6a5a4a', 1.4); lin(g, x + w - 1, y - 24, x + w - 1, y, '#6a5a4a', 1.4);
+    box(g, x - 1, y, w + 2, 5, 1.2, '#b8844a', K, 0.8);
+    g.fillStyle = 'rgba(255,230,180,0.18)'; g.fillRect(x + 1, y - 23, w - 2, 23);
+  }
+  // yayın vericisi: yerde çanak; genişleyen dalga halkası
+  function drawEmitter(g, w, t) {
+    const x = w.x * 16, y = w.y * 16;
+    poly(g, [x - 9, y, x + 9, y, x + 5, y - 5, x - 5, y - 5], '#5a6272', K, 0.8);
+    lin(g, x, y - 5, x, y - 12, K, 1.6); circle(g, x, y - 13, 2.2, (w.r >= 0 && w.r < 0.6) ? '#ffffff' : '#3ad0ff', K, 0.6);
+    if (w.r >= 0 && w.r <= w.max) {
+      const a = 1 - w.r / w.max;
+      g.strokeStyle = `rgba(90,220,255,${0.8 * a})`; g.lineWidth = 2.2; g.beginPath(); g.arc(x, y, Math.max(0.1, w.r * 16), 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = `rgba(255,255,255,${0.6 * a})`; g.lineWidth = 0.8; g.beginPath(); g.arc(x, y, Math.max(0.1, w.r * 16 - 2), 0, Math.PI * 2); g.stroke();
+    }
+  }
+
   root.BA_HAND = {
     glass, planter, turnstile, panel, rack, fanBase, drawFan, drawAir, drawHeat, drawCart, drawDoor, drawReader, coffee,
     drawTable, drawCup, drawGold, goldSlot, drawMoodBug, drawThief, drawPrince, darkTile,
@@ -1216,5 +1265,6 @@
     drawColumn, drawPool, drawCurrent, drawSandal, drawMedusa, stoneBug, drawNest, drawFlood, drawPump,
     drawWind, drawCable, drawTrolley, drawSwing, drawRope, drawLine, drawCabin3, drawPylon,
     drawBrush, drawFoamGun, drawBubble, drawBeacon, drawBelt, crate, drawPress, drawIron, drawForge,
+    drawFrost, drawFog, drawPaterShaft, drawPater, drawEmitter,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
