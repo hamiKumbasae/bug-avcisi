@@ -63,7 +63,7 @@ def bolum_7_1():
 
     # ---- SINA: iki uzun boşluk; arkadan rüzgâr, sonra önden; arada kirişli yürüme yolu
     c.put(148, FL - 1, 'Q')
-    gap(152, 161)
+    gap(152, 160)
     c.obj('ruzgar', x0=146, x1=164, v=5, per=3.6, on=1.8)
     c.put(157, 5, 'g')                           # altın 3: rüzgârla uzun atlayışın tepesinde
     gap(168, 181)

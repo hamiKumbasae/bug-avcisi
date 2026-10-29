@@ -29,7 +29,7 @@ def bolum_9_1(room):
         lamp(x)
 
     # ---- TANIT: karşıdan gelen araçlar; farları yaklaştığını gösterir. üstünden atla ya da durakta bekle
-    yol(19, 63, -1, every=3.4, v=6, kinds=['taksi', 'dolmus', 'taksi'])
+    yol(19, 63, -1, every=3.6, v=4.5, kinds=['taksi', 'taksi', 'dolmus'])
     c.row(9, range(30, 34), '-')
     c.row(9, range(46, 50), '-')
     c.row(7, range(30, 34), 'b')
@@ -38,7 +38,7 @@ def bolum_9_1(room):
         lamp(x)
 
     # ---- GELİŞTİR: arkadan gelen araçlar; çivili çukurların üstünden bir aracın tavanında geç
-    yol(64, 99, 1, every=3.6, v=6.5, kinds=['dolmus', 'taksi', 'otobus'])
+    yol(64, 99, 1, every=2.2, v=6, kinds=['dolmus', 'taksi', 'dolmus'])
     c.row(9, range(70, 74), '-')
     c.row(FL - 1, range(80, 94), '^')
     c.put(87, 6, 'g')                            # altın 1: çukurların üstünde, tavandan zıplayınca

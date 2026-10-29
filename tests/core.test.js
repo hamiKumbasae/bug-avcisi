@@ -1376,6 +1376,26 @@ const mkBug = (x, y, vx) => ({ kind: 'bug', x, y: y + 0.125, w: 0.875, h: 0.875,
   ok(vx > 6 && bug.dead, `yanındaki yana savruldu, bug devrildi (${vx.toFixed(1)})`);
 }
 
+// ================= Ümraniye: şafak, sabah tentesi, vinç kancası =================
+{
+  const i = custom(['..P.........z...............', '#'.repeat(28), '#'.repeat(28)], { hand: true, objs: [{ k: 'safak', x0: 2, v: 4 }, { k: 'kepenk', x: 16, y0: 7, y1: 11, dawn: true }, { k: 'sabahtente', x0: 19, x1: 20, y: 11 }] });
+  const G = BA.loadStage(BA.newRun(), i);
+  run(G, () => { G.player.x = 1; G.player.inv = 99; return {}; }, 0.3);
+  ok(BA.tile(G, 16, 9) === BA.T.SHUTTER && BA.tile(G, 19, 11) === BA.T.EMPTY, 'şafaktan önce kepenk kapalı, tezgâh yok');
+  const bug = G.ents.find((e) => e.state === 'sleep');
+  run(G, () => { G.player.x = 1; G.player.inv = 99; return {}; }, 6);
+  ok(BA.tile(G, 16, 9) === BA.T.EMPTY && BA.tile(G, 19, 11) === BA.T.CART, 'şafak değince kepenk kalktı, tezgâh kuruldu');
+  ok(bug && bug.state !== 'sleep', 'bankta uyuyan bug ışıkla uyandı');
+}
+{
+  const i = custom(['..P.........................', '#'.repeat(28), '#'.repeat(28)], { hand: true, objs: [{ k: 'vinc', ax: 4, ay: 11, bx: 16, by: 8, top: 4, v: 3, wait: 1 }] });
+  const G = BA.loadStage(BA.newRun(), i), hk = G.hooks[0], p = G.player;
+  place(G, 4.5, 11); p.onGround = true; p.plat = hk.plat;
+  let top = 99;
+  run(G, () => { p.inv = 99; return {}; }, 8, () => { top = Math.min(top, hk.plat.y); return hk.plat.x === 16 && hk.plat.y === 8; });
+  ok(top === 4 && hk.plat.x === 16 && p.plat === hk.plat, 'vinç kirişi kaldırdı, taşıdı, indirdi; üstündekini götürdü');
+}
+
 // ---------- el yapımı bölümler: üçer altın simit, en az iki kayıt noktası ----------
 {
   for (let k = 0; k < NL; k++) {

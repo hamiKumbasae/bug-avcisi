@@ -107,7 +107,7 @@
       winds: [], trolleys: [], swings: [], ropes: [], lines: [],
       brushes: [], foams: [], bubbles: [], beams: [],
       belts: [], beltAt: new Map(), crateSp: [], crates: [], presses: [], irons: [], ironSp: [], shake: 0,
-      fogs: [], paters: [], waves: [],
+      fogs: [], paters: [], waves: [], dawn: null, hooks: [],
     };
     if (L.room) G.room = { x0: L.room, x1: L.room + (L.roomW || ROOM_W), y0: MH - VHT, exit: null, used: false,
       // yer altı (metro, füniküler): merdivenle inilir; sokak araçlarında durağa yürünür
@@ -554,7 +554,22 @@
       G.waves.push({ x: o.x, y: o.y, per: o.per || 2.5, v: o.v || 7, max: o.max || 9, force: o.force || 14, ph: o.ph || 0, r: -1, hit: false });
     } else if (o.k === 'kepenk') {
       // dükkân kepengi: belli aralıkla iner (katı), bir süre kapalı kalır, kalkar
-      G.shutters.push({ x: o.x, y0: o.y0, y1: o.y1, ph: o.ph || 0, per: o.per || 4, open: o.open || 2, k: 1, solid: false });
+      // dawn: şafak ışığı değince kalkar ve açık kalır (o zamana dek kapalı)
+      G.shutters.push({ x: o.x, y0: o.y0, y1: o.y1, ph: o.ph || 0, per: o.per || 4, open: o.open || 2, k: o.dawn ? 0 : 1, solid: false, dawn: !!o.dawn });
+    } else if (o.k === 'safak') {
+      // şafak: ışık x0'dan başlayıp v hızıyla sağa ilerler; değdiği kepenkleri açar, uyuyan bug'ları uyandırır
+      G.dawn = { x0: o.x0, x: o.x0, v: o.v || 3, wait: o.wait || 0, tiles: [] };
+    } else if (o.k === 'sabahtente') {
+      // esnaf şafakta tentesini açar: ışık değince tente (sektiren) belirir
+      (G.dawnTiles = G.dawnTiles || []).push({ x0: o.x0, x1: o.x1, y: o.y, on: false });
+    } else if (o.k === 'vinc') {
+      // vinç kancası: yükü (kiriş) a noktasından kaldırır, b noktasına taşır, indirir; bekler, geri döner
+      const hk = { ax: o.ax, ay: o.ay, bx: o.bx, by: o.by, top: o.top, v: o.v || 2.6, wait: o.wait || 1.2, w: o.w || 4, t: o.t0 || 0 };
+      const L1 = hk.ay - hk.top, L2 = Math.abs(hk.bx - hk.ax), L3 = hk.by - hk.top;
+      hk.legs = [L1, L2, L3]; hk.L = L1 + L2 + L3; hk.cycle = 2 * (hk.L / hk.v + hk.wait);
+      hk.plat = { kind: 'hook', x: hk.ax, y: hk.ay, w: hk.w, h: 0.5, tx: 0, ty: 0, dx: 0, dy: 0, hk, a: 0, b: 0 };
+      placeHook(G, hk, 0);
+      G.plats.push(hk.plat); G.hooks.push(hk);
     }
   }
   function panWeight(G, pan) {
@@ -756,6 +771,15 @@
   }
   function updateShutters(G) {
     for (const s of G.shutters) {
+      if (s.dawn) {
+        const want = !G.dawn || G.dawn.x < s.x + 0.5;
+        s.k = approach(s.k, want ? 0 : 1, 1 / 120 / 0.8);
+        if (want === s.solid) continue;
+        s.solid = want;
+        for (let y = s.y0; y <= s.y1; y++) setTile(G, s.x, y, want ? T.SHUTTER : T.EMPTY);
+        if (!want && s.x > G.cam - 2 && s.x < G.cam + VW + 2) ev(G, 'shutterup');
+        continue;
+      }
       const ph = (((G.t + s.ph * s.per) / s.per) % 1 + 1) % 1, tOpen = s.open / s.per, tMove = 0.3 / s.per;
       let k;
       if (ph < tOpen) k = 1;
@@ -1272,6 +1296,29 @@
       if (!w.hitE) w.hitE = new Set();
       for (const e of G.ents) if (!e.dead && !e.harmless && e.kind !== 'boss' && !w.hitE.has(e) && hitAt(e)) { w.hitE.add(e); killEnemy(G, e, true, 100); }
     }
+  }
+  // ---------------- Ümraniye: şafak, vinç kancası ----------------
+  function placeHook(G, hk, t) {
+    // yol: a'dan kalk (yukarı), b'ye git, in; bekle; geri: kalk, a'ya git, in; bekle
+    let u = ((t % hk.cycle) + hk.cycle) % hk.cycle, s;
+    const half = hk.L / hk.v + hk.wait;
+    let back = false;
+    if (u >= half) { back = true; u -= half; }
+    s = Math.min(hk.L, u * hk.v);
+    if (back) s = hk.L - s;
+    const [L1, L2] = hk.legs, d = Math.sign(hk.bx - hk.ax) || 1;
+    let x, y;
+    if (!back) {
+      if (s < L1) { x = hk.ax; y = hk.ay - s; }
+      else if (s < L1 + L2) { x = hk.ax + d * (s - L1); y = hk.top; }
+      else { x = hk.bx; y = hk.top + (s - L1 - L2); }
+    } else {
+      // dönüşte yol tersinden
+      if (s < L1) { x = hk.ax; y = hk.ay - s; }
+      else if (s < L1 + L2) { x = hk.ax + d * (s - L1); y = hk.top; }
+      else { x = hk.bx; y = hk.top + (s - L1 - L2); }
+    }
+    hk.plat.x = x; hk.plat.y = y;
   }
   // çürük tahtalar: oyuncu basınca yarım saniye sonra çöker, beş saniye sonra yerine gelir
   function updateCrumbles(G, dt) {
@@ -2593,6 +2640,8 @@
         pl.y = chartY(G, pl);
       } else if (pl.kind === 'sandal') {
         updateSandal(G, pl.boat, dt); pl.x = pl.boat.x;
+      } else if (pl.kind === 'hook') {
+        pl.hk.t += dt; placeHook(G, pl.hk, pl.hk.t);
       } else if (pl.kind === 'pater') {
         pl.s += pl.pt.v * dt; placePater(pl);
       } else if (pl.kind === 'press') {
@@ -2656,6 +2705,13 @@
     if (G.levers.length) updateLevers(G, dt);
     if (G.foams.length || G.bubbles.length) updateFoams(G, dt);
     for (const f of G.fogs) f.x = fogX(G, f);
+    if (G.dawn) {
+      // şafak ışığı ilerler; oyuncu çok geride kalırsa onu bekler
+      const d = G.dawn;
+      d.x = Math.min(Math.max(d.x, G.cam - 2) + d.v * dt, Math.max(d.x, G.player.x + 22));
+      for (const e of G.ents) if (e.state === 'sleep' && e.x < d.x - 1) wakeBug(G, e);
+      for (const dt2 of G.dawnTiles || []) if (!dt2.on && d.x > dt2.x0 + 0.5) { dt2.on = true; for (let x = dt2.x0; x <= dt2.x1; x++) setTile(G, x, dt2.y, T.CART); ev(G, 'boing'); }
+    }
     if (G.waves.length) updateWaves(G, dt);
     if (G.crateSp.length || G.crates.length) updateCrates(G, dt);
     if (G.ironSp.length || G.irons.length) updateIrons(G, dt);

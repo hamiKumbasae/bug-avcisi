@@ -1255,6 +1255,28 @@
     }
   }
 
+  // ---------------- Ümraniye ----------------
+  // vinç: kule, kol ve araba; kancanın halatı ve taşıdığı kiriş
+  function drawCrane(g, hk) {
+    const x0 = Math.min(hk.ax, hk.bx) * 16 - 24, x1 = (Math.max(hk.ax, hk.bx) + hk.w) * 16 + 24, jy = (hk.top - 3) * 16;
+    const mx = x0 - 8;
+    lin(g, mx, jy - 6, mx, 12 * 16, '#c8a020', 5); lin(g, mx, jy - 6, mx, 12 * 16, '#f0c030', 2.4);
+    for (let y = jy; y < 12 * 16; y += 12) lin(g, mx - 2.5, y, mx + 2.5, y + 12, 'rgba(120,90,10,0.8)', 0.8);
+    lin(g, mx - 20, jy, x1, jy, '#c8a020', 4); lin(g, mx - 20, jy, x1, jy, '#f0c030', 1.8);
+    for (let x = mx; x < x1; x += 10) lin(g, x, jy - 2, x + 5, jy + 2, 'rgba(120,90,10,0.8)', 0.7);
+    box(g, mx - 26, jy - 2, 8, 8, 1, '#5a6070', K, 0.6);
+  }
+  function drawHook(g, hk) {
+    const pl = hk.plat, x = pl.x * 16, y = pl.y * 16, w = pl.w * 16, jy = (hk.top - 3) * 16, cx = x + w / 2;
+    box(g, cx - 5, jy - 1, 10, 5, 1, '#3a404c', K, 0.6);
+    lin(g, cx, jy + 4, cx, y - 10, K, 1.4); lin(g, cx, jy + 4, cx, y - 10, '#9aa2ae', 0.6);
+    lin(g, cx, y - 10, x + 3, y, '#9aa2ae', 0.8); lin(g, cx, y - 10, x + w - 3, y, '#9aa2ae', 0.8);
+    circle(g, cx, y - 10, 2, '#f0c030', K, 0.6);
+    box(g, x, y, w, 6, 0.6, '#d8504a', K, 0.9);
+    g.fillStyle = '#a83830'; g.fillRect(x + 1, y + 2.2, w - 2, 1.4);
+    for (let k = 4; k < w - 2; k += 8) circle(g, x + k, y + 4.4, 0.7, '#5a2a2a', null);
+  }
+
   root.BA_HAND = {
     glass, planter, turnstile, panel, rack, fanBase, drawFan, drawAir, drawHeat, drawCart, drawDoor, drawReader, coffee,
     drawTable, drawCup, drawGold, goldSlot, drawMoodBug, drawThief, drawPrince, darkTile,
@@ -1265,6 +1287,6 @@
     drawColumn, drawPool, drawCurrent, drawSandal, drawMedusa, stoneBug, drawNest, drawFlood, drawPump,
     drawWind, drawCable, drawTrolley, drawSwing, drawRope, drawLine, drawCabin3, drawPylon,
     drawBrush, drawFoamGun, drawBubble, drawBeacon, drawBelt, crate, drawPress, drawIron, drawForge,
-    drawFrost, drawFog, drawPaterShaft, drawPater, drawEmitter,
+    drawFrost, drawFog, drawPaterShaft, drawPater, drawEmitter, drawCrane, drawHook,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -37,6 +37,8 @@ function analyse(idx, revealHidden) {
     const bx = BA.gazeBox(G, m), x = m.dir === 'l' ? bx.x + 1 : bx.x + bx.w - 2, y = m.y + m.w - 1;
     if (BA.tile(G, x, y) === T.EMPTY && SOLID[BA.tile(G, x, y + 1)]) G.grid[y * W + x] = T.STONE;
   }
+  // şafak: kepenkler açık, simitçi tezgâhları kurulmuş sayılır
+  for (const t of G.dawnTiles || []) for (let x = t.x0; x <= t.x1; x++) G.grid[t.y * W + x] = T.CART;
   // koli makinesi (sınırlı): bandın ucundan düşen koliler yere yığılır
   for (const sp of G.crateSp) {
     if (sp.max > 10) continue;
@@ -68,6 +70,11 @@ function analyse(idx, revealHidden) {
       // vapur ve kayık: iki iskele arasındaki yolu boyunca (üst güverte de)
       const b = p.boat, off = p.upper ? 3 : 0;
       statics.push({ x: b.a + off, y: p.y, w: b.b - b.a + p.w, h: 0.5, dy: 0 });
+    } else if (p.kind === 'hook') {
+      // vinç kancası: kalkış, tepe ve iniş noktaları boyunca taşır
+      const hk = p.hk, pts = [{ x: hk.ax, y: hk.ay }, { x: hk.ax, y: hk.top }, { x: (hk.ax + hk.bx) / 2, y: hk.top }, { x: hk.bx, y: hk.top }, { x: hk.bx, y: hk.by }].map((q) => ({ x: q.x, y: q.y, w: hk.w, h: 0.5, dy: 0 }));
+      statics.push(...pts);
+      for (let k = 0; k + 1 < pts.length; k++) rides.push([pts[k], pts[k + 1]]);
     } else if (p.kind === 'pater') {
       // dolap asansör: çıkan sütun, tepe, inen sütun boyunca taşır (her döngü bir kez)
       const pt = p.pt;

@@ -678,6 +678,7 @@
       else if (pl.kind === 'brush') HD.drawBrush(ctx, pl.br, app.t);              // oto yıkama fırçası
       else if (pl.kind === 'press') HD.drawPress(ctx, pl.pr, app.t);              // pres, şahmerdan
       else if (pl.kind === 'pater') HD.drawPater(ctx, pl);                        // dolap asansör kabini
+      else if (pl.kind === 'hook') HD.drawHook(ctx, pl.hk);                       // vincin taşıdığı kiriş
       else if (pl.kind === 'crate') ctx.drawImage(HD.crate(), pl.x * TS - 1, pl.y * TS - 1, 16, 16);   // bantta koli
       else if (pl.kind === 'iron') HD.drawIron(ctx, pl, app.t);                   // kızgın demir
       else if (pl.kind === 'bubble') HD.drawBubble(ctx, pl, app.t);               // köpük baloncuğu
@@ -735,6 +736,17 @@
     for (const d of G.floods) if (onScreen(G, d.x0, d.x1 - d.x0)) HD.drawFlood(ctx, d, app.t, (G.camY + BA.VHT + 1) * TS);
     for (const w of G.winds) if (onScreen(G, w.x0, w.x1 - w.x0)) HD.drawWind(ctx, w, app.t, G.cam);
     for (const f of G.fogs) if (onScreen(G, f.x - 2, f.w + 4)) HD.drawFog(ctx, f, app.t);
+    // şafak: ışığın henüz değmediği yer gece mavisi; ışığın önü yumuşak bir altın şerit
+    if (G.dawn) {
+      const fx = G.dawn.x * TS, X0 = G.cam * TS - 4, Y0 = G.camY * TS, Wd = BA.VW * TS + 8, Ht = BA.VHT * TS;
+      if (fx < X0 + Wd) {
+        const gx = Math.max(X0, fx);
+        const gr = ctx.createLinearGradient(fx - 24, 0, fx + 40, 0);
+        gr.addColorStop(0, 'rgba(255,190,110,0)'); gr.addColorStop(0.35, 'rgba(255,190,110,0.18)'); gr.addColorStop(0.6, 'rgba(14,20,52,0.3)'); gr.addColorStop(1, 'rgba(14,20,52,0.55)');
+        ctx.fillStyle = gr; ctx.fillRect(Math.max(X0, fx - 24), Y0, Math.min(Wd, 64), Ht);
+        if (fx + 40 < X0 + Wd) { ctx.fillStyle = 'rgba(14,20,52,0.55)'; ctx.fillRect(Math.max(gx, fx + 40), Y0, X0 + Wd - Math.max(gx, fx + 40), Ht); }
+      }
+    }
     // alarm: ekranın kenarları kırmızı nabız gibi atar
     if (G.alarm > 0) {
       const a = (0.5 + 0.5 * Math.sin(app.t * 11)) * Math.min(1, G.alarm / 0.5), X0 = G.cam * TS, Y0 = G.camY * TS, Wd = BA.VW * TS, Ht = BA.VHT * TS;
@@ -802,6 +814,8 @@
       else if (d.k === 'direk') HD.drawPylon(ctx, d);
     }
     for (const f of G.fans) if (onScreen(G, f.x)) HD.drawAir(ctx, f.x * TS, f.y * TS, f.reach, app.t + f.x * 0.13, f.spin);
+    // Ümraniye: vinçler
+    for (const hk of G.hooks) if (onScreen(G, Math.min(hk.ax, hk.bx) - 3, Math.abs(hk.bx - hk.ax) + hk.w + 6)) HD.drawCrane(ctx, hk);
     // Çamlıca: dolap asansör kuyuları, cam teraslar (sisle belirir), vericiler
     for (const pt of G.paters) if (onScreen(G, pt.x - 1, pt.gap + 4)) HD.drawPaterShaft(ctx, pt);
     if (G.fogs.length) {
