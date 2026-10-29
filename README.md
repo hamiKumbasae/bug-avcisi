@@ -213,3 +213,15 @@ Git ile bir sürüme dönmek için: `git checkout ef9a3df` (v2.2), `git checkout
 Kod MIT lisanslıdır (`LICENSE`). Fredoka yazı tipi SIL Open Font License ile gelir
 (`src/fonts/OFL-fredoka.txt`). PeerJS ve qrcode-generator MIT lisanslıdır. Ay hesabını yapan SunCalc 1.9.0
 (Vladimir Agafonkin) BSD 2 maddeli lisansla gelir (`src/vendor/LICENSE-suncalc.txt`).
+
+## Android uygulaması (APK)
+
+Oyun, [Capacitor](https://capacitorjs.com/) kabuğuyla Android uygulaması olarak da derlenir. `main` dalına oyunla ilgili her gönderimde
+`.github/workflows/apk.yml` APK'yı GitHub'ın sunucularında derler ve [Releases](https://github.com/hamiKumbasae/bug-avcisi/releases/latest)
+sayfasına `BugAvcisi.apk` olarak koyar. Telefondan indirip açmak kurmaya yeter.
+
+- `mobil/` — uygulama ayarları (`capacitor.config.json`), simge ve açılış görselleri (`mobil/assets`), hazırlama betiği (`hazirla.js`).
+- `src/app.js` — yalnızca uygulamanın içinde çalışır: geri tuşu oyunu duraklatır, ana menüde uygulamadan çıkar.
+- Uygulama yatay ekrana kilitli ve tam ekran açılır.
+- İmza: depo ayarlarında `BA_KEYSTORE_B64`, `BA_KEYSTORE_PASS`, `BA_KEY_ALIAS`, `BA_KEY_PASS` sırları varsa sürüm APK'sı o anahtarla imzalanır
+  (yeni sürümler eskisinin üzerine kurulur). Yoksa hata ayıklama (debug) APK'sı çıkar.

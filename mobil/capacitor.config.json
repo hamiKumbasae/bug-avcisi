@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.hamikumbasae.bugavcisi",
+  "appName": "Bug Avcısı",
+  "webDir": "www",
+  "backgroundColor": "#10121c",
+  "android": {
+    "backgroundColor": "#10121c"
+  }
+}
