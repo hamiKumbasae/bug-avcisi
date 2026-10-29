@@ -184,10 +184,11 @@ oynamak için zip'ini indirip yerelde aç (`python3 -m http.server`).
 
 | Sürüm | Tarih | İçerik | Kaynak |
 |---|---|---|---|
+| v2.1 | 29 Ekim 2026 | İki arada: demircilik az ve yerinde, yeni son (aynı binada, atölyeyle odasının arasında), 12-3 Çatı, Kadosan'da tek dövmeci, İMES'te CNC; İstanbul ağaçları (çınar, erguvan, erik, fıstık çamı); Eyüp'te ve Şile'de görünmeyen ay düzeldi, 12-1 şafakta | [`bad79db`](https://github.com/hamiKumbasae/bug-avcisi/tree/bad79dbe653d6926ca00d016f02082529b5a2061) · [zip](https://github.com/hamiKumbasae/bug-avcisi/archive/bad79dbe653d6926ca00d016f02082529b5a2061.zip) |
 | v2.0 | 29 Ekim 2026 | Yeni hikâye ve yapı: iki katmanlı İstanbul, tek gün ve gece, 12 dünya yeni sırayla (Şişli, Üsküdar, Eyüp, Şile, Sanayi yeni), Eyüp'ün sessiz tepesi, 11 patron, 11 biniş (Marmaray, gece dolmuşları), o günün gerçek ayı, yeni sahneler ve 12 yeni hatıra parçası; kedi, bayrak ve gereksiz camiler çıktı | [`6509f80`](https://github.com/hamiKumbasae/bug-avcisi/tree/6509f80dbdbe385ec1f642c11827f887f3562bee) · [zip](https://github.com/hamiKumbasae/bug-avcisi/archive/6509f80dbdbe385ec1f642c11827f887f3562bee.zip) |
 | v1.0 | 29 Ekim 2026 | 12 dünya, 36 bölüm, 12 patron; 10 bonus binişi (metro, metrobüs, tramvay, minibüs, taksi, Tünel füniküleri); Ataşehir dünyası; yazısız hikâye ve 12 hatıra parçası | [`2a82261`](https://github.com/hamiKumbasae/bug-avcisi/tree/2a822611a7d55d2daf7f049f5052164add01e3b4) · [zip](https://github.com/hamiKumbasae/bug-avcisi/archive/2a822611a7d55d2daf7f049f5052164add01e3b4.zip) |
 
-Git ile bir sürüme dönmek için: `git checkout 6509f80` (v2.0) ya da `git checkout 2a82261` (v1.0).
+Git ile bir sürüme dönmek için: `git checkout bad79db` (v2.1), `git checkout 6509f80` (v2.0) ya da `git checkout 2a82261` (v1.0).
 
 ## Lisans
 
