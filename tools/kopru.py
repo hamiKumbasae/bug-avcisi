@@ -189,9 +189,8 @@ def bolum_7_3():
     sepet(129, len=8.5, amp=0.74, per=3.4)
     c.rect(136, 9, 137, Hm - 1, '=')
     c.put(136, 8, 'e')
-    sepet(144, len=7, amp=0.7, per=3, wind=True)
-    c.obj('ruzgar', x0=138, x1=168, v=-3, per=4.4, on=2.6)
-    sepet(158, len=8, amp=0.6, per=3.2, ph=0.3)
+    sepet(144, len=7, amp=0.7, per=3)
+    sepet(158, len=8, amp=0.66, per=3.2, ph=0.3)
     c.put(151, 4, 'g')                           # altın 3
     c.put(171, FL - 1, 'Q')
 
