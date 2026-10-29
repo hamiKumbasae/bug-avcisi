@@ -138,6 +138,10 @@
       case 'steal': osc('sawtooth', 1200, t, 0.16, 0.05, B, 0.7); seq([84, 79], 0.06, 'pulse', 0.06); break;
       case 'wave': noise(t, 0.9, 0.12, 900, B); break;
       case 'splash': noise(t, 0.3, 0.2, 1400, B); osc('sine', 300, t, 0.15, 0.06, B, 0.5); break;
+      case 'pop': osc('sine', 900, t, 0.06, 0.06, B, 1.8); noise(t, 0.04, 0.06, 5000, B, true); break;
+      case 'gaze': osc('sine', 330, t, 0.5, 0.04, B, 1.5, 0.1); osc('sine', 495, t, 0.5, 0.03, B, 1.5, 0.1); break;
+      case 'stone': noise(t, 0.2, 0.18, 1200, B); osc('triangle', 140, t, 0.2, 0.15, B, 0.6); break;
+      case 'pump': for (let i = 0; i < 4; i++) noise(t + i * 0.12, 0.08, 0.1, 700, B); osc('sine', 120, t, 0.5, 0.08, B, 0.7); break;
       case 'alarm': for (let i = 0; i < 6; i++) osc('square', i % 2 ? 660 : 880, t + i * 0.16, 0.15, 0.05, B); break;
       case 'powerup': osc('sawtooth', 60, t, 0.5, 0.08, B, 2.2, 0.05); osc('square', 1600, t + 0.05, 0.05, 0.03, B); break;
       case 'powerdown': osc('sawtooth', 160, t, 0.5, 0.08, B, 0.35); noise(t, 0.08, 0.1, 3000, B, true); break;

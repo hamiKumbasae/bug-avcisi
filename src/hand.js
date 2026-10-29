@@ -728,6 +728,21 @@
   const SYM = ['SİMİT', 'ÇAY', 'KOD'];
   function drawBoard(g, b, t) {
     const x = b.x0 * 16, y = b.y * 16, w = (b.x1 - b.x0 + 1) * 16;
+    if (b.beam) {
+      // Şile: ışık basamağı (ışık düşünce belirir) ya da gölge basamağı (ışıkta kaybolur)
+      const fl = b.warn && Math.floor(t * 12) % 2 === 0;
+      if (b.lit) {
+        const col = b.inv ? '#4a3a7a' : '#fff0b8', edge = b.inv ? '#8a7ad0' : '#ffd060';
+        if (!b.inv) { g.fillStyle = 'rgba(255,230,140,0.25)'; g.fillRect(x - 3, y - 4, w + 6, 14); }
+        g.globalAlpha = fl ? 0.45 : 0.95;
+        box(g, x, y, w, 10, 2, col, edge, 1.2);
+        g.fillStyle = b.inv ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)'; g.fillRect(x + 2, y + 1.5, w - 4, 1.2);
+        g.globalAlpha = 1;
+      } else {
+        g.save(); g.setLineDash([2, 3]); g.strokeStyle = b.inv ? 'rgba(160,140,230,0.5)' : 'rgba(255,220,140,0.45)'; g.lineWidth = 1; g.strokeRect(x + 1, y + 1, w - 2, 8); g.restore();
+      }
+      return;
+    }
     if (!b.lit) {
       // sönük: koyu cam, kesik çizgili çerçeve, ortada küçük bekleme noktaları
       g.fillStyle = 'rgba(14,20,34,0.55)'; g.fillRect(x + 1, y + 1, w - 2, 12);
@@ -1099,6 +1114,98 @@
     circle(g, x, y - 3, 2, '#ff4a3a', null);
   }
 
+  // ---------------- Şile ----------------
+  // oto yıkama fırçası: üst rayda taşıyıcı, dönen renkli kıllar
+  function drawBrush(g, br, t) {
+    const x = br.x * 16, y0 = br.y0 * 16, y1 = (br.y1 + 1) * 16, w = br.w * 16, pl = br.plat;
+    box(g, pl.x * 16, pl.y * 16, pl.w * 16, 6, 1.4, '#5a6270', K, 0.8);
+    g.fillStyle = '#f0b030'; g.fillRect(pl.x * 16 + 2, pl.y * 16 + 2, pl.w * 16 - 4, 1.4);
+    lin(g, x + w / 2, pl.y * 16 + 6, x + w / 2, y1 - 2, '#3a404c', 2);
+    for (let yy = y0 + 2; yy < y1 - 1; yy += 3) {
+      const ph = br.spin + yy * 0.4, sw = Math.sin(ph) * 4;
+      lin(g, x - 3 + sw * 0.3, yy, x + w + 3 - sw * 0.3, yy + 1, ['#3a8ad0', '#e8483a', '#f4c531'][Math.floor(yy / 3) % 3], 2.4);
+    }
+  }
+  // köpük topu (yerde) ve köpük baloncukları
+  function drawFoamGun(g, f) {
+    const x = f.x * 16, y = (f.y + 1) * 16;
+    box(g, x - 6, y - 8, 14, 8, 2, '#3a7ac0', K, 0.8);
+    box(g, x - 1, y - 14, 4, 7, 1, '#9aa2ae', K, 0.6);
+  }
+  function drawBubble(g, b, t) {
+    const cx = (b.x + b.w / 2) * 16, cy = b.y * 16 + 4, r = 12 + Math.sin(b.age * 6) * 0.8, k = b.stood / b.life;
+    g.fillStyle = `rgba(230,245,255,${0.35 + k * 0.2})`; g.beginPath(); g.ellipse(cx, cy, r * (1 + k * 0.15), r * 0.55, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 1; g.stroke();
+    circle(g, cx - r * 0.4, cy - 2, 2, 'rgba(255,255,255,0.9)', null);
+    g.strokeStyle = 'rgba(190,120,255,0.35)'; g.beginPath(); g.ellipse(cx, cy, r * 0.8, r * 0.38, 0, 0.3, 2); g.stroke();
+  }
+  // işaret feneri: kırmızı-beyaz küçük kule, tepede dönen ışık konisi
+  function drawBeacon(g, bm, t) {
+    const x = bm.x * 16, y = bm.y * 16, base = 12 * 16;
+    g.save(); g.beginPath(); g.moveTo(x - 6, base); g.lineTo(x - 4, y + 6); g.lineTo(x + 4, y + 6); g.lineTo(x + 6, base); g.closePath(); g.clip();
+    for (let yy = y + 6, k = 0; yy < base; yy += 10, k++) { g.fillStyle = k % 2 ? '#e8483a' : '#f4f0e8'; g.fillRect(x - 7, yy, 14, 10); }
+    g.restore();
+    box(g, x - 6, y - 2, 12, 8, 1.4, '#3a404c', K, 0.8);
+    circle(g, x, y + 2, 3.4, '#fff4c0', null);
+    const a = bm.a, L = bm.range * 16, h = bm.half;
+    const gr = g.createRadialGradient(x, y + 2, 2, x, y + 2, L);
+    gr.addColorStop(0, 'rgba(255,240,170,0.55)'); gr.addColorStop(1, 'rgba(255,240,170,0)');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(x, y + 2);
+    g.lineTo(x + Math.cos(a - h) * L, y + 2 + Math.sin(a - h) * L); g.lineTo(x + Math.cos(a + h) * L, y + 2 + Math.sin(a + h) * L); g.closePath(); g.fill();
+  }
+
+  // ---------------- Sanayi ----------------
+  // yürüyen bant: kauçuk şerit, akış yönünde kayan oklar, uçlarda makara
+  function drawBelt(g, bt, t) {
+    const x0 = bt.x0 * 16, x1 = (bt.x1 + 1) * 16, y = bt.y * 16;
+    box(g, x0, y, x1 - x0, 16, 4, '#2a2e36', K, 0.9);
+    g.save(); g.beginPath(); g.rect(x0 + 2, y + 2, x1 - x0 - 4, 5); g.clip();
+    g.fillStyle = '#3a3e48'; g.fillRect(x0, y + 2, x1 - x0, 5);
+    const d = Math.sign(bt.v) || 1, off = ((t * bt.v * 16) % 10 + 10) % 10;
+    for (let x = x0 - 10 + off; x < x1 + 10; x += 10) poly(g, [x, y + 2.5, x + 3 * d, y + 4.5, x, y + 6.5, x + 1.5 * d, y + 4.5], '#f0b030', null);
+    g.restore();
+    for (let x = x0 + 8; x < x1; x += 16) { const a = t * bt.v * 4; circle(g, x, y + 11, 3.4, '#5a606c', K, 0.6); lin(g, x, y + 11, x + Math.cos(a) * 3, y + 11 + Math.sin(a) * 3, '#9aa2ae', 0.8); }
+  }
+  // koli: karton kutu, bant ve etiket
+  function crate() {
+    return cached('koli', (g) => {
+      box(g, 0.6, 1.4, 14.8, 14, 1, '#c89a5a', K, 0.8);
+      g.fillStyle = '#b0844a'; g.fillRect(7, 1.4, 2, 14);
+      g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(2.4, 9, 4.2, 3);
+      g.fillStyle = 'rgba(0,0,0,0.4)'; g.fillRect(3, 10, 3, 0.6);
+    });
+  }
+  // pres: tavandan inen piston, ağır kafa, sarı-siyah kenar; inmeden önce titrer
+  function drawPress(g, pr, t) {
+    const x = pr.x * 16, w = pr.w * 16, y = pr.y * 16 + (pr.warn ? Math.sin(t * 60) * 0.8 : 0), top = (pr.top - 6) * 16;
+    lin(g, x + w / 2, top, x + w / 2, y, K, 5); lin(g, x + w / 2, top, x + w / 2, y, '#b8bec8', 3);
+    box(g, x - 2, y, w + 4, pr.shock ? 18 : 16, 2, pr.shock ? '#4a4e58' : '#6a707c', K, 1);
+    hazard(g, x - 1, y + (pr.shock ? 14 : 12), w + 2, 3);
+    g.fillStyle = 'rgba(255,255,255,0.2)'; g.fillRect(x, y + 2, w, 1.2);
+    if (pr.shock) {
+      // şahmerdanın örsü
+      const by = (pr.bot + 1) * 16;
+      poly(g, [x - 6, by, x + w + 6, by, x + w + 2, by - 3, x - 2, by - 3], '#3a3e48', K, 0.7);
+    }
+  }
+  // kızgın demir çubuk: soğudukça turuncudan griye; ocak ve makaralar
+  function drawIron(g, ir, t) {
+    const x = ir.x * 16, y = ir.y * 16, w = ir.w * 16, h = ir.heat;
+    const r = Math.round(110 + 145 * h), gg = Math.round(110 + 40 * h * h), b = Math.round(118 - 90 * h);
+    if (h > 0.25) { g.fillStyle = `rgba(255,140,40,${0.25 * h})`; g.fillRect(x - 4, y - 6, w + 8, 14); }
+    box(g, x, y, w, 7, 1.6, `rgb(${r},${gg},${b})`, K, 0.8);
+    if (h > 0.25) { g.fillStyle = `rgba(255,240,180,${h})`; g.fillRect(x + 2, y + 1.5, w - 4, 1.2); if (Math.floor(t * 8 + ir.x) % 3 === 0) circle(g, x + (t * 37 % w), y - 2, 0.8, '#ffd27a', null); }
+  }
+  function drawForge(g, sp, t) {
+    const x = sp.x0 * 16, y = sp.y * 16, x1 = (sp.x1 + sp.w) * 16;
+    for (let xx = x + 8; xx < x1; xx += 12) { circle(g, xx, y + 10, 3, '#4a4e58', K, 0.5); circle(g, xx, y + 10, 1, '#9aa2ae', null); }
+    lin(g, x, y + 10, x1, y + 10, 'rgba(60,64,72,0.6)', 1);
+    box(g, x - 28, y - 30, 26, 46, 3, '#5a3a2a', K, 1);
+    box(g, x - 22, y - 8, 16, 14, 6, '#1a0a06', K, 0.6);
+    const f = 0.6 + 0.4 * Math.sin(t * 9);
+    ellipse(g, x - 14, y + 1, 6, 4 * f, '#ff8a2a', null); ellipse(g, x - 14, y + 2, 3, 2 * f, '#ffe08a', null);
+  }
+
   root.BA_HAND = {
     glass, planter, turnstile, panel, rack, fanBase, drawFan, drawAir, drawHeat, drawCart, drawDoor, drawReader, coffee,
     drawTable, drawCup, drawGold, goldSlot, drawMoodBug, drawThief, drawPrince, darkTile,
@@ -1108,5 +1215,6 @@
     drawBoard, drawChartBack, drawChartBar, drawLaser, drawGate, drawVent, drawLever, drawZap, drawTrack, drawRailCar,
     drawColumn, drawPool, drawCurrent, drawSandal, drawMedusa, stoneBug, drawNest, drawFlood, drawPump,
     drawWind, drawCable, drawTrolley, drawSwing, drawRope, drawLine, drawCabin3, drawPylon,
+    drawBrush, drawFoamGun, drawBubble, drawBeacon, drawBelt, crate, drawPress, drawIron, drawForge,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -628,6 +628,7 @@
         else if (t === T.PANEL) put(HD.panel(theme), px, py);
         else if (t === T.FAN) put(HD.fanBase(theme), px, py);
         else if (t === T.STONE) put(HD.stoneBug(), px, py);
+        else if (t === T.CRATE) put(HD.crate(), px, py);
         else if (isRack(t)) put(HD.rack(t === T.HOT, !isRack(up), rackF), px, py);
       }
     }
@@ -674,6 +675,11 @@
       else if (pl.kind === 'sandal') HD.drawSandal(ctx, pl.boat, app.t);          // sarnıçta zıplayarak itilen sandal
       else if (pl.kind === 'trolley') HD.drawTrolley(ctx, pl.tr, app.t);         // halat makarası
       else if (pl.kind === 'cabin') HD.drawCabin3(ctx, pl);                       // teleferik kabini
+      else if (pl.kind === 'brush') HD.drawBrush(ctx, pl.br, app.t);              // oto yıkama fırçası
+      else if (pl.kind === 'press') HD.drawPress(ctx, pl.pr, app.t);              // pres, şahmerdan
+      else if (pl.kind === 'crate') ctx.drawImage(HD.crate(), pl.x * TS - 1, pl.y * TS - 1, 16, 16);   // bantta koli
+      else if (pl.kind === 'iron') HD.drawIron(ctx, pl, app.t);                   // kızgın demir
+      else if (pl.kind === 'bubble') HD.drawBubble(ctx, pl, app.t);               // köpük baloncuğu
       else if (pl.kind === 'rope') HD.drawRope(ctx, pl.rope, app.t);              // çamaşır ipi
       else if (pl.kind === 'swing') HD.drawSwing(ctx, pl.sw);                    // sallanan bakım sepeti
       else if (pl.rail) HD.drawRailCar(ctx, pl, !!G.power[pl.grp]);               // elektrikli raylı platform
@@ -794,6 +800,12 @@
       else if (d.k === 'direk') HD.drawPylon(ctx, d);
     }
     for (const f of G.fans) if (onScreen(G, f.x)) HD.drawAir(ctx, f.x * TS, f.y * TS, f.reach, app.t + f.x * 0.13, f.spin);
+    // Sanayi: bantlar, ocaklar
+    for (const bt of G.belts) if (onScreen(G, bt.x0, bt.x1 - bt.x0 + 1)) HD.drawBelt(ctx, bt, app.t);
+    for (const sp of G.ironSp) if (onScreen(G, sp.x0 - 2, sp.x1 - sp.x0 + 5)) HD.drawForge(ctx, sp, app.t);
+    // Şile: fenerler (ışık basamaklarının arkasında), köpük topları
+    for (const bm of G.beams) if (onScreen(G, bm.x - bm.range, bm.range * 2)) HD.drawBeacon(ctx, bm, app.t);
+    for (const f of G.foams) if (onScreen(G, f.x - 1, 3)) HD.drawFoamGun(ctx, f);
     // Ataşehir: borsa panoları, canlı grafiğin ekranı, raylar, şalterler, ızgaralar, menfezler
     for (const b of G.boards) if (onScreen(G, b.x0, b.x1 - b.x0 + 1)) HD.drawBoard(ctx, b, app.t);
     { const bars = G.plats.filter((q) => q.kind === 'chart'); if (bars.length && onScreen(G, bars[0].x - 1, bars.length * bars[0].w + 2)) HD.drawChartBack(ctx, bars, app.t); }
@@ -849,9 +861,26 @@
       if (l.flash) { hole((l.x + 0.5) * TS, (l.y - 4) * TS, 15 * TS, a); lit.push([l.x + 0.5, l.y - 4, 15]); }
       else { hole((l.x + 0.5) * TS, (l.y + 5) * TS, 5.6 * TS, a); hole((l.x + 0.5) * TS, (l.y + 1.5) * TS, 3 * TS, a); lit.push([l.x + 0.5, l.y + 5, 5.6]); }
     }
+    // araç farları: önlerine uzanan ışık konisi
+    const cone = (x, y, dir, len, spread) => {
+      const gr = g.createLinearGradient(X(x), 0, X(x + dir * len), 0);
+      gr.addColorStop(0, 'rgba(0,0,0,0.95)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.beginPath(); g.moveTo(X(x), Y(y - 0.3)); g.lineTo(X(x + dir * len), Y(y - spread)); g.lineTo(X(x + dir * len), Y(y + spread * 0.5)); g.lineTo(X(x), Y(y + 0.3)); g.closePath(); g.fill();
+    };
+    for (const c of G.cars) {
+      const d = c.lane.dir, fx = (d > 0 ? c.x + c.w : c.x) * TS, fy = (c.lane.y - c.h * 0.45) * TS;
+      cone(fx, fy, d, 9 * TS, 2.2 * TS); hole(fx, fy, 1.6 * TS, 0.9); hole((c.x + c.w / 2) * TS, (c.lane.y - c.h / 2) * TS, 2.2 * TS, 0.6);
+      lit.push([c.x + c.w / 2 + d * 4, c.lane.y - 1, 5]);
+    }
     const p = G.player;
     hole((p.x + p.w / 2) * TS, (p.y + p.h / 2) * TS, 2.4 * TS, 0.75);
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(darkCv, 0, 0); ctx.setTransform(S, 0, 0, S, 0, 0);
+    // karanlıkta dikenlerin uçları parıldar (çivili çukurlar görünsün)
+    { const T = BA.T, x0 = Math.max(0, Math.floor(G.cam) - 1), x1 = Math.min(G.W - 1, Math.floor(G.cam) + 17);
+      for (let ty = 0; ty < G.H; ty++) for (let tx = x0; tx <= x1; tx++) if (G.grid[ty * G.W + tx] === T.SPIKE) {
+        const tw = 0.5 + 0.5 * Math.sin(app.t * 5 + tx * 1.7);
+        for (const dx of [3, 8, 13]) ART.circle(ctx, tx * TS + dx + ox, ty * TS + 5 + oy, 0.7 + tw * 0.4, `rgba(220,235,255,${0.35 + tw * 0.4})`, null);
+      } }
     // karanlıkta kalan bug'ların gözleri
     for (const e of G.ents) {
       if (e.dead || e.kind === 'hirsiz') continue;
@@ -1102,6 +1131,16 @@
         const a = Math.max(0, 1 - f.t / 0.35);
         for (let k = 0; k < 7; k++) { const an = -Math.PI + k / 6 * Math.PI, d = 3 + f.t * 30; ART.circle(ctx, f.x * TS + Math.cos(an) * d, f.y * TS + Math.sin(an) * d * 0.6 + f.t * f.t * 60, 1.6, k % 3 ? `rgba(230,60,60,${a})` : `rgba(40,30,30,${a})`, null); }
         ART.ellipse(ctx, f.x * TS, f.y * TS + 5, 4 + f.t * 16, 1.4, `rgba(220,50,50,${a * 0.8})`, null);
+        break;
+      }
+      case 'foam': {
+        const a = Math.max(0, 1 - f.t / 0.7);
+        for (let k = 0; k < 5; k++) ART.circle(ctx, f.x * TS + Math.cos(k * 1.3) * (3 + f.t * 14), f.y * TS + Math.sin(k * 1.9) * (2 + f.t * 8), 2.4, `rgba(240,248,255,${a * 0.85})`, null);
+        break;
+      }
+      case 'pop': {
+        const a = Math.max(0, 1 - f.t / 0.3), r = 6 + f.t * 40;
+        for (let k = 0; k < 8; k++) { const an = k / 8 * Math.PI * 2; ART.circle(ctx, f.x * TS + Math.cos(an) * r, f.y * TS + Math.sin(an) * r * 0.6, 1.4, `rgba(240,248,255,${a})`, null); }
         break;
       }
       case 'clothes': {

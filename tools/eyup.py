@@ -169,8 +169,7 @@ def bolum_8_3():
     c.rect(62, 9, 74, FL - 1, '=')
     c.put(68, 5, 'x')
     c.put(68, 2, 'g')                            # altın 3: gizli bloğun üstünde
-    stairs(c, 75, 2, FL)
-    c.rect(77, 8, 104, FL - 1, '=')
+    c.rect(75, 8, 104, FL - 1, '=')
     c.row(5, (80, 82, 84), 'b')
     c.put(96, 7, 'W')
     c.rect(W - 1, 0, W - 1, Hm - 1, '=')

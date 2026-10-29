@@ -221,10 +221,8 @@ def bolum_5_3():
     c.row(3, range(122, 128), '-')
     c.put(126, 2, 'g')                           # altın 2
 
-    # ---- SINA: ızgaralı zemin elektrikliyken raylı platformla geç; duvarı raylı asansörle tırman.
-    # elektriği kesersen ızgara söner ama platform da asansör de durur
+    # ---- SINA: ızgaralı zemin elektrikli; raylı platformla üstünden geç, duvarı raylı asansörle tırman
     c.put(130, FL - 1, 'Q')
-    salter(c, 133, 11, 'd', on=True)
     c.obj('izgara', x0=136, x1=153, y=FL, grp='d')
     c.obj('ray', x0=136, x1=150, y=9, w=3, grp='d', v=2.6)
     c.put(146, 4, 'g')                           # altın 3: platformun üstünde yüksekte

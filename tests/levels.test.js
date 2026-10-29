@@ -37,6 +37,15 @@ function analyse(idx, revealHidden) {
     const bx = BA.gazeBox(G, m), x = m.dir === 'l' ? bx.x + 1 : bx.x + bx.w - 2, y = m.y + m.w - 1;
     if (BA.tile(G, x, y) === T.EMPTY && SOLID[BA.tile(G, x, y + 1)]) G.grid[y * W + x] = T.STONE;
   }
+  // koli makinesi (sınırlı): bandın ucundan düşen koliler yere yığılır
+  for (const sp of G.crateSp) {
+    if (sp.max > 10) continue;
+    const bt = G.beltAt.get((Math.floor(sp.y) + 1) * W + Math.floor(sp.x));
+    if (!bt) continue;
+    const x = bt.v > 0 ? bt.x1 + 1 : bt.x0 - 1;
+    let y = bt.y; while (y + 1 < H && !SOLID[BA.tile(G, x, y + 1)]) y++;
+    for (let k = 0; k < Math.min(3, sp.max) && y >= 0; k++, y--) G.grid[y * W + x] = T.CRATE;
+  }
   for (const g of G.agates) {
     const bridge = !g.inv && g.x1 - g.x0 > g.y1 - g.y0;
     for (let y = g.y0; y <= g.y1; y++) for (let x = g.x0; x <= g.x1; x++) G.grid[y * W + x] = bridge ? T.GATE : T.EMPTY;
@@ -59,6 +68,13 @@ function analyse(idx, revealHidden) {
       // vapur ve kayık: iki iskele arasındaki yolu boyunca (üst güverte de)
       const b = p.boat, off = p.upper ? 3 : 0;
       statics.push({ x: b.a + off, y: p.y, w: b.b - b.a + p.w, h: 0.5, dy: 0 });
+    } else if (p.kind === 'press') {
+      // pres: kafası tepede ve dipte durur; kalkarken üstündekini taşır
+      const a = { x: p.pr.x, y: p.pr.top, w: p.pr.w, h: 0.5, dy: 0 }, z = { x: p.pr.x, y: p.pr.bot, w: p.pr.w, h: 0.5, dy: 0 };
+      statics.push(a, z); rides.push([a, z]);
+    } else if (p.kind === 'brush') {
+      const br = p.br;
+      statics.push({ x: br.x0 - 0.3, y: p.y, w: br.x1 - br.x0 + p.w, h: 0.5, dy: 0 });   // fırçanın tepesi rayı boyunca
     } else if (p.kind === 'rope') {
       statics.push({ x: p.x, y: p.y, w: p.w, h: 0.5, dy: 0, rope: true });   // çamaşır ipi: üstüne düşeni sektirir
     } else if (p.kind === 'cabin') {
@@ -97,6 +113,13 @@ function analyse(idx, revealHidden) {
       statics.push(a, z); rides.push([a, z]);
     }
   }
+  // ocak: soğuyan demir çubuklar makaralar boyunca köprü
+  for (const sp of G.ironSp) statics.push({ x: sp.x0 + 2, y: sp.y, w: sp.x1 - sp.x0 - 2 + sp.w, h: 0.5, dy: 0 });
+  // köpük baloncukları: çıktıkları yerden tepeye kadar asansör gibi
+  for (const f of G.foams) {
+    const ys = []; for (let y = f.y; y >= f.top; y -= 2) ys.push({ x: f.x - 0.5, y, w: 2, h: 0.5, dy: 0 });
+    statics.push(...ys); for (let k = 0; k + 1 < ys.length; k++) rides.push([ys[k], ys[k + 1]]);
+  }
   // asansör: her katta durur, katlar arasında taşır
   for (const L of G.lifts) {
     const ys = L.floors.map((y) => ({ x: L.x, y, w: 3, h: 0.5, dy: 0 }));
@@ -104,7 +127,7 @@ function analyse(idx, revealHidden) {
     for (let k = 0; k + 1 < ys.length; k++) rides.push([ys[k], ys[k + 1]]);
   }
   // trafik şeridi: araçların tavanı (en alçak araç: taksi) şerit boyunca köprü sayılır
-  for (const ln of G.lanes) statics.push({ x: ln.x0, y: ln.y - BA.CAR.taksi[1], w: ln.x1 - ln.x0, h: 0.5, dy: 0 });
+  for (const ln of G.lanes) statics.push({ x: ln.x0, y: ln.y - BA.CAR.taksi[1], w: ln.x1 - ln.x0, h: 0.5, dy: 0, lane: true });
   G.plats = statics;
   const spikeCol = new Set();
   for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (G.grid[y * W + x] === T.SPIKE) spikeCol.add(x * 100 + y);
@@ -245,6 +268,18 @@ function analyse(idx, revealHidden) {
     // aynı sıradaki komşu parçaya yürüyerek (tek karo engelsiz) — zaten bitişikse aynı parça
   }
   for (const [a, z] of rides) { edges[a.seg.id].add(z.seg.id); edges[z.seg.id].add(a.seg.id); }
+  // şahmerdan: vurduğu an zıplayan çok yükseğe uçar
+  for (const pr of G.presses) {
+    if (!pr.shock) continue;
+    const cx = pr.x + pr.w / 2;
+    for (const s of segs) {
+      if (s.plat || s.y !== pr.bot || s.x1 < cx - pr.shock || s.x0 > cx + pr.shock) continue;
+      for (const x of [Math.max(s.x0, cx - pr.shock + 0.5), Math.min(s.x1 + 1 - PW, cx + pr.shock - 1)]) for (const dir of [-1, 1]) for (const speed of [PH.walk, PH.run]) {
+        const r = sim(x, s.y + 1 - BIG_H - 0.0001, dir, speed, 1, speed * 0.5, 0, 3, { launch: 21 });
+        if (r && r !== s) edges[s.id].add(r.id);
+      }
+    }
+  }
   // makaranın tamponu fırlatır: uçtan ileri ve yukarı
   for (const L of launches) for (const dir of [0, 1]) for (const hold of [0, 1]) {
     const r = sim(L.z.x + L.z.w / 2 - PW / 2, L.z.y - BIG_H, Math.sign(L.vx) || 1, dir ? PH.run : 0.001, 0, 0, 0, 3, { launch: L.vy, carry: L.vx });
@@ -252,6 +287,8 @@ function analyse(idx, revealHidden) {
     if (r && r !== L.z.seg) edges[L.z.seg.id].add(r.id);
   }
   for (const [a, b] of touch) { edges[a.id].add(b.id); edges[b.id].add(a.id); }
+  // trafik şeridi: araçların arasından yola inilebilir
+  for (const p of statics) if (p.lane) for (const t of segs) if (t !== p.seg && t.y > p.seg.y && t.x1 >= p.seg.x0 && t.x0 <= p.seg.x1) edges[p.seg.id].add(t.id);
   // metro: giriş → odaya düşüş, odanın çıkışı → yukarıdaki çıkış noktası
   let metro = null;
   if (G.room) {
