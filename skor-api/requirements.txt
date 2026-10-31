@@ -1,0 +1,4 @@
+# Çalışma bağımlılıkları (Raspberry Pi 3 için bilinçli olarak az: ORM yok, uvloop/httptools yok).
+fastapi==0.162.0
+uvicorn==0.54.0
+PyMySQL==1.2.3

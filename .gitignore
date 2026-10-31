@@ -3,3 +3,5 @@ __pycache__/
 node_modules/
 mobil/www/
 mobil/android/
+.venv/
+.pytest_cache/
