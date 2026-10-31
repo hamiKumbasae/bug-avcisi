@@ -1,0 +1,39 @@
+# skor-api testleri (gerçek MariaDB ile). Yalnız skor-api/ değişince çalışır; Pages'e dokunmaz.
+name: skor-api
+
+on:
+  push:
+    paths: ['skor-api/**', '.github/workflows/skor-api.yml']
+  pull_request:
+    paths: ['skor-api/**', '.github/workflows/skor-api.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: oyun_test
+          MARIADB_USER: oyun
+          MARIADB_PASSWORD: yerel-test-sifresi
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    defaults:
+      run:
+        working-directory: skor-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements-dev.txt
+      - run: bash -n deploy/kurulum.sh
+      - run: python -m pytest

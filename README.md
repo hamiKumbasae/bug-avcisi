@@ -189,10 +189,20 @@ python3 tools/bolumler.py   # bölümleri yeniden üret (src/levels.js)
 - `src/audio.js`: sentezlenmiş efektler, şehir sesleri ve her dünyanın özgün çiptün müziği.
 - `src/main.js`: ekranlar, kamera, HUD, harita, giriş (klavye, dokunmatik, oyun kolu).
 - `src/remote.js`, `kumanda.html`: telefon kumandası.
+- `src/skor.js`: çevrimiçi skor tablosu (koşu bitince ad sorar, ilk 10'u gösterir). En üstteki `SKOR_API` boşsa
+  kapalıdır ve oyun eskisi gibi çalışır.
+- `skor-api/`: skor tablosunun sunucusu (FastAPI + MariaDB, Raspberry Pi'de Cloudflare Tunnel ile).
+  Bug Avcısı ve Boğaz Yolu'na birlikte hizmet eder. Ayrıntılar `skor-api/README.md`, kurulum `skor-api/DEPLOY.md`.
 - `tools/onizle.html`: çizimleri tek tek görmek için geliştirme önizlemesi (`?k=teleferik`, `?m=story&k=eyup&t=6`,
   `?m=pieces`, `?m=sprites`, `?m=tiles`, `?m=title`).
 
 Her `main` gönderiminde GitHub Actions üç testi çalıştırır ve siteyi GitHub Pages'e yayınlar.
+
+## Çevrimiçi skor tablosu
+
+Canlar sonsuz olduğu için oyun "bitmez". Bir koşu, duraklat menüsünden *ANA MENÜ*'ye dönünce ya da oyunun sonunda biter.
+O anda ad sorulur ve skor çevrimiçi tabloya gönderilir. **Skor tablosu** düğmesi tüm zamanların ve bu haftanın
+ilk 10'unu gösterir. Sunucuya ulaşılamazsa oyun takılmaz, yerel rekor her zaman kaydedilir.
 
 ## Sürümler
 

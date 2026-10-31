@@ -1,0 +1,10 @@
+# Adlandırılmış tünel, komut satırıyla kurulduysa: /etc/cloudflared/config.yml
+# <TUNEL-ID>: `cloudflared tunnel create skor` komutunun yazdığı kimlik.
+tunnel: <TUNEL-ID>
+credentials-file: /etc/cloudflared/<TUNEL-ID>.json
+
+ingress:
+  - hostname: skor.celikdovme.net
+    service: http://127.0.0.1:8077
+  # başka hiçbir şeyi dışarı açma
+  - service: http_status:404

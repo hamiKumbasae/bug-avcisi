@@ -3,6 +3,8 @@
   'use strict';
   const BA = window.BA, ART = window.BA_ART, SC = window.BA_SCENE, AU = window.BA_AUDIO, ST = window.BA_STORY, RD = window.BA_RIDE, HD = window.BA_HAND;
   const LEVELS = window.BA_LEVELS, WORLDS = window.BA_WORLDS;
+  // çevrimiçi skor tablosu (src/skor.js); adresi boşsa kapalıdır ve hiçbir şey değişmez
+  const LB = window.OYUN_SKOR && window.OYUN_SKOR.enabled ? window.OYUN_SKOR : null;
   const canvas = document.getElementById('oyun');
   const ctx = canvas.getContext('2d');
   const VW = 256, VH = 240, TS = 16, TOP = 16;
@@ -211,6 +213,8 @@
     acc = 0;   // yeni koşu: birikmiş adım süresi sıfırlanır (kayıtların tekrarı belirlenimci kalsın)
     app.S = BA.newRun();
     app.S.stage = stage;
+    app.S.start = stage;
+    if (LB) LB.runStart('normal');
     if (prologue && ST.has('giris')) playStory('giris', toIntro); else toIntro();
   }
   // yazısız hikâye sahnesi; bitince ya da atlanınca then() çağrılır
@@ -253,7 +257,13 @@
   function saveScore() {
     if (app.S && app.S.score > app.best) { app.best = app.S.score; store.set('ba-rekor', app.best); }
   }
-  function toTitle() { saveScore(); app.screen = 'title'; app.menu = 0; app.G = null; AU.stopAmbient(); AU.playMusic('title'); }
+  // koşu bitti (oyun sonu ya da ana menüye dönüş): çevrimiçi tabloya ad sor
+  function endRun(finished, delay) {
+    if (!LB || !app.S) return;
+    const start = app.S.start || 0, cleared = Math.max(0, Math.min(NL, app.S.stage) - start);
+    LB.runEnd({ score: app.S.score, meta: { start, cleared, finished: !!finished }, delay });
+  }
+  function toTitle() { saveScore(); endRun(false); app.screen = 'title'; app.menu = 0; app.G = null; AU.stopAmbient(); AU.playMusic('title'); }
 
   function titleItems() {
     const items = [{ label: 'OYNA', act: () => startRun(0, true) }];
@@ -264,6 +274,7 @@
     return items;
   }
   function menuKey(k) {
+    if (LB && LB.isOpen()) return;   // skor tablosu açıkken kumanda ve oyun kolu menüyü oynatmasın
     const s = app.screen;
     if (s === 'title') {
       const items = titleItems();
@@ -369,7 +380,7 @@
         const after = STORY_AFTER[app.S.stage / 3 - 1];
         if (app.S.stage >= NL) {
           saveScore();
-          const toEnd = () => { app.screen = 'end'; app.endT = 0; AU.sfx('win'); setTimeout(() => { if (app.screen === 'end') AU.playMusic('son'); }, 1600); };
+          const toEnd = () => { app.screen = 'end'; app.endT = 0; AU.sfx('win'); endRun(true, 3500); setTimeout(() => { if (app.screen === 'end') AU.playMusic('son'); }, 1600); };
           if (ST.has('son')) playStory('son', toEnd); else toEnd();
         } else if (app.S.stage % 3 === 0 && after && ST.has(after)) playStory(after, toIntro);
         else toIntro();
@@ -1556,5 +1567,6 @@
 
   AU.playMusic && document.addEventListener('pointerdown', () => { if (app.screen === 'title' && !AU.current()) AU.playMusic('title'); }, { once: false });
   addEventListener('keydown', () => { if (app.screen === 'title' && !AU.current()) AU.playMusic('title'); });
+  if (LB) LB.init({ onOpen: () => { if (app.screen === 'play') pauseGame(); } });
   requestAnimationFrame(frame);
 })();
